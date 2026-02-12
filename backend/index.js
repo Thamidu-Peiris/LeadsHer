@@ -7,10 +7,6 @@ const authRoutes = require('./routes/auth');
 const mentorRoutes = require('./routes/mentors');
 const mentorshipRequestRoutes = require('./routes/mentorshipRequests');
 const mentorshipRoutes = require('./routes/mentorships');
-
-const mentorRoutes = require('./routes/mentors');
-const mentorshipRequestRoutes = require('./routes/mentorshipRequests');
-const mentorshipRoutes = require('./routes/mentorships');
 const storyRoutes = require('./routes/stories');
 
 
