@@ -1,4 +1,4 @@
-//Thamidu
+// Thamidu
 const mongoose = require('mongoose');
 
 const storySchema = new mongoose.Schema(
