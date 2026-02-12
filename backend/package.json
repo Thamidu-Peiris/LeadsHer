@@ -1,12 +1,29 @@
 {
+  "name": "leadsher-backend",
+  "version": "1.0.0",
+  "description": "LeadsHer - A platform to amplify women's leadership through storytelling and mentorship",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node scripts/seedMentors.js"
+  },
+  "keywords": [
+    "mentorship",
+    "leadership",
+    "women",
+    "empowerment"
+  ],
+  "author": "LeadsHer Team",
+  "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-
     "mongoose": "^9.1.6",
     "multer": "^1.4.5-lts.1"
+
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

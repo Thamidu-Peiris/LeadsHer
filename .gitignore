@@ -26,3 +26,9 @@ Thumbs.db
 
 # Testing
 coverage/
+
+# Ignore all markdown files
+*.md
+
+# But allow README.md
+!README.md
