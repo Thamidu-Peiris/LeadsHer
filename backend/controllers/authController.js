@@ -10,7 +10,8 @@ const signToken = (id) =>
 // POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const body = req.body || {};
+    const { name, email, password, role } = body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required.' });
     }
@@ -45,7 +46,8 @@ exports.register = async (req, res) => {
 // POST /api/auth/login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const body = req.body || {};
+    const { email, password } = body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
@@ -92,7 +94,8 @@ exports.getProfile = async (req, res) => {
 // PUT /api/auth/profile (protected)
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, avatar, bio } = req.body;
+    const body = req.body || {};
+    const { name, avatar, bio } = body;
     const allowed = { name, avatar, bio };
     Object.keys(allowed).forEach((k) => allowed[k] === undefined && delete allowed[k]);
     const user = await User.findByIdAndUpdate(req.user.id, allowed, {
@@ -121,7 +124,8 @@ exports.logout = (req, res) => {
 // POST /api/auth/forgot-password
 exports.forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const body = req.body || {};
+    const { email } = body;
     if (!email) {
       return res.status(400).json({ message: 'Email is required.' });
     }
@@ -152,7 +156,8 @@ exports.forgotPassword = async (req, res) => {
 // POST /api/auth/reset-password (optional; use with token from forgot-password)
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const body = req.body || {};
+    const { token, newPassword } = body;
     if (!token || !newPassword) {
       return res.status(400).json({ message: 'Token and new password are required.' });
     }
