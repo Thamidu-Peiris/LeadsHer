@@ -1,0 +1,92 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: leadsher-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - leadsher-network
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: leadsher-auth
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - AUTH_SERVICE_PORT=5001
+      - DOTENV_PATH=/dev/null
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
+  story-service:
+    build:
+      context: ./backend/story-service
+      dockerfile: Dockerfile
+    container_name: leadsher-story
+    ports:
+      - "5002:5002"
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - STORY_SERVICE_PORT=5002
+      - DOTENV_PATH=/dev/null
+    volumes:
+      - story-uploads:/app/uploads/stories
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
+  mentorship-service:
+    build:
+      context: ./backend/mentorship-service
+      dockerfile: Dockerfile
+    container_name: leadsher-mentorship
+    ports:
+      - "5003:5003"
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - MENTORSHIP_SERVICE_PORT=5003
+      - DOTENV_PATH=/dev/null
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: leadsher-gateway
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth-service
+      - story-service
+      - mentorship-service
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  story-uploads:
+
+networks:
+  leadsher-network:
+    driver: bridge
