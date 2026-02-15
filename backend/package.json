@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "description": "Workspace root for LeadsHer backend microservices",
   "workspaces": [
-    "auth-service",
-    "story-service",
-    "mentorship-service"
+    "services/auth-service",
+    "services/story-service",
+    "services/mentorship-service"
   ],
   "scripts": {
     "postinstall": "docker compose -f ../docker-compose.yml up -d --build",

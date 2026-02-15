@@ -11,7 +11,7 @@ services:
 
   auth-service:
     build:
-      context: ./backend/auth-service
+      context: ./backend/services/auth-service
       dockerfile: Dockerfile
     container_name: leadsher-auth
     ports:
@@ -30,7 +30,7 @@ services:
 
   story-service:
     build:
-      context: ./backend/story-service
+      context: ./backend/services/story-service
       dockerfile: Dockerfile
     container_name: leadsher-story
     ports:
@@ -51,7 +51,7 @@ services:
 
   mentorship-service:
     build:
-      context: ./backend/mentorship-service
+      context: ./backend/services/mentorship-service
       dockerfile: Dockerfile
     container_name: leadsher-mentorship
     ports:
