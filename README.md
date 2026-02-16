@@ -2,6 +2,10 @@
 
 Single-repo project. Backend (Node/Express) lives in `backend/`.
 
+## Deploy to Render
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for deploying this microservice architecture to [Render](https://dashboard.render.com/).
+
 ## Component 1: User Management & Authentication
 
 **Owner:** Member 1
