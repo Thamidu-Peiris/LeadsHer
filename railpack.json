@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "steps": {
+    "install": {
+      "commands": ["cd backend/services/auth-service && npm install"]
+    }
+  },
+  "deploy": {
+    "startCommand": "cd backend/services/auth-service && node src/index.js"
+  }
+}

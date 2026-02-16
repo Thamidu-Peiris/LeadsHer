@@ -1,0 +1,9 @@
+{
+  "name": "leadsher",
+  "private": true,
+  "description": "LeadsHer - Amplifying women leadership",
+  "scripts": {
+    "build": "cd backend/services/auth-service && npm install",
+    "start": "cd backend/services/auth-service && node src/index.js"
+  }
+}
