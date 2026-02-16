@@ -3,10 +3,10 @@
   "provider": "node",
   "steps": {
     "install": {
-      "commands": ["cd backend/services/auth-service && npm install"]
+      "commands": ["npm install --prefix backend/services/auth-service"]
     }
   },
   "deploy": {
-    "startCommand": "cd backend/services/auth-service && node src/index.js"
+    "startCommand": "node backend/services/auth-service/src/index.js"
   }
 }
