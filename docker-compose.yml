@@ -68,6 +68,27 @@ services:
       - leadsher-network
     restart: unless-stopped
 
+  resource-service:
+    build:
+      context: ./backend/services/resource-service
+      dockerfile: Dockerfile
+    container_name: leadsher-resource
+    ports:
+      - "5004:5004"
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - RESOURCE_SERVICE_PORT=5004
+      - DOTENV_PATH=/dev/null
+    volumes:
+      - resource-uploads:/app/uploads/resources
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -79,6 +100,7 @@ services:
       - auth-service
       - story-service
       - mentorship-service
+      - resource-service
     networks:
       - leadsher-network
     restart: unless-stopped
@@ -86,6 +108,7 @@ services:
 volumes:
   mongo-data:
   story-uploads:
+  resource-uploads:
 
 networks:
   leadsher-network:
