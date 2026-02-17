@@ -24,7 +24,7 @@ const seedMentors = async () => {
           name: 'Sarah Johnson',
           email: 'sarah.johnson@leadsher.com',
           password: 'password123',
-          role: 'Mentor',
+          role: 'mentor',
           bio: 'Senior Software Engineer with 12+ years of experience in full-stack development.',
         },
         profile: {
@@ -42,7 +42,7 @@ const seedMentors = async () => {
           name: 'Maria Rodriguez',
           email: 'maria.rodriguez@leadsher.com',
           password: 'password123',
-          role: 'Mentor',
+          role: 'mentor',
           bio: 'Product Manager turned VP of Product at a leading fintech company.',
         },
         profile: {
@@ -60,7 +60,7 @@ const seedMentors = async () => {
           name: 'Dr. Emily Chen',
           email: 'emily.chen@leadsher.com',
           password: 'password123',
-          role: 'Mentor',
+          role: 'mentor',
           bio: 'AI Research Scientist with a PhD in Machine Learning.',
         },
         profile: {
@@ -78,7 +78,7 @@ const seedMentors = async () => {
           name: 'Jessica Williams',
           email: 'jessica.williams@leadsher.com',
           password: 'password123',
-          role: 'Mentor',
+          role: 'mentor',
           bio: 'Startup founder and angel investor with expertise in scaling businesses.',
         },
         profile: {
@@ -96,7 +96,7 @@ const seedMentors = async () => {
           name: 'Aisha Patel',
           email: 'aisha.patel@leadsher.com',
           password: 'password123',
-          role: 'Mentor',
+          role: 'mentor',
           bio: 'Cybersecurity expert and CISO at a major healthcare organization.',
         },
         profile: {
@@ -117,21 +117,21 @@ const seedMentors = async () => {
         name: 'Rachel Thompson',
         email: 'rachel.thompson@leadsher.com',
         password: 'password123',
-        role: 'Mentee',
+        role: 'mentee',
         bio: 'Junior developer looking to grow in full-stack development.',
       },
       {
         name: 'Lisa Anderson',
         email: 'lisa.anderson@leadsher.com',
         password: 'password123',
-        role: 'Mentee',
+        role: 'mentee',
         bio: 'Career changer transitioning from marketing to product management.',
       },
       {
         name: 'Priya Sharma',
         email: 'priya.sharma@leadsher.com',
         password: 'password123',
-        role: 'Mentee',
+        role: 'mentee',
         bio: 'Computer science student interested in AI and machine learning.',
       },
     ];
@@ -159,7 +159,7 @@ const seedMentors = async () => {
       name: 'Admin User',
       email: 'admin@leadsher.com',
       password: 'admin123',
-      role: 'Admin',
+      role: 'admin',
       bio: 'Platform administrator',
     });
     console.log(`Created admin: ${admin.name} (${admin.email})`);
