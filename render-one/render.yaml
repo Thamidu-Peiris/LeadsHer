@@ -1,0 +1,17 @@
+# One-service Blueprint for Render free tier (optional).
+# Deploy: Render Dashboard → New → Blueprint → connect repo →
+#         use this file: set "Blueprint Path" to render-one/render.yaml
+#         Then add MONGODB_URI and JWT_SECRET in the created service.
+
+services:
+  - type: web
+    name: leadsher-api
+    runtime: docker
+    dockerfilePath: render-one/Dockerfile
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
