@@ -1,7 +1,7 @@
 # LeadsHer – single container for Render (free tier: 1 service)
 # Runs api-gateway (nginx) + auth, story, mentorship, resource services in one process.
 
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Nginx and envsubst for gateway
 RUN apk add --no-cache nginx gettext
@@ -30,8 +30,8 @@ RUN cd services/resource-service && npm install --production
 COPY backend/services/resource-service ./services/resource-service
 RUN mkdir -p services/resource-service/uploads/resources
 
-# --- API Gateway (nginx config + start script) ---
-COPY render-one/nginx.conf.template /etc/nginx/conf.d/default.conf.template
+# --- API Gateway (full nginx.conf so upstream is in http context) ---
+COPY render-one/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY render-one/start.sh /start.sh
 RUN chmod +x /start.sh
 

@@ -18,12 +18,12 @@ node /app/services/resource-service/src/index.js &
 # Give DB connections and servers time to bind
 sleep 3
 
-# Nginx PID dir (Alpine)
-mkdir -p /run/nginx
+# Nginx dirs (Alpine)
+mkdir -p /run/nginx /var/log/nginx
 
 # Render sets PORT (e.g. 10000); default for local runs
 export PORT="${PORT:-5000}"
-envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # Nginx runs in foreground so container stays up
 exec nginx -g 'daemon off;'
