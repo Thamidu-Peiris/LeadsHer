@@ -11,7 +11,8 @@ const protect = async (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password -resetPasswordToken -resetPasswordExpires');
+    const user = await User.findById(decoded.id)
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -googleId -linkedinId');
     if (!user) {
       return res.status(401).json({ message: 'User not found.' });
     }
@@ -20,6 +21,17 @@ const protect = async (req, res, next) => {
   } catch (err) {
     return res.status(401).json({ message: 'Not authorized. Invalid or expired token.' });
   }
+};
+
+/** Require email to be verified for full access. Use after protect. */
+const requireEmailVerified = (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authorized.' });
+  if (!req.user.isEmailVerified) {
+    return res.status(403).json({
+      message: 'Email verification required. Check your inbox or use the verification link.',
+    });
+  }
+  next();
 };
 
 const role = (...allowed) => (req, res, next) => {
@@ -42,4 +54,4 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { protect, role, optionalAuth };
+module.exports = { protect, role, optionalAuth, requireEmailVerified };
