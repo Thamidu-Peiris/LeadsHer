@@ -16,8 +16,10 @@ services:
     container_name: leadsher-auth
     ports:
       - "5001:5001"
+    env_file:
+      - backend/.env
     environment:
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - PORT=5001
       - JWT_SECRET=${JWT_SECRET:-superkey}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - AUTH_SERVICE_PORT=5001
@@ -35,8 +37,10 @@ services:
     container_name: leadsher-story
     ports:
       - "5002:5002"
+    env_file:
+      - backend/.env
     environment:
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - PORT=5002
       - JWT_SECRET=${JWT_SECRET:-superkey}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - STORY_SERVICE_PORT=5002
@@ -56,8 +60,10 @@ services:
     container_name: leadsher-mentorship
     ports:
       - "5003:5003"
+    env_file:
+      - backend/.env
     environment:
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - PORT=5003
       - JWT_SECRET=${JWT_SECRET:-superkey}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - MENTORSHIP_SERVICE_PORT=5003
@@ -75,8 +81,10 @@ services:
     container_name: leadsher-resource
     ports:
       - "5004:5004"
+    env_file:
+      - backend/.env
     environment:
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/leadsher}
+      - PORT=5004
       - JWT_SECRET=${JWT_SECRET:-superkey}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - RESOURCE_SERVICE_PORT=5004
