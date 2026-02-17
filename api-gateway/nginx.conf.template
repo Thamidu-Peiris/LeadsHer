@@ -1,24 +1,23 @@
-# Nginx config template - use envsubst for Render (dynamic service hostnames)
-# Fallback values used when running locally via docker-compose
+# Nginx config template - envsubst replaces $VAR (defaults set in docker-entrypoint.sh)
 
 upstream auth_service {
-    server ${AUTH_SERVICE_HOST:-auth-service}:${AUTH_SERVICE_PORT:-5001};
+    server $AUTH_SERVICE_HOST:$AUTH_SERVICE_PORT;
 }
 
 upstream story_service {
-    server ${STORY_SERVICE_HOST:-story-service}:${STORY_SERVICE_PORT:-5002};
+    server $STORY_SERVICE_HOST:$STORY_SERVICE_PORT;
 }
 
 upstream mentorship_service {
-    server ${MENTORSHIP_SERVICE_HOST:-mentorship-service}:${MENTORSHIP_SERVICE_PORT:-5003};
+    server $MENTORSHIP_SERVICE_HOST:$MENTORSHIP_SERVICE_PORT;
 }
 
 upstream resource_service {
-    server ${RESOURCE_SERVICE_HOST:-resource-service}:${RESOURCE_SERVICE_PORT:-5004};
+    server $RESOURCE_SERVICE_HOST:$RESOURCE_SERVICE_PORT;
 }
 
 server {
-    listen ${PORT:-5000};
+    listen $PORT;
     server_name localhost;
 
     # Max upload size (100MB for resource videos/files)
