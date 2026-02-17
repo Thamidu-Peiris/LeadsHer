@@ -1,31 +1,20 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
+/**
+ * Story-service only reads user data for authorization and story display.
+ * The canonical user write-model lives in auth-service.
+ */
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 6, select: false },
-    role: {
-      type: String,
-      enum: ['Admin', 'Mentor', 'Mentee'],
-      default: 'Mentee',
-    },
-    avatar: { type: String, default: '' },
+    name: { type: String, trim: true },
+    email: { type: String, lowercase: true, trim: true },
+    role: { type: String, default: 'mentee' },
     bio: { type: String, default: '' },
-    resetPasswordToken: { type: String, select: false },
-    resetPasswordExpires: { type: Date, select: false },
+    profilePicture: { type: String, default: '' },
+    avatar: { type: String, default: '' }, // backward compat
+    isEmailVerified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
-
-userSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
-  this.password = await bcrypt.hash(this.password, 12);
-});
-
-userSchema.methods.comparePassword = async function (candidate) {
-  return bcrypt.compare(candidate, this.password);
-};
 
 module.exports = mongoose.model('User', userSchema);
