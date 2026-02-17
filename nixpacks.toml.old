@@ -1,9 +1,0 @@
-# Fallback for Nixpacks (if Railway uses Nixpacks instead of Railpack)
-[phases.setup]
-nixPkgs = ["nodejs_22"]
-
-[phases.install]
-cmds = ["cd backend/services/auth-service && npm install"]
-
-[start]
-cmd = "cd backend/services/auth-service && node src/index.js"
