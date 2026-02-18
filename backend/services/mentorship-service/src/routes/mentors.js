@@ -15,9 +15,9 @@ router.get('/:id/compatibility', protect, mentorMatchingController.checkMentorCo
 router.get('/user/:userId', mentorController.getMentorByUserId);
 
 // Protected routes
-router.post('/profile', protect, role('Mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
-router.put('/profile', protect, role('Mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
-router.get('/me/profile', protect, role('Mentor'), mentorController.getMyMentorProfile);
-router.put('/availability', protect, role('Mentor'), mentorController.toggleAvailability);
+router.post('/profile', protect, role('mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
+router.put('/profile', protect, role('mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
+router.get('/me/profile', protect, role('mentor'), mentorController.getMyMentorProfile);
+router.put('/availability', protect, role('mentor'), mentorController.toggleAvailability);
 
 module.exports = router;

@@ -3,9 +3,9 @@ const MentorProfile = require('../models/MentorProfile');
 
 const getActiveMentorships = async (userId, userRole, queryRole) => {
   let filter = { status: 'active' };
-  if (queryRole === 'mentor' || (userRole === 'Mentor' && !queryRole)) {
+  if (queryRole === 'mentor' || (userRole === 'mentor' && !queryRole)) {
     filter.mentor = userId;
-  } else if (queryRole === 'mentee' || (userRole === 'Mentee' && !queryRole)) {
+  } else if (queryRole === 'mentee' || (userRole === 'mentee' && !queryRole)) {
     filter.mentee = userId;
   } else {
     filter = { status: 'active', $or: [{ mentor: userId }, { mentee: userId }] };
