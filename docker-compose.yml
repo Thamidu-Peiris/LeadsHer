@@ -97,6 +97,27 @@ services:
       - leadsher-network
     restart: unless-stopped
 
+  forum-service:
+    build:
+      context: ./backend/services/forum-service
+      dockerfile: Dockerfile
+    container_name: leadsher-forum
+    ports:
+      - "5005:5005"
+    env_file:
+      - backend/.env
+    environment:
+      - PORT=5005
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - FORUM_SERVICE_PORT=5005
+      - DOTENV_PATH=/dev/null
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -109,6 +130,7 @@ services:
       - story-service
       - mentorship-service
       - resource-service
+      - forum-service
     networks:
       - leadsher-network
     restart: unless-stopped
