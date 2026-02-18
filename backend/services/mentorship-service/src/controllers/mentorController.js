@@ -2,7 +2,7 @@ const mentorService = require('../services/mentorService');
 
 exports.createOrUpdateMentorProfile = async (req, res) => {
   try {
-    if (req.user.role !== 'Mentor') {
+    if (req.user.role !== 'mentor') {
       return res.status(403).json({ message: 'Only users with Mentor role can create mentor profiles' });
     }
     const mentorProfile = await mentorService.createOrUpdateProfile(req.user._id, req.body);

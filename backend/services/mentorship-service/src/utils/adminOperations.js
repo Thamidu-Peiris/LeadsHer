@@ -24,9 +24,9 @@ const getPlatformStats = async () => {
   const stats = {
     users: {
       total: await User.countDocuments(),
-      mentors: await User.countDocuments({ role: 'Mentor' }),
-      mentees: await User.countDocuments({ role: 'Mentee' }),
-      admins: await User.countDocuments({ role: 'Admin' }),
+      mentors: await User.countDocuments({ role: 'mentor' }),
+      mentees: await User.countDocuments({ role: 'mentee' }),
+      admins: await User.countDocuments({ role: 'admin' }),
     },
     mentorProfiles: {
       total: await MentorProfile.countDocuments(),

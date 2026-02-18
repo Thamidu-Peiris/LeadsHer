@@ -44,7 +44,7 @@ const createRequest = async (userId, { mentorId, goals, preferredStartDate, mess
 
 const getRequests = async (userId, userRole, { status, type = 'received' }) => {
   const filter = {};
-  if (type === 'received' && userRole === 'Mentor') filter.mentor = userId;
+  if (type === 'received' && userRole === 'mentor') filter.mentor = userId;
   else if (type === 'sent') filter.mentee = userId;
   else filter.$or = [{ mentor: userId }, { mentee: userId }];
   if (status) filter.status = status;
