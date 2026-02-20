@@ -28,6 +28,9 @@ Thumbs.db
 *.swp
 *.swo
 
+
+.claude/
+
 # Testing
 coverage/
 
@@ -36,3 +39,4 @@ coverage/
 
 # But allow README.md
 !README.md
+
