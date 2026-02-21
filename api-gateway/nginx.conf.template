@@ -16,6 +16,10 @@ upstream resource_service {
     server $RESOURCE_SERVICE_HOST:$RESOURCE_SERVICE_PORT;
 }
 
+upstream event_service {
+    server $EVENT_SERVICE_HOST:$EVENT_SERVICE_PORT;
+}
+
 server {
     listen $PORT;
     server_name localhost;
@@ -90,6 +94,15 @@ server {
         proxy_pass http://resource_service/uploads/resources/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Event service
+    location /api/events {
+        proxy_pass http://event_service/api/events;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # Aggregated health check

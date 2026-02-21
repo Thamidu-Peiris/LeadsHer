@@ -135,10 +135,32 @@ services:
       - leadsher-network
     restart: unless-stopped
 
+  event-service:
+    build:
+      context: ./backend/services/event-service
+      dockerfile: Dockerfile
+    container_name: leadsher-event
+    ports:
+      - "5006:5006"
+    env_file:
+      - backend/.env
+    environment:
+      - PORT=5006
+      - JWT_SECRET=${JWT_SECRET:-superkey}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - EVENT_SERVICE_PORT=5006
+      - DOTENV_PATH=/dev/null
+    depends_on:
+      - mongo
+    networks:
+      - leadsher-network
+    restart: unless-stopped
+
 volumes:
   mongo-data:
   story-uploads:
   resource-uploads:
+
 
 networks:
   leadsher-network:
