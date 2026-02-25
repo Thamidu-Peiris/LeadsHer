@@ -17,6 +17,7 @@ router.get('/user/:userId', mentorController.getMentorByUserId);
 // Protected routes
 router.post('/profile', protect, role('mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
 router.put('/profile', protect, role('mentor'), validateMentorProfile, mentorController.createOrUpdateMentorProfile);
+router.delete('/profile', protect, role('mentor'), mentorController.deleteMyMentorProfile);
 router.get('/me/profile', protect, role('mentor'), mentorController.getMyMentorProfile);
 router.put('/availability', protect, role('mentor'), mentorController.toggleAvailability);
 
