@@ -112,6 +112,23 @@ const getMentorStats = async (mentorProfileId) => {
   };
 };
 
+const deleteMyProfile = async (userId) => {
+  const mentorProfile = await MentorProfile.findOne({ user: userId });
+  if (!mentorProfile) {
+    const err = new Error('Mentor profile not found');
+    err.status = 404;
+    throw err;
+  }
+  const activeMentorships = await Mentorship.countDocuments({ mentor: userId, status: 'active' });
+  if (activeMentorships > 0) {
+    const err = new Error('Cannot delete mentor profile while you have active mentorships. Complete or terminate them first.');
+    err.status = 400;
+    throw err;
+  }
+  await MentorProfile.findByIdAndDelete(mentorProfile._id);
+  return { deleted: true, id: mentorProfile._id };
+};
+
 module.exports = {
   createOrUpdateProfile,
   getAllMentors,
@@ -120,4 +137,5 @@ module.exports = {
   getMyProfile,
   toggleAvailability,
   getMentorStats,
+  deleteMyProfile,
 };
