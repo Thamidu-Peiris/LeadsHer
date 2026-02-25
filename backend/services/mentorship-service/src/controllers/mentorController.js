@@ -78,3 +78,19 @@ exports.getMentorStats = async (req, res) => {
     res.status(error.status || 500).json({ message: 'Error fetching mentor statistics', error: error.message });
   }
 };
+
+exports.deleteMyMentorProfile = async (req, res) => {
+  try {
+    if (req.user.role !== 'mentor') {
+      return res.status(403).json({ message: 'Only users with Mentor role can delete mentor profiles' });
+    }
+    const result = await mentorService.deleteMyProfile(req.user._id);
+    res.status(200).json({
+      message: 'Mentor profile deleted successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error('Error deleting mentor profile:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Error deleting mentor profile' });
+  }
+};
