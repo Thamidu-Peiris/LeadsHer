@@ -1,78 +1,53 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { eventApi } from '../../api/eventApi';
-
-const PLACEHOLDER_EVENTS = [
-  { _id: 'pe1', day: '14', tags: [{ label: 'Virtual', gold: true }],  title: 'Mastering the Boardroom Dynamic',      desc: 'Hosted by Margaret Howell, CEO of Howell & Co.' },
-  { _id: 'pe2', day: '22', tags: [{ label: 'In-Person (London)', gold: false }], title: 'Women in AI: Global Summit 2026', desc: 'A full-day intensive on ethical scaling and future tech trends.' },
-  { _id: 'pe3', day: '05', tags: [{ label: 'Virtual', gold: true }],  title: 'Financial Autonomy & Wealth Building',  desc: 'Interactive workshop with diversified portfolio specialists.' },
-];
-
-function mapEvent(e) {
-  const d = new Date(e.date);
-  return {
-    _id: e._id,
-    day: isNaN(d) ? '--' : String(d.getDate()).padStart(2, '0'),
-    tags: [{ label: e.type === 'virtual' ? 'Virtual' : e.type === 'physical' ? 'In-Person' : 'Hybrid', gold: e.type === 'virtual' }],
-    title: e.title,
-    desc: e.description,
-  };
-}
+import EventCard from '../events/EventCard';
+import Spinner from '../common/Spinner';
 
 export default function UpcomingEvents() {
-  const [events, setEvents] = useState(PLACEHOLDER_EVENTS);
+  const [events, setEvents]   = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     eventApi.getAll({ status: 'upcoming', limit: 3 })
-      .then((res) => {
-        const data = res.data?.data?.events || res.data?.events || [];
-        if (data.length >= 1) setEvents(data.slice(0, 3).map(mapEvent));
-      })
-      .catch(() => {});
+      .then((res) => setEvents(res.data?.data?.events || res.data?.events || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
+  if (loading) return (
+    <section className="py-16 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 flex justify-center"><Spinner /></div>
+    </section>
+  );
+
+  if (!events.length) return (
+    <section className="py-16 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 className="section-title mb-2">Upcoming Events</h2>
+        <p className="section-subtitle">No events scheduled yet. Check back soon!</p>
+        <Link to="/events" className="btn-primary mt-6 inline-flex">Browse Events</Link>
+      </div>
+    </section>
+  );
+
   return (
-    <section className="py-24 bg-dark-bg">
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-baseline mb-16 gap-4">
-          <h2 className="font-cormorant text-5xl">Circle Gatherings</h2>
-          <Link
-            to="/events"
-            className="text-gold font-bold uppercase tracking-widest text-xs border-b border-gold pb-1 hover:text-white hover:border-white transition-all"
-          >
-            View All Events
-          </Link>
+    <section className="py-16 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h2 className="section-title">Upcoming Events</h2>
+            <p className="section-subtitle">Join webinars, workshops & networking sessions</p>
+          </div>
+          <Link to="/events" className="btn-secondary text-sm hidden sm:inline-flex">View all →</Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {events.map((ev) => (
-            <div key={ev._id} className="bg-dark-section p-8 border border-gold/10 rounded-eight flex flex-col h-full hover:border-gold/30 transition-colors">
-              <div className="font-playfair text-5xl text-gold mb-6">{ev.day}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((e) => <EventCard key={e._id} event={e} />)}
+        </div>
 
-              <div className="flex gap-2 mb-4">
-                {ev.tags.map((t) => (
-                  <span key={t.label}
-                    className={`text-[10px] px-2 py-0.5 rounded border uppercase ${
-                      t.gold
-                        ? 'bg-gold/10 text-gold border-gold/20'
-                        : 'bg-white/5 text-gray-400 border-white/10'
-                    }`}>
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-
-              <h6 className="font-playfair text-2xl mb-4">{ev.title}</h6>
-              <p className="text-gray-500 text-sm mb-8 flex-grow line-clamp-2">{ev.desc}</p>
-
-              <Link
-                to={`/events/${ev._id}`}
-                className="text-gold text-xs font-bold uppercase tracking-widest text-left hover:translate-x-2 transition-transform inline-block"
-              >
-                Register Now ⟶
-              </Link>
-            </div>
-          ))}
+        <div className="mt-6 text-center sm:hidden">
+          <Link to="/events" className="btn-secondary">View all events</Link>
         </div>
       </div>
     </section>

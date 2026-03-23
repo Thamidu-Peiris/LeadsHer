@@ -7,73 +7,36 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-dark-bg text-white font-manrope antialiased overflow-x-hidden;
-    selection-color: #000;
-    -webkit-font-smoothing: antialiased;
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
   }
-  ::selection {
-    background-color: #d4af35;
-    color: #000;
+  h1, h2, h3 {
+    @apply font-display;
   }
 }
 
 @layer components {
-  .btn-gold {
-    @apply inline-flex items-center justify-center px-8 py-4 rounded-eight bg-gold text-black font-bold text-sm hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  .btn-gold-outline {
-    @apply inline-flex items-center justify-center px-8 py-4 rounded-eight border border-gold text-gold font-bold text-sm hover:bg-gold/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
   .btn-primary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-eight bg-gold text-black font-bold text-sm hover:bg-white transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 active:bg-brand-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-eight bg-transparent text-gold font-bold text-sm border border-gold/40 hover:bg-gold/10 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-white text-brand-700 font-medium text-sm border border-brand-200 hover:bg-brand-50 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-eight text-gray-400 font-medium text-sm hover:text-white hover:bg-white/5 transition-colors;
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-gray-600 font-medium text-sm hover:bg-gray-100 transition-colors;
   }
   .card {
-    @apply bg-dark-card rounded-eight border border-gold/10 overflow-hidden;
-  }
-  .glass-card {
-    background: rgba(255,255,255,0.03);
-    backdrop-filter: blur(8px);
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden;
   }
   .input {
-    @apply w-full px-4 py-2.5 rounded-eight border border-gold/30 bg-transparent text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold transition;
+    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition;
   }
   .badge {
-    @apply inline-block px-2.5 py-0.5 rounded text-xs font-medium;
+    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   .section-title {
-    @apply font-cormorant text-5xl text-white;
+    @apply text-3xl font-display font-semibold text-gray-900;
   }
   .section-subtitle {
-    @apply text-gray-400 font-dm-sans mt-2 text-base;
+    @apply text-gray-500 mt-2 text-base;
   }
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-}
-
-/* Marquee animation */
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.animate-marquee {
-  display: flex;
-  animation: marquee 25s linear infinite;
-}
-
-/* Geometric hero background */
-.geometric-bg {
-  background-image:
-    linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-    linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-    linear-gradient(30deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-    linear-gradient(150deg, #111 12%, transparent 12.5%, transparent 87%, #111 87.5%, #111),
-    linear-gradient(60deg, #1a1a1a 25%, transparent 25.5%, transparent 75%, #1a1a1a 75%, #1a1a1a),
-    linear-gradient(60deg, #1a1a1a 25%, transparent 25.5%, transparent 75%, #1a1a1a 75%, #1a1a1a);
-  background-size: 80px 140px;
 }
