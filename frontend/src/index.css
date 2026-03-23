@@ -3,40 +3,84 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    background-color: #FAF9F7;
+    color: #1A1C1B;
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
   }
-  h1, h2, h3 {
-    @apply font-display;
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
+  /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 active:bg-brand-800 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-8 py-4 bg-primary-container text-on-primary font-label text-xs tracking-[0.2em] uppercase transition-transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
-  .btn-secondary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-white text-brand-700 font-medium text-sm border border-brand-200 hover:bg-brand-50 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-8 py-4 border border-outline-variant text-primary font-label text-xs tracking-[0.2em] uppercase hover:bg-secondary-container/20 transition-all active:scale-[0.98] disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-gray-600 font-medium text-sm hover:bg-gray-100 transition-colors;
+    @apply inline-flex items-center justify-center px-4 py-2 text-on-surface-variant font-label text-xs tracking-wider uppercase hover:text-primary transition-colors;
   }
-  .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden;
-  }
+  /* Inputs */
   .input {
-    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition;
+    @apply w-full px-4 py-3 border border-outline-variant bg-surface-container-lowest text-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors;
   }
+  /* Cards */
+  .card {
+    @apply bg-surface-container-lowest border border-outline-variant/10;
+  }
+  .editorial-shadow {
+    box-shadow: 0 20px 40px rgba(26, 28, 27, 0.04);
+  }
+  /* Glass nav */
+  .glass-nav {
+    background: rgba(250, 249, 247, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  /* Marquee */
+  .marquee { display: flex; overflow: hidden; user-select: none; gap: 2rem; }
+  .marquee-content {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    min-width: 100%;
+    gap: 2rem;
+    animation: marquee-scroll 40s linear infinite;
+  }
+  @keyframes marquee-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+  /* Badge */
   .badge {
-    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-block px-3 py-1 font-label text-[10px] tracking-widest uppercase;
   }
   .section-title {
-    @apply text-3xl font-display font-semibold text-gray-900;
+    @apply font-headline text-5xl text-on-surface;
   }
-  .section-subtitle {
-    @apply text-gray-500 mt-2 text-base;
+  .section-label {
+    @apply font-label text-[10px] tracking-[0.3em] uppercase text-on-surface-variant;
   }
+  /* No scrollbar */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }

@@ -1,47 +1,100 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (!email) return;
+    toast.success('Thank you for subscribing!');
+    setEmail('');
+  };
+
   return (
-    <footer className="bg-brand-950 text-gray-300 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span className="font-display font-bold text-xl text-white">LeadsHer</span>
-            </div>
-            <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-              Amplifying women's leadership through storytelling, mentorship, and community.
-            </p>
-          </div>
-
-          {/* Platform */}
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Platform</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/stories" className="hover:text-white transition-colors">Stories</Link></li>
-              <li><Link to="/events" className="hover:text-white transition-colors">Events</Link></li>
-              <li><Link to="/mentors" className="hover:text-white transition-colors">Mentors</Link></li>
-            </ul>
-          </div>
-
-          {/* Account */}
-          <div>
-            <h4 className="text-sm font-semibold text-white mb-3">Account</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/login" className="hover:text-white transition-colors">Log in</Link></li>
-              <li><Link to="/register" className="hover:text-white transition-colors">Register</Link></li>
-              <li><Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
-            </ul>
-          </div>
+    <footer className="bg-[#D4748F] dark:bg-[#8A3D54] w-full">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-16 px-8 md:px-16 py-24 w-full">
+        {/* Brand */}
+        <div className="col-span-1 md:col-span-1">
+          <div className="font-headline text-5xl font-bold text-white mb-8">LEADSHER</div>
+          <p className="text-white/80 font-body text-sm leading-relaxed max-w-xs">
+            Curating a movement where every woman's leadership is a story of impact, and every impact is a legacy.
+          </p>
         </div>
 
-        <hr className="border-white/10 mt-10 mb-6" />
-        <p className="text-center text-xs text-gray-500">
-          © {new Date().getFullYear()} LeadsHer. All rights reserved.
+        {/* Archives */}
+        <div className="space-y-6">
+          <h5 className="text-white font-body text-xs tracking-widest uppercase font-bold">The Archives</h5>
+          <ul className="space-y-4 font-body text-sm tracking-widest uppercase">
+            {[
+              { to: '/stories', label: 'Collections' },
+              { to: '/events',  label: 'Gatherings' },
+              { to: '/mentors', label: 'Curators' },
+            ].map(({ to, label }) => (
+              <li key={to}>
+                <Link to={to} className="text-white/80 hover:text-white transition-opacity duration-200">
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Legal */}
+        <div className="space-y-6">
+          <h5 className="text-white font-body text-xs tracking-widest uppercase font-bold">Account</h5>
+          <ul className="space-y-4 font-body text-sm tracking-widest uppercase">
+            {[
+              { to: '/login',     label: 'Sign In' },
+              { to: '/register',  label: 'Join' },
+              { to: '/dashboard', label: 'Dashboard' },
+            ].map(({ to, label }) => (
+              <li key={to}>
+                <Link to={to} className="text-white/80 hover:text-white transition-opacity duration-200">
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Newsletter */}
+        <div className="space-y-8">
+          <h5 className="text-white font-body text-xs tracking-widest uppercase font-bold">The Newsletter</h5>
+          <p className="text-white/80 text-sm italic font-body">Weekly insights for the modern visionary.</p>
+          <form onSubmit={handleSubscribe} className="flex flex-col gap-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="YOUR EMAIL ADDRESS"
+              className="bg-transparent border-b border-white/30 text-white placeholder:text-white/40 font-body text-xs py-2 focus:outline-none focus:border-white transition-colors"
+            />
+            <button
+              type="submit"
+              className="bg-white text-[#D4748F] py-4 font-label text-xs tracking-widest uppercase font-bold hover:bg-white/90 transition-all"
+            >
+              Subscribe
+            </button>
+          </form>
+          <div className="flex gap-6 pt-4">
+            <a href="#" className="text-white hover:opacity-70 transition-opacity">
+              <span className="material-symbols-outlined">share</span>
+            </a>
+            <a href="#" className="text-white hover:opacity-70 transition-opacity">
+              <span className="material-symbols-outlined">public</span>
+            </a>
+            <a href="#" className="text-white hover:opacity-70 transition-opacity">
+              <span className="material-symbols-outlined">mail</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-8 md:px-16 py-8 border-t border-white/10 text-center">
+        <p className="text-white font-body text-sm tracking-widest uppercase">
+          © {new Date().getFullYear()} LEADSHER. ALL RIGHTS RESERVED.
         </p>
       </div>
     </footer>

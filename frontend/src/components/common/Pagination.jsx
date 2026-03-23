@@ -1,32 +1,30 @@
 export default function Pagination({ page, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const visible = pages.filter(
-    (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1
-  );
+  const pages   = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const visible = pages.filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1);
 
   return (
-    <div className="flex items-center justify-center gap-1 mt-8">
+    <div className="flex items-center justify-center gap-1 mt-12">
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="btn-ghost px-3 py-1.5 disabled:opacity-40"
+        className="w-10 h-10 border border-outline-variant flex items-center justify-center hover:border-primary hover:text-primary transition-colors disabled:opacity-30 font-label text-xs"
       >
-        ← Prev
+        ←
       </button>
 
       {visible.map((p, i) => (
-        <span key={p}>
+        <span key={p} className="flex items-center">
           {i > 0 && visible[i - 1] !== p - 1 && (
-            <span className="px-2 text-gray-400">…</span>
+            <span className="px-2 text-on-surface-variant font-label text-xs">…</span>
           )}
           <button
             onClick={() => onPageChange(p)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`w-10 h-10 border font-label text-xs transition-colors ${
               p === page
-                ? 'bg-brand-600 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'border-primary bg-primary text-white'
+                : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
             }`}
           >
             {p}
@@ -37,9 +35,9 @@ export default function Pagination({ page, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
-        className="btn-ghost px-3 py-1.5 disabled:opacity-40"
+        className="w-10 h-10 border border-outline-variant flex items-center justify-center hover:border-primary hover:text-primary transition-colors disabled:opacity-30 font-label text-xs"
       >
-        Next →
+        →
       </button>
     </div>
   );

@@ -1,78 +1,77 @@
 import { Link } from 'react-router-dom';
 
-const typeIcon = {
-  virtual:  '🌐',
-  physical: '📍',
-  hybrid:   '🔄',
-};
-
-const categoryColors = {
-  webinar:           'bg-blue-100 text-blue-700',
-  workshop:          'bg-yellow-100 text-yellow-700',
-  networking:        'bg-green-100 text-green-700',
-  conference:        'bg-purple-100 text-purple-700',
-  'panel-discussion':'bg-orange-100 text-orange-700',
+const TAG_COLORS = {
+  webinar:           'bg-tertiary-container text-white',
+  workshop:          'bg-primary-container text-white',
+  networking:        'bg-secondary text-white',
+  conference:        'bg-tertiary-container text-white',
+  'panel-discussion':'bg-primary-container text-white',
 };
 
 export default function EventCard({ event }) {
-  const { _id, title, description, category, type, date, startTime, endTime, capacity, registeredAttendees, status } = event;
+  const { _id, title, description, category, type, date, startTime, endTime, capacity, registeredAttendees, status, location } = event;
 
-  const dateObj = new Date(date);
-  const registered = registeredAttendees?.length || 0;
-  const spotsLeft  = capacity - registered;
+  const d         = new Date(date);
+  const day       = d.toLocaleDateString('en-US', { day: '2-digit' });
+  const monthYr   = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const registered= registeredAttendees?.length || 0;
+  const spotsLeft = (capacity || 0) - registered;
+  const locStr    = type === 'virtual' ? 'Virtual' : location?.city || location?.venue || 'TBC';
 
   return (
-    <Link to={`/events/${_id}`} className="card group flex flex-col hover:shadow-md transition-shadow">
-      <div className="p-5 flex flex-col flex-1">
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <span className={`badge ${categoryColors[category] || 'bg-gray-100 text-gray-600'}`}>
-            {category}
-          </span>
-          <span className="text-xs text-gray-400">{typeIcon[type]} {type}</span>
-        </div>
+    <Link
+      to={`/events/${_id}`}
+      className="group bg-surface-container-lowest p-8 border border-outline-variant/10 hover:border-primary/20 transition-all relative overflow-hidden block"
+    >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-secondary-container/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform" />
 
-        <h3 className="font-display font-semibold text-gray-900 text-lg leading-snug line-clamp-2 group-hover:text-brand-700 transition-colors">
-          {title}
-        </h3>
-        <p className="text-gray-500 text-sm mt-2 line-clamp-2 flex-1">{description}</p>
+      <span className={`inline-block px-4 py-1 font-label text-[9px] tracking-widest uppercase mb-8 ${TAG_COLORS[category] || 'bg-tertiary-container text-white'}`}>
+        {category}
+      </span>
 
-        {/* Date / time */}
-        <div className="mt-4 flex items-center gap-1.5 text-sm text-gray-600">
-          <svg className="w-4 h-4 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>
-            {dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            {startTime && ` · ${startTime}`}{endTime && ` – ${endTime}`}
-          </span>
-        </div>
-
-        {/* Capacity */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="w-full bg-gray-100 rounded-full h-1.5 mr-3">
-            <div
-              className="bg-brand-500 h-1.5 rounded-full transition-all"
-              style={{ width: `${Math.min((registered / capacity) * 100, 100)}%` }}
-            />
-          </div>
-          <span className="text-xs text-gray-500 whitespace-nowrap">
-            {spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}
-          </span>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between">
-          <span className={`badge text-xs ${
-            status === 'upcoming' ? 'bg-green-100 text-green-700' :
-            status === 'ongoing'  ? 'bg-yellow-100 text-yellow-700' :
-            'bg-gray-100 text-gray-500'
-          }`}>
-            {status}
-          </span>
-          <span className="text-xs text-gray-400">{registered}/{capacity} registered</span>
-        </div>
+      <div className="mb-6">
+        <p className="font-serif-alt text-5xl text-primary mb-1">{day}</p>
+        <p className="font-label text-[10px] tracking-widest uppercase text-on-surface-variant">{monthYr}</p>
       </div>
+
+      <h4 className="font-serif-alt text-xl mb-4 group-hover:text-primary transition-colors leading-tight line-clamp-2">
+        {title}
+      </h4>
+
+      {description && (
+        <p className="font-body text-on-surface-variant text-sm line-clamp-2 mb-5 leading-relaxed">{description}</p>
+      )}
+
+      <div className="flex items-center gap-4 text-on-surface-variant text-sm mb-6">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-base">location_on</span>
+          <span className="font-body text-sm">{locStr}</span>
+        </div>
+        {startTime && (
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base">schedule</span>
+            <span className="font-body text-sm">{startTime}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Capacity bar */}
+      <div className="mb-4">
+        <div className="w-full bg-surface-container h-0.5">
+          <div
+            className="bg-primary h-0.5 transition-all"
+            style={{ width: `${Math.min((registered / (capacity || 1)) * 100, 100)}%` }}
+          />
+        </div>
+        <p className="font-label text-[10px] tracking-wider uppercase text-on-surface-variant mt-1.5">
+          {spotsLeft > 0 ? `${spotsLeft} spots remaining` : 'Fully booked'}
+        </p>
+      </div>
+
+      <span className="font-label text-[10px] tracking-widest uppercase text-primary flex items-center gap-2">
+        Secure Spot
+        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+      </span>
     </Link>
   );
 }
