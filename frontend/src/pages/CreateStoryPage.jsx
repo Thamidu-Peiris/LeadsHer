@@ -8,6 +8,7 @@ const CATEGORIES = ['leadership', 'entrepreneurship', 'STEM', 'corporate', 'soci
 
 export default function CreateStoryPage() {
   const navigate  = useNavigate();
+  const cancelTo = arguments?.[0]?.cancelTo || '/stories';
   const [form, setForm] = useState({
     title: '', content: '', excerpt: '', category: 'leadership', tags: '', status: 'draft',
   });
@@ -106,7 +107,7 @@ export default function CreateStoryPage() {
           <button type="submit" className="btn-primary flex-1 py-3" disabled={loading}>
             {loading ? <Spinner size="sm" className="mx-auto" /> : (form.status === 'published' ? 'Publish story' : 'Save draft')}
           </button>
-          <button type="button" onClick={() => navigate('/stories')} className="btn-secondary px-6 py-3">
+          <button type="button" onClick={() => navigate(cancelTo)} className="btn-secondary px-6 py-3">
             Cancel
           </button>
         </div>
