@@ -1,5 +1,13 @@
 const mentorshipRequestService = require('../services/mentorshipRequestService');
 
+function statusFromError(error) {
+  if (!error) return 500;
+  if (error.status) return error.status;
+  if (error.name === 'CastError') return 400;
+  if (error.name === 'ValidationError') return 400;
+  return 500;
+}
+
 exports.createMentorshipRequest = async (req, res) => {
   try {
     const { mentorId, goals, preferredStartDate, message } = req.body;
@@ -10,7 +18,7 @@ exports.createMentorshipRequest = async (req, res) => {
     res.status(201).json({ message: 'Mentorship request created successfully', data: mentorshipRequest });
   } catch (error) {
     console.error('Error creating mentorship request:', error);
-    res.status(error.status || 500).json({ message: 'Error creating mentorship request', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error creating mentorship request', error: error.message });
   }
 };
 
@@ -20,7 +28,7 @@ exports.getMentorshipRequests = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching mentorship requests:', error);
-    res.status(error.status || 500).json({ message: 'Error fetching mentorship requests', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error fetching mentorship requests', error: error.message });
   }
 };
 
@@ -30,29 +38,29 @@ exports.getMentorshipRequestById = async (req, res) => {
     res.status(200).json({ data: request });
   } catch (error) {
     console.error('Error fetching mentorship request:', error);
-    res.status(error.status || 500).json({ message: 'Error fetching mentorship request', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error fetching mentorship request', error: error.message });
   }
 };
 
 exports.acceptMentorshipRequest = async (req, res) => {
   try {
-    const { responseMessage } = req.body;
+    const { responseMessage } = req.body || {};
     const result = await mentorshipRequestService.acceptRequest(req.params.id, req.user._id, responseMessage);
     res.status(200).json({ message: 'Mentorship request accepted successfully', data: result });
   } catch (error) {
     console.error('Error accepting mentorship request:', error);
-    res.status(error.status || 500).json({ message: 'Error accepting mentorship request', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error accepting mentorship request', error: error.message });
   }
 };
 
 exports.rejectMentorshipRequest = async (req, res) => {
   try {
-    const { responseMessage } = req.body;
+    const { responseMessage } = req.body || {};
     const request = await mentorshipRequestService.rejectRequest(req.params.id, req.user._id, responseMessage);
     res.status(200).json({ message: 'Mentorship request rejected', data: request });
   } catch (error) {
     console.error('Error rejecting mentorship request:', error);
-    res.status(error.status || 500).json({ message: 'Error rejecting mentorship request', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error rejecting mentorship request', error: error.message });
   }
 };
 
@@ -62,6 +70,6 @@ exports.cancelMentorshipRequest = async (req, res) => {
     res.status(200).json({ message: 'Mentorship request cancelled', data: request });
   } catch (error) {
     console.error('Error cancelling mentorship request:', error);
-    res.status(error.status || 500).json({ message: 'Error cancelling mentorship request', error: error.message });
+    res.status(statusFromError(error)).json({ message: 'Error cancelling mentorship request', error: error.message });
   }
 };
