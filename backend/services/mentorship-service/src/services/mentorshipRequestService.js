@@ -85,6 +85,11 @@ const acceptRequest = async (requestId, userId, responseMessage) => {
     throw err;
   }
   const mentorProfile = await MentorProfile.findOne({ user: userId });
+  if (!mentorProfile) {
+    const err = new Error('Mentor profile not found');
+    err.status = 404;
+    throw err;
+  }
   if (!mentorProfile.canAcceptMentees) {
     const err = new Error('You cannot accept new mentees at this time');
     err.status = 400;
@@ -100,7 +105,14 @@ const acceptRequest = async (requestId, userId, responseMessage) => {
   request.respondedAt = Date.now();
   request.responseMessage = responseMessage || 'Request accepted';
   await request.save();
-  const mentorship = await Mentorship.create({ mentor: request.mentor, mentee: request.mentee, goals: request.goals, startDate: request.preferredStartDate, status: 'active' });
+  // Start mentorship immediately on accept (preferredStartDate is scheduling preference).
+  const mentorship = await Mentorship.create({
+    mentor: request.mentor,
+    mentee: request.mentee,
+    goals: request.goals,
+    startDate: Date.now(),
+    status: 'active',
+  });
   await mentorProfile.incrementMentees();
   mentorProfile.totalMentorships += 1;
   await mentorProfile.save();
