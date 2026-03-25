@@ -7,4 +7,7 @@ export const mentorApi = {
   getRequests: (params) => api.get('/mentorship/requests', { params }),
   updateRequest: (id, status) => api.patch(`/mentorship/requests/${id}`, { status }),
   getHistory: () => api.get('/mentorship/history'),
+  getMyProfile: () => api.get('/mentors/me/profile'),
+  upsertProfile: (data) => api.put('/mentors/profile', data),
+  toggleAvailability: () => api.put('/mentors/availability'),
 };

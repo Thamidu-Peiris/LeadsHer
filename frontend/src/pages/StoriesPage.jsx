@@ -14,7 +14,8 @@ const SORTS = [
 ];
 
 export default function StoriesPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const newStoryHref = user?.role === 'mentor' ? '/dashboard/stories/new' : '/stories/new';
   const [stories, setStories]     = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
@@ -55,7 +56,7 @@ export default function StoriesPage() {
           <p className="section-subtitle">Discover leadership journeys from women around the world</p>
         </div>
         {isAuthenticated && (
-          <Link to="/stories/new" className="btn-primary shrink-0">+ Share Story</Link>
+          <Link to={newStoryHref} className="btn-primary shrink-0">+ Share Story</Link>
         )}
       </div>
 
@@ -105,7 +106,7 @@ export default function StoriesPage() {
         <div className="text-center py-20">
           <p className="text-gray-400 text-lg mb-4">No stories found.</p>
           {isAuthenticated && (
-            <Link to="/stories/new" className="btn-primary">Be the first to share</Link>
+            <Link to={newStoryHref} className="btn-primary">Be the first to share</Link>
           )}
         </div>
       ) : (

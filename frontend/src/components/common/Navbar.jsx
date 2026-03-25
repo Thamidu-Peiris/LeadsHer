@@ -70,7 +70,7 @@ export default function Navbar() {
                     className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
                     Dashboard
                   </Link>
-                  <Link to="/stories/new" onClick={() => setDropOpen(false)}
+                  <Link to="/dashboard/stories/new" onClick={() => setDropOpen(false)}
                     className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
                     Write Story
                   </Link>

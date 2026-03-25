@@ -6,9 +6,8 @@ import Spinner from '../components/common/Spinner';
 
 const CATEGORIES = ['leadership', 'entrepreneurship', 'STEM', 'corporate', 'social-impact', 'career-growth'];
 
-export default function CreateStoryPage() {
+export default function CreateStoryPage({ cancelTo = '/stories' }) {
   const navigate  = useNavigate();
-  const cancelTo = arguments?.[0]?.cancelTo || '/stories';
   const [form, setForm] = useState({
     title: '', content: '', excerpt: '', category: 'leadership', tags: '', status: 'draft',
   });

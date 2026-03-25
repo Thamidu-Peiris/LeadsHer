@@ -65,11 +65,11 @@ export default function MentorDashboardStoriesPage() {
             {[
               { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/mentors', icon: 'groups', label: 'Mentorship' },
+              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/resources', icon: 'library_books', label: 'Resources' },
               { to: '/forum', icon: 'forum', label: 'Forum' },
-              { to: '/settings', icon: 'settings', label: 'Settings' },
+              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
                 key={item.to}
@@ -191,7 +191,7 @@ export default function MentorDashboardStoriesPage() {
             ) : stories.length === 0 ? (
               <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-10 text-center">
                 <p className="text-on-surface-variant mb-5">No stories yet.</p>
-                <Link to="/stories/new" className="btn-primary">Write your first story</Link>
+                <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
               </div>
             ) : (
               <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl overflow-hidden">

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
+import { mentorApi } from '../api/mentorApi';
 import StoryCard from '../components/stories/StoryCard';
 import EventCard from '../components/events/EventCard';
 import Spinner from '../components/common/Spinner';
@@ -13,6 +14,91 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [onboardOpen, setOnboardOpen] = useState(false);
+  const [onboardLoading, setOnboardLoading] = useState(false);
+  const [onboardSaving, setOnboardSaving] = useState(false);
+  const [onboardError, setOnboardError] = useState('');
+  const [onboardForm, setOnboardForm] = useState({
+    expertise: '',
+    yearsOfExperience: 0,
+    industries: '',
+    mentoringAreas: '',
+    bio: '',
+    maxMentees: 3,
+    preferredTime: '',
+    timezone: 'UTC',
+  });
+
+  const onboardingKey = `leadsher_onboarding_mentorprofile_${user?._id}`;
+
+  const toList = (v) => String(v || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const isComplete = (p) => {
+    if (!p) return false;
+    return (
+      Array.isArray(p.expertise) && p.expertise.length > 0 &&
+      Array.isArray(p.industries) && p.industries.length > 0 &&
+      Array.isArray(p.mentoringAreas) && p.mentoringAreas.length > 0 &&
+      typeof p.yearsOfExperience === 'number' &&
+      typeof p.bio === 'string' && p.bio.trim().length > 0
+    );
+  };
+
+  useEffect(() => {
+    const shouldTry = user?._id && !localStorage.getItem(onboardingKey);
+    if (!shouldTry) return;
+    setOnboardLoading(true);
+    mentorApi.getMyProfile()
+      .then((res) => {
+        const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        if (!isComplete(p)) {
+          setOnboardOpen(true);
+          if (p) {
+            setOnboardForm({
+              expertise: (p.expertise || []).join(', '),
+              yearsOfExperience: p.yearsOfExperience ?? 0,
+              industries: (p.industries || []).join(', '),
+              mentoringAreas: (p.mentoringAreas || []).join(', '),
+              bio: p.bio || '',
+              maxMentees: p.availability?.maxMentees ?? 3,
+              preferredTime: (p.availability?.preferredTime || []).join(', '),
+              timezone: p.availability?.timezone || 'UTC',
+            });
+          }
+        }
+      })
+      .catch(() => {
+        // If profile missing, open onboarding
+        setOnboardOpen(true);
+      })
+      .finally(() => setOnboardLoading(false));
+  }, [user?._id]);
+
+  const saveOnboarding = async () => {
+    setOnboardError('');
+    const payload = {
+      expertise: toList(onboardForm.expertise),
+      yearsOfExperience: Number(onboardForm.yearsOfExperience),
+      industries: toList(onboardForm.industries),
+      mentoringAreas: toList(onboardForm.mentoringAreas),
+      bio: onboardForm.bio,
+      availability: {
+        maxMentees: Number(onboardForm.maxMentees),
+        preferredTime: toList(onboardForm.preferredTime),
+        timezone: onboardForm.timezone,
+      },
+    };
+    setOnboardSaving(true);
+    try {
+      await mentorApi.upsertProfile(payload);
+      localStorage.setItem(onboardingKey, '1');
+      toast.success('Mentor profile saved');
+      setOnboardOpen(false);
+    } catch (e) {
+      setOnboardError(e.response?.data?.message || 'Failed to save profile');
+    } finally {
+      setOnboardSaving(false);
+    }
+  };
 
   const totalViews = useMemo(
     () => myStories.reduce((a, s) => a + (s.views || 0), 0),
@@ -26,6 +112,94 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   return (
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+        {/* Onboarding modal */}
+        {onboardOpen && (
+          <div className="fixed inset-0 z-[60] bg-black/35 flex items-center justify-center p-6">
+            <div className="w-full max-w-3xl bg-white border border-outline-variant/20 editorial-shadow p-8">
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Complete your mentor profile</h2>
+                  <p className="text-on-surface-variant text-sm mt-1">
+                    This helps mentees find you and improves match quality. You can update it later in Settings.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="text-outline hover:text-on-surface"
+                  onClick={() => setOnboardOpen(false)}
+                  aria-label="Close"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              {onboardLoading ? (
+                <div className="flex justify-center py-10"><Spinner size="lg" /></div>
+              ) : (
+                <>
+                  {onboardError && (
+                    <div className="mb-5 px-4 py-3 rounded-lg bg-error-container/50 border border-error/30 text-on-error-container text-sm">
+                      {onboardError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Expertise *</label>
+                      <input className="w-full input" value={onboardForm.expertise} onChange={(e) => setOnboardForm((f) => ({ ...f, expertise: e.target.value }))} placeholder="Leadership, Technology, Strategy" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Years of Experience *</label>
+                      <input type="number" min={0} className="w-full input" value={onboardForm.yearsOfExperience} onChange={(e) => setOnboardForm((f) => ({ ...f, yearsOfExperience: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Industries *</label>
+                      <input className="w-full input" value={onboardForm.industries} onChange={(e) => setOnboardForm((f) => ({ ...f, industries: e.target.value }))} placeholder="FinTech, Education, Health" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Mentoring Areas *</label>
+                      <input className="w-full input" value={onboardForm.mentoringAreas} onChange={(e) => setOnboardForm((f) => ({ ...f, mentoringAreas: e.target.value }))} placeholder="Career growth, Negotiation, Confidence" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Bio *</label>
+                      <textarea className="w-full input h-28 resize-y" value={onboardForm.bio} onChange={(e) => setOnboardForm((f) => ({ ...f, bio: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Max mentees</label>
+                      <input type="number" min={1} max={10} className="w-full input" value={onboardForm.maxMentees} onChange={(e) => setOnboardForm((f) => ({ ...f, maxMentees: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Timezone</label>
+                      <input className="w-full input" value={onboardForm.timezone} onChange={(e) => setOnboardForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="Asia/Colombo" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Preferred time (comma-separated)</label>
+                      <input className="w-full input" value={onboardForm.preferredTime} onChange={(e) => setOnboardForm((f) => ({ ...f, preferredTime: e.target.value }))} placeholder="Weeknights, Weekends" />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
+                    <button
+                      type="button"
+                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                      onClick={() => navigate('/dashboard/settings')}
+                    >
+                      Open Settings
+                    </button>
+                    <button
+                      type="button"
+                      disabled={onboardSaving}
+                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                      onClick={saveOnboarding}
+                    >
+                      {onboardSaving ? 'Saving…' : 'Save profile'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         {/* Fixed left sidebar */}
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
           {/* Profile */}
@@ -55,11 +229,11 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             {[
               { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/mentors', icon: 'groups', label: 'Mentorship' },
+              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/resources', icon: 'library_books', label: 'Resources' },
               { to: '/forum', icon: 'forum', label: 'Forum' },
-              { to: '/settings', icon: 'settings', label: 'Settings' },
+              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
                 key={item.to}
@@ -193,7 +367,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
-                    to="/stories/new"
+                    to="/dashboard/stories/new"
                     className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
                   >
                     + New Story
@@ -380,7 +554,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {[
               { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/mentors', icon: 'groups', label: 'Find Mentors' },
+              { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/settings', icon: 'settings', label: 'Settings' },
@@ -491,7 +665,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
-                    to="/mentors"
+                    to="/dashboard/mentors"
                     className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
                   >
                     Find a Mentor

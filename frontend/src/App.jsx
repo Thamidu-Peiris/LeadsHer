@@ -18,17 +18,16 @@ import CreateEventPage  from './pages/CreateEventPage';
 import DashboardPage    from './pages/DashboardPage';
 import MentorDashboardStoriesPage from './pages/MentorDashboardStoriesPage';
 import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPage';
+import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage';
+import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
+import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
 import MentorsPage      from './pages/MentorsPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
+const MENTEE_ONLY  = ['mentee'];
 
-function MentorStoryNewWrapper() {
-  const { user } = useAuth();
-  if (user?.role === 'mentor') return <MentorDashboardCreateStoryPage />;
-  return <CreateStoryPage />;
-}
 
 /* Layout with Navbar + Footer */
 function MainLayout() {
@@ -81,10 +80,17 @@ export default function App() {
             <Route path="/dashboard/stories/new" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
             } />
+            <Route path="/dashboard/mentorship" element={
+              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/settings" element={
+              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardSettingsPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/mentors" element={
+              <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+            } />
             <Route path="/stories/new" element={
-              <ProtectedRoute roles={ANY_USER}>
-                <MentorStoryNewWrapper />
-              </ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
             } />
             <Route path="/stories/:id/edit" element={
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
