@@ -1,5 +1,7 @@
 // Validation middleware for mentorship system
 
+const { validateSessionDateShape } = require('../utils/sessionDate');
+
 exports.validateMentorProfile = (req, res, next) => {
   const { expertise, yearsOfExperience, industries, mentoringAreas, bio, availability } = req.body;
   const errors = [];
@@ -43,9 +45,9 @@ exports.validateSession = (req, res, next) => {
   if (!date) {
     errors.push('Session date is required');
   } else {
-    const sessionDate = new Date(date);
-    if (isNaN(sessionDate.getTime())) errors.push('Invalid session date');
-    else if (sessionDate > new Date()) errors.push('Session date cannot be in the future');
+    const ymd = typeof date === 'string' ? date.trim().slice(0, 10) : '';
+    const check = validateSessionDateShape(ymd);
+    if (!check.ok) errors.push(check.error);
   }
   if (!duration) {
     errors.push('Session duration is required');
