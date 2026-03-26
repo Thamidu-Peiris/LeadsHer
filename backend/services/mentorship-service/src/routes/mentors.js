@@ -20,5 +20,6 @@ router.put('/profile', protect, role('mentor'), validateMentorProfile, mentorCon
 router.delete('/profile', protect, role('mentor'), mentorController.deleteMyMentorProfile);
 router.get('/me/profile', protect, role('mentor'), mentorController.getMyMentorProfile);
 router.put('/availability', protect, role('mentor'), mentorController.toggleAvailability);
+router.put('/:id/verification', protect, role('admin'), mentorController.adminSetMentorVerification);
 
 module.exports = router;

@@ -1,10 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, role } = require('../middleware/auth');
 const { validateSession, validateGoals, validateFeedback } = require('../middleware/validation');
 const mentorshipController = require('../controllers/mentorshipController');
 
 router.use(protect);
+
+// Admin mentorship operations
+router.get('/admin/requests', role('admin'), mentorshipController.adminGetMentorshipRequests);
+router.get('/admin/active', role('admin'), mentorshipController.adminGetActiveMentorships);
+router.put('/admin/:id/terminate', role('admin'), mentorshipController.adminTerminateMentorship);
+router.get('/admin/feedback', role('admin'), mentorshipController.adminGetFeedbackRatings);
+router.get('/admin/reports', role('admin'), mentorshipController.adminGetReports);
 
 router.get('/active', mentorshipController.getActiveMentorships);
 router.get('/history', mentorshipController.getMentorshipHistory);

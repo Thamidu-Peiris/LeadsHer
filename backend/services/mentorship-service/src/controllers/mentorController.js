@@ -1,4 +1,5 @@
 const mentorService = require('../services/mentorService');
+const { verifyMentor, unverifyMentor } = require('../utils/adminOperations');
 
 exports.createOrUpdateMentorProfile = async (req, res) => {
   try {
@@ -92,5 +93,20 @@ exports.deleteMyMentorProfile = async (req, res) => {
   } catch (error) {
     console.error('Error deleting mentor profile:', error);
     res.status(error.status || 500).json({ message: error.message || 'Error deleting mentor profile' });
+  }
+};
+
+exports.adminSetMentorVerification = async (req, res) => {
+  try {
+    const verified = Boolean(req.body?.verified);
+    const data = verified
+      ? await verifyMentor(req.params.id)
+      : await unverifyMentor(req.params.id);
+    res.status(200).json({
+      message: verified ? 'Mentor verified successfully' : 'Mentor verification removed',
+      data,
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error updating mentor verification', error: error.message });
   }
 };
