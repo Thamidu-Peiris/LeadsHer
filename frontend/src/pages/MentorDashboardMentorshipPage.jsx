@@ -197,7 +197,7 @@ export default function MentorDashboardMentorshipPage() {
     { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
     { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
     { to: '/events', icon: 'event', label: 'Events' },
-    { to: '/resources', icon: 'library_books', label: 'Resources' },
+    { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
     { to: '/forum', icon: 'forum', label: 'Forum' },
     { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
   ];
@@ -214,7 +214,7 @@ export default function MentorDashboardMentorshipPage() {
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
@@ -263,7 +263,7 @@ export default function MentorDashboardMentorshipPage() {
 
         {/* Main */}
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -286,7 +286,7 @@ export default function MentorDashboardMentorshipPage() {
                   />
                 </button>
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
                         {user?.name || 'Mentor'}
@@ -319,7 +319,7 @@ export default function MentorDashboardMentorshipPage() {
           </header>
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentorship</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -339,7 +339,7 @@ export default function MentorDashboardMentorshipPage() {
                     className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                       tab === t.key
                         ? 'border-gold-accent bg-gold-accent/10 text-on-surface'
-                        : 'border-outline-variant/25 bg-white hover:border-gold-accent/40'
+                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-gold-accent/40'
                     }`}
                   >
                     {t.label} <span className="text-outline font-semibold">({t.count})</span>
@@ -353,7 +353,7 @@ export default function MentorDashboardMentorshipPage() {
             ) : (
               <>
                 {tab === 'requests' && (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center mb-6">
                       <div>
                         <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Requests</h2>
@@ -363,7 +363,7 @@ export default function MentorDashboardMentorshipPage() {
                         value={responseMessage}
                         onChange={(e) => setResponseMessage(e.target.value)}
                         placeholder="Optional response message…"
-                        className="w-full md:w-[420px] bg-white border border-outline-variant/25 rounded-lg px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-gold-accent/40"
+                        className="w-full md:w-[420px] bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-gold-accent/40"
                         rows={2}
                       />
                     </div>
@@ -428,7 +428,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'active' && (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentees</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Log sessions, update goals, mark complete, and submit feedback.</p>
 
@@ -508,7 +508,7 @@ export default function MentorDashboardMentorshipPage() {
                                     const defaultStr = startStr && startStr <= todayStr ? todayStr : startStr;
                                     setSessionForm({ date: defaultStr || todayStr, duration: 30, notes: '', topics: '' });
                                   }}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
                                 >
                                   Log session
                                 </button>
@@ -536,7 +536,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'history' && (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Completed and past mentorships.</p>
 
@@ -626,7 +626,7 @@ export default function MentorDashboardMentorshipPage() {
             {/* Session modal */}
             {sessionFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Log Session</h3>
@@ -645,7 +645,7 @@ export default function MentorDashboardMentorshipPage() {
                         max={sessionModalMax}
                         value={sessionForm.date}
                         onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))}
-                        className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       />
                       {sessionFor?.startDate && (
                         <p className="mt-2 text-[11px] text-outline">
@@ -668,7 +668,7 @@ export default function MentorDashboardMentorshipPage() {
                         min={15}
                         value={sessionForm.duration}
                         onChange={(e) => setSessionForm((f) => ({ ...f, duration: e.target.value }))}
-                        className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       />
                     </div>
                   </div>
@@ -677,7 +677,7 @@ export default function MentorDashboardMentorshipPage() {
                     <input
                       value={sessionForm.topics}
                       onChange={(e) => setSessionForm((f) => ({ ...f, topics: e.target.value }))}
-                      className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       placeholder="Leadership, career, negotiation…"
                     />
                   </div>
@@ -686,7 +686,7 @@ export default function MentorDashboardMentorshipPage() {
                     <textarea
                       value={sessionForm.notes}
                       onChange={(e) => setSessionForm((f) => ({ ...f, notes: e.target.value }))}
-                      className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       rows={4}
                     />
                   </div>
@@ -713,7 +713,7 @@ export default function MentorDashboardMentorshipPage() {
             {/* Feedback modal */}
             {feedbackFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
@@ -732,7 +732,7 @@ export default function MentorDashboardMentorshipPage() {
                         max={5}
                         value={feedbackForm.rating}
                         onChange={(e) => setFeedbackForm((f) => ({ ...f, rating: Number(e.target.value) }))}
-                        className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       />
                     </div>
                   </div>
@@ -741,7 +741,7 @@ export default function MentorDashboardMentorshipPage() {
                     <textarea
                       value={feedbackForm.comment}
                       onChange={(e) => setFeedbackForm((f) => ({ ...f, comment: e.target.value }))}
-                      className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       rows={4}
                       placeholder="Write a short feedback note…"
                     />

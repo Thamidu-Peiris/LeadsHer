@@ -141,7 +141,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
         {/* Onboarding modal */}
         {onboardOpen && (
           <div className="fixed inset-0 z-[60] bg-black/35 flex items-center justify-center p-6">
-            <div className="w-full max-w-3xl bg-white border border-outline-variant/20 editorial-shadow p-8">
+            <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-8">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                   <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Complete your mentor profile</h2>
@@ -207,7 +207,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                     <button
                       type="button"
-                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
                       onClick={() => navigate('/dashboard/settings')}
                     >
                       Open Settings
@@ -227,7 +227,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
           </div>
         )}
         {/* Fixed left sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
           {/* Profile */}
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
@@ -262,7 +262,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
-              { to: '/resources', icon: 'library_books', label: 'Resources' },
+              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
               { to: '/forum', icon: 'forum', label: 'Forum' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
@@ -303,7 +303,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
         {/* Main */}
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
           {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">
                 Home
@@ -326,7 +326,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="w-10 h-10 rounded-full bg-white border border-outline-variant/25 flex items-center justify-center text-outline hover:text-gold-accent transition-colors">
+              <button className="w-10 h-10 rounded-full bg-white dark:bg-surface-container border border-outline-variant/25 flex items-center justify-center text-outline hover:text-gold-accent transition-colors">
                 <span className="material-symbols-outlined">help_outline</span>
               </button>
               <div className="relative">
@@ -347,7 +347,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 {profileOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50"
+                    className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50"
                   >
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
@@ -384,7 +384,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
             {/* Welcome banner */}
-            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
@@ -421,7 +421,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="col-span-12 lg:col-span-8 space-y-8">
                 {/* Activity grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Published</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myStories.length}</h4>
@@ -429,7 +429,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Your published stories</p>
                   </div>
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
@@ -437,7 +437,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Community Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews + totalLikes}</h4>
@@ -459,13 +459,13 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   </div>
 
                   {myStories.length === 0 ? (
-                    <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-on-surface-variant">
+                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-on-surface-variant">
                       You haven&apos;t written any stories yet.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
+                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
                             <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
@@ -490,7 +490,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 
               {/* Right column */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
                   </h3>
@@ -512,7 +512,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   )}
                 </div>
 
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
@@ -760,7 +760,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
         {/* Main */}
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
           {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">
                 Home
@@ -786,7 +786,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 </button>
 
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
                         {user?.name || 'Mentee'}
@@ -829,7 +829,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
             {/* Welcome banner */}
-            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-tertiary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -862,7 +862,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               {/* Left column */}
               <div className="col-span-12 lg:col-span-8 space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
@@ -870,7 +870,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Saved</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">0</h4>
@@ -878,7 +878,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Wishlist (coming soon)</p>
                   </div>
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Reading Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews}</h4>
@@ -898,7 +898,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </Link>
                   </div>
 
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
                     <p className="text-on-surface-variant text-sm">
                       Start by exploring mentors and joining an event. Your mentorship requests will appear here.
                     </p>
@@ -912,7 +912,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
 
               {/* Right column */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
                   </h3>
@@ -937,7 +937,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                   </Link>
                 </div>
 
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
@@ -1034,7 +1034,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10">
       {/* Welcome */}
-      <div className="bg-white rounded-2xl border border-outline-variant/15 editorial-shadow px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/15 editorial-shadow px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-on-surface">
             Welcome back, {user?.name?.split(' ')[0]}! 👋
@@ -1046,14 +1046,14 @@ export default function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/stories/new"
-            className="px-5 py-2.5 border border-outline-variant/30 bg-white text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+            className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
           >
             + New Story
           </Link>
           {canManageEvents && (
             <Link
               to="/events/new"
-              className="px-5 py-2.5 border border-outline-variant/30 bg-white text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+              className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
             >
               + New Event
             </Link>

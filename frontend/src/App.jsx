@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -24,11 +25,21 @@ import MenteeProfilePage from './pages/MenteeProfilePage';
 import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
+import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
+import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
+import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
 const MENTEE_ONLY  = ['mentee'];
+
+/* Role-based resources page */
+function ResourcesRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'mentee') return <MenteeDashboardResourcesPage />;
+  return <MentorDashboardResourcesPage />;
+}
 
 
 /* Layout with Navbar + Footer */
@@ -36,11 +47,9 @@ function MainLayout() {
   const location = useLocation();
   const { user } = useAuth();
 
-  const roleLc = (user?.role || '').toLowerCase();
   const hideChromeForRoleDashboard =
     location.pathname.startsWith('/dashboard') &&
-    (roleLc === 'mentor' || roleLc === 'mentee') &&
-    !location.pathname.startsWith('/dashboard/profile');
+    (user?.role === 'mentor' || user?.role === 'mentee' || user?.role === 'admin');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,6 +69,7 @@ function AuthLayout() {
 
 export default function App() {
   return (
+    <ThemeProvider>
     <BrowserRouter>
       <AuthProvider>
         <Toaster
@@ -102,6 +112,10 @@ export default function App() {
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
             } />
+            <Route path="/resources" element={<PublicResourcesPage />} />
+            <Route path="/dashboard/resources" element={
+              <ProtectedRoute roles={ANY_USER}><ResourcesRoute /></ProtectedRoute>
+            } />
             <Route path="/dashboard/profile" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
             } />
@@ -124,5 +138,6 @@ export default function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }

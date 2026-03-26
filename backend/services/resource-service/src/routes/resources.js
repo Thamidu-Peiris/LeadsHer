@@ -14,6 +14,7 @@ const {
   rateResource,
   getRecommendedResources,
   uploadResourceFile,
+  getMyResources,
 } = require('../controllers/resourceController');
 
 // Public
@@ -22,6 +23,7 @@ router.get('/', getAllResources);
 // Protected (must be before /:id routes)
 router.get('/bookmarks', protect, getUserBookmarks);
 router.get('/recommended', protect, getRecommendedResources);
+router.get('/my', protect, getMyResources);
 router.post('/upload', protect, upload.single('file'), uploadResourceFile);
 
 // Public with optional auth
