@@ -113,8 +113,12 @@ const acceptRequest = async (requestId, userId, responseMessage) => {
     startDate: Date.now(),
     status: 'active',
   });
-  await mentorProfile.incrementMentees();
-  mentorProfile.totalMentorships += 1;
+  // Update mentor stats in one save (more reliable than save-twice).
+  mentorProfile.availability.currentMentees = (mentorProfile.availability.currentMentees || 0) + 1;
+  mentorProfile.totalMentorships = (mentorProfile.totalMentorships || 0) + 1;
+  if (mentorProfile.availability.currentMentees >= mentorProfile.availability.maxMentees) {
+    mentorProfile.isAvailable = false;
+  }
   await mentorProfile.save();
   await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
   return { request, mentorship };
