@@ -66,13 +66,15 @@ export function AuthProvider({ children }) {
   };
 
   const isAuthenticated = Boolean(token);
-  const isAdmin   = user?.role === 'admin';
-  const isMentor  = user?.role === 'mentor';
+  const roleLc = (user?.role || '').toLowerCase();
+  const isAdmin   = roleLc === 'admin';
+  const isMentor  = roleLc === 'mentor';
+  const isMentee  = roleLc === 'mentee';
   const canManageEvents = isAdmin || isMentor;
 
   return (
     <AuthContext.Provider value={{
-      user, token, loading, isAuthenticated, isAdmin, isMentor, canManageEvents,
+      user, token, loading, isAuthenticated, isAdmin, isMentor, isMentee, canManageEvents,
       login, register, logout, updateUser,
     }}>
       {children}

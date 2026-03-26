@@ -11,7 +11,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isMentee } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
@@ -70,6 +70,12 @@ export default function Navbar() {
                     className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
                     Dashboard
                   </Link>
+                  {isMentee && (
+                    <Link to="/dashboard/profile" onClick={() => setDropOpen(false)}
+                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
+                      Profile
+                    </Link>
+                  )}
                   <Link to="/dashboard/stories/new" onClick={() => setDropOpen(false)}
                     className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
                     Write Story
@@ -117,6 +123,10 @@ export default function Navbar() {
             <>
               <Link to="/dashboard" onClick={() => setMenuOpen(false)}
                 className="block font-label text-xs tracking-widest uppercase text-on-surface-variant">Dashboard</Link>
+              {isMentee && (
+                <Link to="/dashboard/profile" onClick={() => setMenuOpen(false)}
+                  className="block font-label text-xs tracking-widest uppercase text-on-surface-variant">Profile</Link>
+              )}
               <button onClick={handleLogout}
                 className="block font-label text-xs tracking-widest uppercase text-tertiary">Sign Out</button>
             </>

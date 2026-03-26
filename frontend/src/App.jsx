@@ -20,6 +20,7 @@ import MentorDashboardStoriesPage from './pages/MentorDashboardStoriesPage';
 import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPage';
 import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage';
 import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
+import MenteeProfilePage from './pages/MenteeProfilePage';
 import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
 import MentorsPage      from './pages/MentorsPage';
 import NotFoundPage     from './pages/NotFoundPage';
@@ -35,7 +36,9 @@ function MainLayout() {
   const { user } = useAuth();
 
   const hideChromeForRoleDashboard =
-    location.pathname.startsWith('/dashboard') && (user?.role === 'mentor' || user?.role === 'mentee');
+    location.pathname.startsWith('/dashboard') &&
+    (user?.role === 'mentor' || user?.role === 'mentee') &&
+    !location.pathname.startsWith('/dashboard/profile');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,6 +91,9 @@ export default function App() {
             } />
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/profile" element={
+              <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
             } />
             <Route path="/stories/new" element={
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
