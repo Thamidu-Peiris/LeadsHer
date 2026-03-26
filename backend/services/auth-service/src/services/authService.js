@@ -22,6 +22,9 @@ const toUserResponse = (user) => ({
   location: user.location,
   isEmailVerified: user.isEmailVerified,
   isProfileComplete: user.isProfileComplete,
+  isSuspended: user.isSuspended,
+  suspendedAt: user.suspendedAt,
+  suspendedReason: user.suspendedReason,
   privacy: user.privacy,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
@@ -83,6 +86,11 @@ const loginUser = async ({ email, password }) => {
   if (!user || !(await user.comparePassword(password))) {
     const err = new Error('Invalid email or password.');
     err.status = 401;
+    throw err;
+  }
+  if (user.isSuspended) {
+    const err = new Error('Account is suspended. Contact admin.');
+    err.status = 403;
     throw err;
   }
   const token = signToken(user._id);
@@ -188,6 +196,65 @@ const findUserById = async (id) => {
   return toUserResponse(user);
 };
 
+const listUsersForAdmin = async ({ role, search, page = 1, limit = 20 }) => {
+  const filter = {};
+  if (role) filter.role = role;
+  if (search) {
+    const rx = new RegExp(String(search).trim(), 'i');
+    filter.$or = [{ name: rx }, { email: rx }];
+  }
+  const skip = (Number(page) - 1) * Number(limit);
+  const users = await User.find(filter).sort('-createdAt').skip(skip).limit(Number(limit));
+  const total = await User.countDocuments(filter);
+  return {
+    data: users.map(toUserResponse),
+    pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) },
+  };
+};
+
+const adminUpdateUserProfile = async (userId, updates) => {
+  const allowed = ['name', 'bio', 'industry', 'experienceLevel', 'linkedin', 'location', 'profilePicture'];
+  const doc = {};
+  allowed.forEach((k) => {
+    if (updates[k] !== undefined) doc[k] = updates[k];
+  });
+  const user = await User.findByIdAndUpdate(userId, doc, { new: true, runValidators: true });
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+  return toUserResponse(user);
+};
+
+const adminSetUserRole = async (userId, role) => {
+  const normalizedRole = normalizeRole(role);
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { role: normalizedRole },
+    { new: true, runValidators: true }
+  );
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+  return toUserResponse(user);
+};
+
+const adminSetSuspension = async (userId, suspended, reason) => {
+  const patch = suspended
+    ? { isSuspended: true, suspendedAt: new Date(), suspendedReason: reason || '' }
+    : { isSuspended: false, suspendedAt: null, suspendedReason: '' };
+  const user = await User.findByIdAndUpdate(userId, patch, { new: true, runValidators: true });
+  if (!user) {
+    const err = new Error('User not found.');
+    err.status = 404;
+    throw err;
+  }
+  return toUserResponse(user);
+};
+
 module.exports = {
   signToken,
   registerUser,
@@ -199,5 +266,9 @@ module.exports = {
   resetPasswordWithToken,
   findOrCreateGoogleUser,
   findUserById,
+  listUsersForAdmin,
+  adminUpdateUserProfile,
+  adminSetUserRole,
+  adminSetSuspension,
   toUserResponse,
 };

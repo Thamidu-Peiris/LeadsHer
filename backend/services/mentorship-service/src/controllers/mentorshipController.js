@@ -1,4 +1,7 @@
 const mentorshipService = require('../services/mentorshipService');
+const Mentorship = require('../models/Mentorship');
+const MentorshipRequest = require('../models/MentorshipRequest');
+const adminOps = require('../utils/adminOperations');
 
 exports.getActiveMentorships = async (req, res) => {
   try {
@@ -107,5 +110,74 @@ exports.getMentorshipHistory = async (req, res) => {
   } catch (error) {
     console.error('Error fetching mentorship history:', error);
     res.status(error.status || 500).json({ message: 'Error fetching mentorship history', error: error.message });
+  }
+};
+
+// Admin endpoints
+exports.adminGetMentorshipRequests = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query?.status) filter.status = req.query.status;
+    const items = await MentorshipRequest.find(filter)
+      .populate('mentor', 'name email')
+      .populate('mentee', 'name email')
+      .sort('-createdAt');
+    res.status(200).json({ data: items, count: items.length });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error fetching mentorship requests', error: error.message });
+  }
+};
+
+exports.adminGetActiveMentorships = async (req, res) => {
+  try {
+    const items = await Mentorship.find({ status: 'active' })
+      .populate('mentor', 'name email')
+      .populate('mentee', 'name email')
+      .sort('-startDate');
+    res.status(200).json({ data: items, count: items.length });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error fetching active mentorships', error: error.message });
+  }
+};
+
+exports.adminTerminateMentorship = async (req, res) => {
+  try {
+    const item = await Mentorship.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Mentorship not found' });
+    if (!['active', 'paused'].includes(item.status)) {
+      return res.status(400).json({ message: `Cannot terminate ${item.status} mentorship` });
+    }
+    item.status = 'terminated';
+    item.endDate = Date.now();
+    await item.save();
+    await item.populate([{ path: 'mentor', select: 'name email' }, { path: 'mentee', select: 'name email' }]);
+    res.status(200).json({ message: 'Mentorship terminated by admin', data: item });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error terminating mentorship', error: error.message });
+  }
+};
+
+exports.adminGetFeedbackRatings = async (req, res) => {
+  try {
+    const items = await Mentorship.find({
+      status: 'completed',
+      $or: [{ 'feedback.mentorRating': { $exists: true } }, { 'feedback.menteeRating': { $exists: true } }],
+    })
+      .populate('mentor', 'name email')
+      .populate('mentee', 'name email')
+      .sort('-completedAt');
+    res.status(200).json({ data: items, count: items.length });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error fetching feedback & ratings', error: error.message });
+  }
+};
+
+exports.adminGetReports = async (req, res) => {
+  try {
+    const stats = await adminOps.getPlatformStats();
+    const attention = await adminOps.getMentorshipsRequiringAttention();
+    res.status(200).json({ data: { stats, attention } });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: 'Error generating mentorship reports', error: error.message });
   }
 };
