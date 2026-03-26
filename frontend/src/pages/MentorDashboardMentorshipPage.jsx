@@ -220,7 +220,7 @@ export default function MentorDashboardMentorshipPage() {
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
                 <img
                   alt="User avatar"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-full"
                   src={avatarSrc}
                 />
               </div>
@@ -281,7 +281,7 @@ export default function MentorDashboardMentorshipPage() {
                 >
                   <img
                     alt="Avatar"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-full"
                     src={avatarSrc}
                   />
                 </button>
