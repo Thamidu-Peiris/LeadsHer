@@ -47,7 +47,6 @@ function MainLayout() {
   const location = useLocation();
   const { user } = useAuth();
 
-  const roleLc = (user?.role || '').toLowerCase();
   const hideChromeForRoleDashboard =
     location.pathname.startsWith('/dashboard') &&
     (user?.role === 'mentor' || user?.role === 'mentee' || user?.role === 'admin');
@@ -116,6 +115,7 @@ export default function App() {
             <Route path="/resources" element={<PublicResourcesPage />} />
             <Route path="/dashboard/resources" element={
               <ProtectedRoute roles={ANY_USER}><ResourcesRoute /></ProtectedRoute>
+            } />
             <Route path="/dashboard/profile" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
             } />
