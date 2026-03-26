@@ -62,7 +62,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
+        <Toaster
+          position="bottom-center"
+          containerStyle={{ pointerEvents: 'none' }}
+          toastOptions={{
+            duration: 2500,
+            style: { pointerEvents: 'auto' },
+          }}
+        />
         <Routes>
 
           {/* All pages — with Navbar + Footer */}

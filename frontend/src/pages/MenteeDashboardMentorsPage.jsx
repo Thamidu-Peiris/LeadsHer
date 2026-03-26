@@ -157,7 +157,7 @@ export default function MenteeDashboardMentorsPage() {
             <div className="flex flex-col items-center gap-2">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover" src={menteeAvatarSrc} />
+                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
                 </div>
                 <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
@@ -221,7 +221,7 @@ export default function MenteeDashboardMentorsPage() {
                   onClick={() => setProfileOpen((v) => !v)}
                   className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
                 >
-                  <img alt="Avatar" className="w-full h-full object-cover" src={menteeAvatarSrc} />
+                  <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
                 </button>
                 {profileOpen && (
                   <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">

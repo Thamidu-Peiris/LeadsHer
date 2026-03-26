@@ -124,7 +124,7 @@ export default function MenteeSettingsPage() {
             <div className="flex flex-col items-center gap-2">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover" src={menteeAvatarSrc} />
+                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
                 </div>
                 <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
