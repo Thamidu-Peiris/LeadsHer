@@ -742,7 +742,7 @@ export default function MentorDashboardResourcesPage() {
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {sidebarNav.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === '/dashboard/resources'}
+              <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive

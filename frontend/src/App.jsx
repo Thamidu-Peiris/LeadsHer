@@ -73,7 +73,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster
-          position="bottom-center"
+          position="top-center"
           containerStyle={{ pointerEvents: 'none' }}
           toastOptions={{
             duration: 2500,
