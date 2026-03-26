@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
+import { authApi } from '../api/authApi';
 
 function toList(value) {
   if (!value) return [];
@@ -28,13 +29,18 @@ function isProfileComplete(p) {
 }
 
 export default function MentorDashboardSettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pictureSaving, setPictureSaving] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
+  const [pictureFile, setPictureFile] = useState(null);
+  const [picturePreview, setPicturePreview] = useState('');
+  const [resetEmail, setResetEmail] = useState(user?.email || '');
 
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
@@ -47,6 +53,11 @@ export default function MentorDashboardSettingsPage() {
     preferredTime: '',
     timezone: 'UTC',
   });
+  const avatarSrc =
+    picturePreview ||
+    user?.profilePicture ||
+    user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
@@ -76,6 +87,52 @@ export default function MentorDashboardSettingsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handlePictureFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    setPictureFile(file);
+    if (file) setPicturePreview(URL.createObjectURL(file));
+    else setPicturePreview('');
+  };
+
+  const saveProfilePicture = async () => {
+    if (!pictureFile) {
+      toast.error('Choose a profile image first');
+      return;
+    }
+    setPictureSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('profilePicture', pictureFile);
+      const res = await authApi.updateProfileMultipart(fd);
+      const u = res.data?.user || res.data;
+      if (u) updateUser(u);
+      toast.success('Profile image updated');
+      setPictureFile(null);
+      setPicturePreview('');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update profile image');
+    } finally {
+      setPictureSaving(false);
+    }
+  };
+
+  const sendPasswordReset = async (e) => {
+    e.preventDefault();
+    if (!resetEmail?.trim()) {
+      toast.error('Enter your email address');
+      return;
+    }
+    setSendingReset(true);
+    try {
+      await authApi.forgotPassword(resetEmail.trim());
+      toast.success('If an account exists, reset instructions were sent.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send reset email');
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   const save = async () => {
     const payload = {
@@ -113,8 +170,8 @@ export default function MentorDashboardSettingsPage() {
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
                 <img
                   alt="User avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
+                  className="w-full h-full object-cover rounded-full"
+                  src={avatarSrc}
                 />
               </div>
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
@@ -177,8 +234,8 @@ export default function MentorDashboardSettingsPage() {
                 >
                   <img
                     alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
+                    className="w-full h-full object-cover rounded-full"
+                    src={avatarSrc}
                   />
                 </button>
                 {profileOpen && (
@@ -237,6 +294,32 @@ export default function MentorDashboardSettingsPage() {
                 <div className="flex justify-center py-16"><Spinner size="lg" /></div>
               ) : (
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Profile picture</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border border-outline-variant/30 bg-surface-container-lowest">
+                        <img alt="" className="w-full h-full object-cover rounded-full" src={avatarSrc} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                            Choose image
+                            <input type="file" accept="image/*" onChange={handlePictureFile} className="hidden" />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={pictureSaving}
+                            onClick={saveProfilePicture}
+                            className="bg-gold-accent text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
+                          >
+                            {pictureSaving ? 'Uploading…' : 'Upload'}
+                          </button>
+                          <span className="text-xs text-outline truncate">{pictureFile?.name || 'No file chosen'}</span>
+                        </div>
+                        <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB. Uploaded to Cloudinary.</p>
+                      </div>
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Expertise *</label>
                     <input className="w-full input" value={form.expertise} onChange={(e) => setForm((f) => ({ ...f, expertise: e.target.value }))} placeholder="Leadership, Technology, Strategy" />
@@ -272,6 +355,36 @@ export default function MentorDashboardSettingsPage() {
                   </div>
                 </div>
               )}
+            </section>
+
+            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4 max-w-[900px]">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-bold text-on-surface text-lg">Forgot / reset password</h2>
+                    <p className="text-sm text-on-surface-variant mt-1">
+                      We will email you a link to set a new password for this account.
+                    </p>
+                    <form onSubmit={sendPasswordReset} className="mt-4 space-y-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-outline">Email</label>
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        autoComplete="email"
+                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                        placeholder="you@example.com"
+                      />
+                      <button
+                        type="submit"
+                        disabled={sendingReset}
+                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 disabled:opacity-50"
+                      >
+                        {sendingReset ? 'Sending…' : 'Send reset link'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
             </section>
           </div>
         </main>

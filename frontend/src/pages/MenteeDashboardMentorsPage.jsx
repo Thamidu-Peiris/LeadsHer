@@ -26,13 +26,28 @@ function formatDate(d) {
   }
 }
 
+function localYmd(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  if (isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const mo = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
 export default function MenteeDashboardMentorsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [tab, setTab] = useState('directory'); // directory | requests | active
+  const [tab, setTab] = useState('directory'); // directory | requests | active | history
+
+
+  const menteeAvatarSrc =
+    user?.profilePicture || user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -56,11 +71,14 @@ export default function MenteeDashboardMentorsPage() {
   const [feedbackFor, setFeedbackFor] = useState(null);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
 
+  const [expandedId, setExpandedId] = useState(null);
+
   const counts = useMemo(() => ({
     directory: mentors.length,
     requests: requests.length,
     active: active.length,
-  }), [mentors.length, requests.length, active.length]);
+    history: history.length,
+  }), [mentors.length, requests.length, active.length, history.length]);
 
   const loadMentors = async () => {
     const res = await mentorApi.getAll({ limit: 24, search: search || undefined });
@@ -138,11 +156,12 @@ export default function MenteeDashboardMentorsPage() {
       setFeedbackFor(null);
       setFeedbackForm({ rating: 5, comment: '' });
       await loadMyMentorship();
-      setTab('active');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to submit feedback');
     }
   };
+
+  // Sessions are read-only for mentees (mentors log sessions).
 
   return (
     <div className="min-h-screen">
@@ -167,6 +186,7 @@ export default function MenteeDashboardMentorsPage() {
                   Mentee
                 </span>
               </div>
+              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
             </div>
           </div>
 
@@ -182,6 +202,7 @@ export default function MenteeDashboardMentorsPage() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive
@@ -226,11 +247,7 @@ export default function MenteeDashboardMentorsPage() {
                   onClick={() => setProfileOpen((v) => !v)}
                   className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
                 >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
+                  <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
                 </button>
                 {profileOpen && (
                   <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
@@ -242,6 +259,14 @@ export default function MenteeDashboardMentorsPage() {
                         {user?.email}
                       </p>
                     </div>
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                      role="menuitem"
+                    >
+                      Profile
+                    </Link>
                     <button
                       type="button"
                       onClick={async () => {
@@ -278,6 +303,7 @@ export default function MenteeDashboardMentorsPage() {
                   { key: 'directory', label: 'Directory', count: counts.directory },
                   { key: 'requests', label: 'My Requests', count: counts.requests },
                   { key: 'active', label: 'Active', count: counts.active },
+                  { key: 'history', label: 'History', count: counts.history },
                 ].map((t) => (
                   <button
                     key={t.key}
@@ -365,7 +391,7 @@ export default function MenteeDashboardMentorsPage() {
                     {requests.length === 0 ? (
                       <p className="text-on-surface-variant">No requests yet.</p>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {requests.map((r) => (
                           <div key={r._id} className="border border-outline-variant/20 rounded-xl p-6">
                             <div className="flex items-start justify-between gap-4">
@@ -373,19 +399,44 @@ export default function MenteeDashboardMentorsPage() {
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
                                 <p className="font-semibold text-on-surface">{r?.mentor?.name || 'Mentor'}</p>
                                 <p className="text-xs text-outline mt-1">Preferred start: {formatDate(r?.preferredStartDate)}</p>
+                                <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">
+                                  {r?.message || 'No request message.'}
+                                </p>
                               </div>
-                              <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline">
+                              <span
+                                className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
+                                  (r?.status || 'pending') === 'accepted'
+                                    ? 'border-green-500 text-green-900 bg-green-200'
+                                    : (r?.status || 'pending') === 'rejected'
+                                      ? 'border-red-500 text-red-900 bg-red-200'
+                                      : (r?.status || 'pending') === 'cancelled'
+                                        ? 'border-slate-500 text-slate-900 bg-slate-200'
+                                        : 'border-amber-500 text-amber-950 bg-amber-200'
+                                }`}
+                              >
                                 {r?.status || 'pending'}
                               </span>
                             </div>
                             <div className="mt-4 flex gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => cancelRequest(r._id)}
-                                className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-tertiary/30 text-tertiary hover:bg-tertiary/5"
-                              >
-                                Cancel request
-                              </button>
+                              {(r?.status || 'pending') === 'pending' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => cancelRequest(r._id)}
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-tertiary/30 text-tertiary hover:bg-tertiary/5"
+                                >
+                                  Cancel request
+                                </button>
+                              ) : (
+                                <p className="text-xs text-outline">
+                                  {r?.status === 'accepted'
+                                    ? 'This request has been accepted.'
+                                    : r?.status === 'cancelled'
+                                      ? 'This request has been cancelled.'
+                                      : r?.status === 'rejected'
+                                        ? 'This request was rejected.'
+                                        : 'This request is not cancellable.'}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -397,62 +448,130 @@ export default function MenteeDashboardMentorsPage() {
                 {tab === 'active' && (
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentorship</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">View active mentorship and update goals.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">View your active mentorship, log sessions, and update goals.</p>
 
                     {active.length === 0 ? (
-                      <p className="text-on-surface-variant">No active mentorships yet.</p>
+                      <p className="text-on-surface-variant">No active mentorships yet. Send a request from the Directory tab.</p>
                     ) : (
                       <div className="space-y-4">
-                        {active.map((m) => (
-                          <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                <p className="font-semibold text-on-surface">{m?.mentor?.name || 'Mentor'}</p>
-                                <p className="text-xs text-outline mt-1">Started: {formatDate(m?.startDate)}</p>
+                        {active.map((m) => {
+                          const sessionCount = m?.sessions?.length || 0;
+                          const goals = m?.goals || [];
+                          const isExpanded = expandedId === m._id;
+                          return (
+                            <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
+                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  {m?.mentor?.email && <p className="text-xs text-outline">{m.mentor.email}</p>}
+                                  <p className="text-xs text-outline mt-1">Started: {formatDate(m?.startDate)} · Sessions: {sessionCount}</p>
+                                </div>
+                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
+                                  {m?.status || 'active'}
+                                </span>
                               </div>
-                              <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline">
-                                {m?.status || 'active'}
-                              </span>
-                            </div>
 
-                            <div className="mt-4">
-                              <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
-                              <div className="flex flex-wrap gap-2">
-                                {(m?.goals || []).slice(0, 8).map((g) => (
-                                  <span key={g} className="inline-flex px-3 py-1 text-xs bg-surface-container-lowest border border-outline-variant/15 rounded-lg">
-                                    {g}
-                                  </span>
-                                ))}
-                                {(!m?.goals || m.goals.length === 0) && (
-                                  <span className="text-sm text-on-surface-variant">No goals set yet.</span>
-                                )}
+                              <div className="mt-4">
+                                <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {goals.length ? goals.map((g) => (
+                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                  )) : <span className="text-sm text-on-surface-variant">No goals set yet.</span>}
+                                </div>
                               </div>
-                            </div>
 
-                            <div className="mt-5 flex gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setGoalsFor(m);
-                                  setGoalsInput((m?.goals || []).join(', '));
-                                }}
-                                className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors"
-                              >
-                                Set goals
-                              </button>
-                              {m?.status === 'completed' && (
+                              {sessionCount > 0 && (
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedId(isExpanded ? null : m._id)}
+                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
+                                    {isExpanded ? 'Hide' : 'View'} sessions ({sessionCount})
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="mt-3 space-y-2">
+                                      {(m.sessions || []).map((s, i) => (
+                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-semibold text-on-surface">{formatDate(s.date)}</span>
+                                            <span className="text-outline">{s.duration} min</span>
+                                          </div>
+                                          {s.topics?.length > 0 && <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>}
+                                          {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="mt-5 flex gap-2 flex-wrap">
                                 <button
                                   type="button"
-                                  onClick={() => setFeedbackFor(m)}
+                                  onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
                                   className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
                                 >
-                                  Submit feedback
+                                  Set goals
                                 </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {tab === 'history' && (
+                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
+                    <p className="text-on-surface-variant text-sm mb-6">Past mentorships — submit feedback on completed ones.</p>
+
+                    {history.length === 0 ? (
+                      <p className="text-on-surface-variant">No history yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {history.map((m) => {
+                          const hasMenteeFeedback = !!m?.feedback?.menteeRating;
+                          return (
+                            <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
+                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  <p className="text-xs text-outline mt-1">
+                                    Started: {formatDate(m?.startDate)} · {m?.completedAt ? `Completed: ${formatDate(m.completedAt)}` : `Ended: ${formatDate(m?.endDate)}`}
+                                  </p>
+                                  <p className="text-xs text-outline">Sessions: {m?.sessions?.length || 0}</p>
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
+                                  m?.status === 'completed' ? 'border-green-300 text-green-700 bg-green-50' :
+                                  m?.status === 'terminated' ? 'border-red-300 text-red-700 bg-red-50' :
+                                  'border-outline-variant/25 text-outline'
+                                }`}>
+                                  {m?.status}
+                                </span>
+                              </div>
+                              {m?.status === 'completed' && !hasMenteeFeedback && (
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
+                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  >
+                                    Submit feedback
+                                  </button>
+                                </div>
+                              )}
+                              {hasMenteeFeedback && (
+                                <p className="mt-3 text-xs text-green-700 font-semibold">✓ Feedback submitted (Rating: {m.feedback.menteeRating}/5)</p>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
