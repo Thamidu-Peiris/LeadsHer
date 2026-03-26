@@ -22,6 +22,7 @@ import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage
 import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
 import MentorsPage      from './pages/MentorsPage';
+import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
@@ -35,7 +36,8 @@ function MainLayout() {
   const { user } = useAuth();
 
   const hideChromeForRoleDashboard =
-    location.pathname.startsWith('/dashboard') && (user?.role === 'mentor' || user?.role === 'mentee');
+    (location.pathname.startsWith('/dashboard') || location.pathname === '/resources') &&
+    (user?.role === 'mentor' || user?.role === 'mentee' || user?.role === 'admin');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,6 +90,9 @@ export default function App() {
             } />
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+            } />
+            <Route path="/resources" element={
+              <ProtectedRoute roles={ANY_USER}><MentorDashboardResourcesPage /></ProtectedRoute>
             } />
             <Route path="/stories/new" element={
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
