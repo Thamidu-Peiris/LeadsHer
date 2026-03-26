@@ -29,6 +29,7 @@ export default function MentorDashboardCreateStoryPage() {
     tags: '',
   });
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
+  const [coverFile, setCoverFile] = useState(null);
   const [status, setStatus] = useState('draft');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,31 +40,49 @@ export default function MentorDashboardCreateStoryPage() {
     [form.tags]
   );
   const wordCount = useMemo(
-    () => form.content.trim().split(/\\s+/).filter(Boolean).length,
+    () => form.content.trim().split(/\s+/).filter(Boolean).length,
     [form.content]
   );
   const excerptWords = useMemo(
-    () => form.excerpt.trim().split(/\\s+/).filter(Boolean).length,
+    () => form.excerpt.trim().split(/\s+/).filter(Boolean).length,
     [form.excerpt]
   );
   const readingMins = Math.max(1, Math.ceil(wordCount / 200));
+  const publishWordTarget = 100;
+  const publishWordProgress = Math.min(100, Math.round((wordCount / publishWordTarget) * 100));
 
   const checklist = useMemo(() => ([
     { ok: !!form.title.trim(), text: 'Compelling story title' },
     { ok: !!form.coverImage.trim(), text: 'High-quality cover image' },
     { ok: excerptWords >= 8, text: 'Editorial excerpt (recommended)' },
     { ok: tagsList.length >= 3, text: 'Story tags (at least 3)' },
-  ]), [excerptWords, form.coverImage, form.title, tagsList.length]);
+    { ok: wordCount >= publishWordTarget, text: `Minimum ${publishWordTarget} words for publish` },
+  ]), [excerptWords, form.coverImage, form.title, tagsList.length, wordCount]);
 
   const setField = (key, value) => {
     setError('');
     setForm((f) => ({ ...f, [key]: value }));
   };
 
+  const handleCoverFileSelect = (file) => {
+    if (!file) return;
+    if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+    const preview = URL.createObjectURL(file);
+    setCoverPreviewUrl(preview);
+    setCoverFile(file);
+  };
+
   const saveStory = async (nextStatus) => {
     setError('');
-    if (!form.title.trim() || !form.content.trim()) {
-      setError('Title and content are required.');
+    const title = form.title.trim();
+    const content = form.content.trim();
+
+    if (nextStatus === 'draft' && !title && !content) {
+      setError('Add at least a title or some content to save draft.');
+      return;
+    }
+    if (nextStatus === 'published' && (!title || !content)) {
+      setError('Title and content are required to publish.');
       return;
     }
     if (nextStatus === 'published' && wordCount < 100) {
@@ -73,20 +92,33 @@ export default function MentorDashboardCreateStoryPage() {
 
     setSaving(true);
     try {
+      let coverImageUrl = form.coverImage || '';
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('media', coverFile);
+        const uploadRes = await storyApi.uploadMedia(fd);
+        coverImageUrl = uploadRes.data?.url || '';
+      }
+
       const payload = {
         title: form.title,
         excerpt: form.excerpt,
         content: form.content,
         category: form.category,
-        coverImage: form.coverImage || undefined,
+        coverImage: coverImageUrl || undefined,
         status: nextStatus,
         tags: tagsList.slice(0, 5),
       };
       const res = await storyApi.create(payload);
       setStatus(nextStatus);
       setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      toast.success(nextStatus === 'published' ? 'Story published!' : 'Draft saved!');
-      navigate(`/stories/${res.data._id}`);
+      if (nextStatus === 'draft') {
+        toast.success('Draft saved!');
+        navigate('/dashboard/stories');
+      } else {
+        toast.success('Story published!');
+        navigate(`/stories/${res.data._id}`);
+      }
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to save story.');
     } finally {
@@ -241,15 +273,7 @@ export default function MentorDashboardCreateStoryPage() {
                               type="file"
                               accept="image/*"
                               className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const preview = URL.createObjectURL(file);
-                                setCoverPreviewUrl(preview);
-                                const reader = new FileReader();
-                                reader.onload = () => setForm((f) => ({ ...f, coverImage: String(reader.result || '') }));
-                                reader.readAsDataURL(file);
-                              }}
+                              onChange={(e) => handleCoverFileSelect(e.target.files?.[0])}
                             />
                           </label>
                           <button
@@ -258,6 +282,7 @@ export default function MentorDashboardCreateStoryPage() {
                             onClick={() => {
                               if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
                               setCoverPreviewUrl('');
+                              setCoverFile(null);
                               setForm((f) => ({ ...f, coverImage: '' }));
                             }}
                           >
@@ -274,15 +299,7 @@ export default function MentorDashboardCreateStoryPage() {
                           type="file"
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const preview = URL.createObjectURL(file);
-                            setCoverPreviewUrl(preview);
-                            const reader = new FileReader();
-                            reader.onload = () => setForm((f) => ({ ...f, coverImage: String(reader.result || '') }));
-                            reader.readAsDataURL(file);
-                          }}
+                          onChange={(e) => handleCoverFileSelect(e.target.files?.[0])}
                         />
                       </label>
                     )}
@@ -333,6 +350,23 @@ export default function MentorDashboardCreateStoryPage() {
                   className="w-full min-h-[520px] bg-transparent border-none focus:ring-0 text-xl leading-relaxed text-on-surface placeholder:text-outline/40 resize-none p-0"
                   placeholder="Start your narrative journey here..."
                 />
+                <div className="mt-4 p-4 border border-outline-variant/20 rounded-lg bg-surface-container-lowest">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold uppercase tracking-widest text-outline">Word Target</span>
+                    <span className={`font-semibold ${wordCount >= publishWordTarget ? 'text-green-600' : 'text-outline'}`}>
+                      {wordCount} / {publishWordTarget} words
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 w-full rounded-full bg-outline-variant/20 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all ${wordCount >= publishWordTarget ? 'bg-green-500' : 'bg-gold-accent'}`}
+                      style={{ width: `${publishWordProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] text-outline">
+                    Keep typing until you reach 100 words to enable publishing.
+                  </p>
+                </div>
               </div>
             </section>
 

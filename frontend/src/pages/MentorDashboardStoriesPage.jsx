@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ import { mentorApi } from '../api/mentorApi';
 export default function MentorDashboardStoriesPage() {
   const { user, logout, canManageEvents } = useAuth();
   const navigate = useNavigate();
+  const userId = user?.id ?? user?._id;
+  const storiesCacheKey = userId ? `leadsher_mentor_stories_${userId}` : '';
 
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
   const [profileOpen, setProfileOpen] = useState(false);
@@ -16,9 +18,10 @@ export default function MentorDashboardStoriesPage() {
 
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [publishingId, setPublishingId] = useState('');
 
   useEffect(() => {
-    const userId = user?.id ?? user?._id;
     if (!userId) return;
     mentorApi.getMyProfile()
       .then((res) => {
@@ -26,16 +29,52 @@ export default function MentorDashboardStoriesPage() {
         setMentorProfile(p);
       })
       .catch(() => setMentorProfile(null));
-  }, [user?.id, user?._id]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!user?._id) return;
-    setLoading(true);
-    storyApi.getByUser(user._id, { limit: 50 })
-      .then((res) => setStories(res.data?.stories || []))
-      .catch(() => setStories([]))
+    if (!userId) return;
+
+    // Hydrate immediately from cache to avoid "refresh-like" blank/loading flicker.
+    if (storiesCacheKey) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(storiesCacheKey) || '[]');
+        if (Array.isArray(cached) && cached.length) {
+          setStories(cached);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+      } catch {
+        setLoading(true);
+      }
+    } else {
+      setLoading(true);
+    }
+
+    // Dedicated endpoint for mentor's own stories (draft + published).
+    // Fallback keeps drafts visible even if `/stories/mine` is unavailable.
+    storyApi.getMine({ limit: 100 })
+      .then((res) => {
+        const nextStories = res.data?.stories || [];
+        setStories(nextStories);
+        if (storiesCacheKey) {
+          sessionStorage.setItem(storiesCacheKey, JSON.stringify(nextStories));
+        }
+      })
+      .catch(async () => {
+        try {
+          const fallbackRes = await storyApi.getAll({ author: userId, limit: 100, sort: 'newest' });
+          const nextStories = fallbackRes.data?.stories || [];
+          setStories(nextStories);
+          if (storiesCacheKey) {
+            sessionStorage.setItem(storiesCacheKey, JSON.stringify(nextStories));
+          }
+        } catch {
+          setStories([]);
+        }
+      })
       .finally(() => setLoading(false));
-  }, [user?._id]);
+  }, [userId, storiesCacheKey]);
 
   const avatarSrc =
     user?.profilePicture ||
@@ -52,6 +91,44 @@ export default function MentorDashboardStoriesPage() {
       toast.error(e.response?.data?.message || 'Failed to delete story');
     }
   };
+
+  const publishDraft = async (id) => {
+    setPublishingId(id);
+    try {
+      await storyApi.update(id, { status: 'published' });
+      setStories((prev) => prev.map((s) => (s._id === id ? { ...s, status: 'published', publishedAt: s.publishedAt || new Date().toISOString() } : s)));
+      toast.success('Draft published');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not publish draft');
+    } finally {
+      setPublishingId('');
+    }
+  };
+
+  const stats = useMemo(() => {
+    const total = stories.length;
+    const published = stories.filter((s) => s.status === 'published');
+    const drafts = stories.filter((s) => s.status === 'draft');
+    const totalViews = stories.reduce((sum, s) => sum + (s.views || s.viewCount || 0), 0);
+    const totalLikes = stories.reduce((sum, s) => sum + (s.likeCount || 0), 0);
+    const avgReadingTime = total ? Math.round(stories.reduce((sum, s) => sum + (s.readingTime || 0), 0) / total) : 0;
+    return {
+      total,
+      published: published.length,
+      drafts: drafts.length,
+      totalViews,
+      totalLikes,
+      avgReadingTime,
+      topViewed: [...stories]
+        .sort((a, b) => (b.views || b.viewCount || 0) - (a.views || a.viewCount || 0))
+        .slice(0, 5),
+    };
+  }, [stories]);
+
+  const displayedStories = useMemo(() => {
+    if (statusFilter === 'all') return stories;
+    return stories.filter((s) => s.status === statusFilter);
+  }, [stories, statusFilter]);
 
   return (
     <div className="min-h-screen">
@@ -187,9 +264,9 @@ export default function MentorDashboardStoriesPage() {
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Published Stories</h1>
+                <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Stories Studio</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
-                  Manage and review your published stories.
+                  Create, draft, publish, and analyze your stories in one place.
                 </p>
               </div>
               <div className="flex gap-3 flex-wrap">
@@ -210,20 +287,100 @@ export default function MentorDashboardStoriesPage() {
               </div>
             </section>
 
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                <p className="text-[11px] uppercase tracking-widest text-outline font-bold">Total stories</p>
+                <p className="text-3xl font-bold text-on-surface mt-2">{stats.total}</p>
+              </div>
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                <p className="text-[11px] uppercase tracking-widest text-outline font-bold">Published</p>
+                <p className="text-3xl font-bold text-on-surface mt-2">{stats.published}</p>
+              </div>
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                <p className="text-[11px] uppercase tracking-widest text-outline font-bold">Drafts</p>
+                <p className="text-3xl font-bold text-on-surface mt-2">{stats.drafts}</p>
+              </div>
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                <p className="text-[11px] uppercase tracking-widest text-outline font-bold">Total views</p>
+                <p className="text-3xl font-bold text-on-surface mt-2">{stats.totalViews}</p>
+              </div>
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                <p className="text-[11px] uppercase tracking-widest text-outline font-bold">Avg read time</p>
+                <p className="text-3xl font-bold text-on-surface mt-2">{stats.avgReadingTime}m</p>
+              </div>
+            </section>
+
+            {stats.topViewed.length > 0 && (
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+                <h2 className="font-serif-alt text-xl font-bold text-on-surface">Story Analytics</h2>
+                <p className="text-xs text-outline mt-1">Top performing stories by views</p>
+                <div className="mt-4 space-y-3">
+                  {stats.topViewed.map((s) => {
+                    const value = s.views || s.viewCount || 0;
+                    const max = stats.topViewed[0]?.views || stats.topViewed[0]?.viewCount || 1;
+                    const width = Math.max(8, Math.round((value / max) * 100));
+                    return (
+                      <div key={`metric-${s._id}`}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-on-surface line-clamp-1">{s.title}</span>
+                          <span className="text-outline">{value} views · {s.likeCount || 0} likes</span>
+                        </div>
+                        <div className="h-2 bg-surface-container-low rounded-full overflow-hidden">
+                          <div className="h-2 bg-gold-accent rounded-full" style={{ width: `${width}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            <section className="flex gap-2 flex-wrap">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'published', label: 'Published' },
+                { key: 'draft', label: 'Drafts' },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${
+                    statusFilter === f.key
+                      ? 'bg-gold-accent/10 text-on-surface border-gold-accent/40'
+                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-gold-accent/40'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </section>
+
             {loading ? (
               <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-            ) : stories.length === 0 ? (
+            ) : displayedStories.length === 0 ? (
               <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-10 text-center">
-                <p className="text-on-surface-variant mb-5">No stories yet.</p>
+                <p className="text-on-surface-variant mb-5">
+                  {statusFilter === 'draft' ? 'No drafts created yet.' : statusFilter === 'published' ? 'No published stories yet.' : 'No stories created yet.'}
+                </p>
                 <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
               </div>
             ) : (
               <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-outline-variant/10">
-                  {stories.map((s) => (
+                  {displayedStories.map((s) => (
                     <div key={s._id} className="p-6">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded-full border ${
+                              s.status === 'published'
+                                ? 'bg-green-500/10 text-green-700 border-green-500/20'
+                                : 'bg-outline-variant/20 text-outline border-outline-variant/30'
+                            }`}>
+                              {s.status || 'draft'}
+                            </span>
+                          </div>
                           <h3 className="font-serif-alt text-xl font-bold text-on-surface line-clamp-1">{s.title}</h3>
                           {s.excerpt && (
                             <p className="text-on-surface-variant text-sm mt-2 line-clamp-2">
@@ -243,6 +400,9 @@ export default function MentorDashboardStoriesPage() {
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[16px]">favorite</span> {s.likeCount || 0}
                         </span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px]">schedule</span> {s.readingTime || 1}m
+                        </span>
                       </div>
 
                       <div className="mt-5 flex gap-2">
@@ -259,6 +419,16 @@ export default function MentorDashboardStoriesPage() {
                         >
                           Delete
                         </button>
+                        {s.status === 'draft' && (
+                          <button
+                            type="button"
+                            disabled={publishingId === s._id}
+                            onClick={() => publishDraft(s._id)}
+                            className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-gold-accent/30 text-gold-accent hover:bg-gold-accent/10 transition-colors bg-white dark:bg-surface-container disabled:opacity-60"
+                          >
+                            {publishingId === s._id ? 'Publishing...' : 'Publish'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
