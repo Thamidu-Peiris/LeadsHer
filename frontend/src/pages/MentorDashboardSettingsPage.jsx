@@ -49,6 +49,7 @@ export default function MentorDashboardSettingsPage() {
     industries: '',
     mentoringAreas: '',
     bio: '',
+    achievements: '',
     maxMentees: 3,
     preferredTime: '',
     timezone: 'UTC',
@@ -74,6 +75,7 @@ export default function MentorDashboardSettingsPage() {
           industries: (data.industries || []).join(', '),
           mentoringAreas: (data.mentoringAreas || []).join(', '),
           bio: data.bio || '',
+          achievements: (data.achievements || []).join(', '),
           maxMentees: data.availability?.maxMentees ?? 3,
           preferredTime: (data.availability?.preferredTime || []).join(', '),
           timezone: data.availability?.timezone || 'UTC',
@@ -141,6 +143,7 @@ export default function MentorDashboardSettingsPage() {
       industries: toList(form.industries),
       mentoringAreas: toList(form.mentoringAreas),
       bio: form.bio,
+      achievements: toList(form.achievements),
       availability: {
         maxMentees: Number(form.maxMentees),
         preferredTime: toList(form.preferredTime),
@@ -174,7 +177,12 @@ export default function MentorDashboardSettingsPage() {
                   src={avatarSrc}
                 />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
+              <span
+                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
+                  profile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
+                }`}
+                title={profile?.isAvailable ? 'Available' : 'Unavailable'}
+              />
             </div>
             <div className="text-center">
               <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
@@ -280,14 +288,58 @@ export default function MentorDashboardSettingsPage() {
                     {complete ? 'Your profile is complete.' : 'Complete your profile to receive better mentorship matches.'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={save}
-                  className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
-                >
-                  {saving ? 'Saving…' : 'Save changes'}
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border ${
+                        profile?.isAvailable
+                          ? 'bg-green-500/10 text-green-700 border-green-500/20'
+                          : 'bg-outline-variant/20 text-outline border-outline-variant/30'
+                      }`}
+                    >
+                      {profile?.isAvailable ? 'Available' : 'Unavailable'}
+                    </span>
+                    <label className="inline-flex items-center gap-2 select-none">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Off</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!profile?.isAvailable}
+                        disabled={loading || saving}
+                        onClick={async () => {
+                          try {
+                            await mentorApi.toggleAvailability();
+                            await load();
+                            toast.success(`Availability set to ${!profile?.isAvailable ? 'available' : 'unavailable'}`);
+                          } catch (e) {
+                            toast.error(e.response?.data?.message || 'Failed to toggle availability');
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors disabled:opacity-60 ${
+                          profile?.isAvailable
+                            ? 'bg-green-500/20 border-green-500/30'
+                            : 'bg-outline-variant/25 border-outline-variant/40'
+                        }`}
+                        title={profile?.isAvailable ? 'Turn off availability' : 'Turn on availability'}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                            profile?.isAvailable ? 'translate-x-5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-outline">On</span>
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={save}
+                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                  >
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </button>
+                </div>
               </div>
 
               {loading ? (
@@ -339,6 +391,18 @@ export default function MentorDashboardSettingsPage() {
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Bio *</label>
                     <textarea className="w-full input h-32 resize-y" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">
+                      Achievements (comma-separated)
+                    </label>
+                    <input
+                      className="w-full input"
+                      value={form.achievements}
+                      onChange={(e) => setForm((f) => ({ ...f, achievements: e.target.value }))}
+                      placeholder="Awards, Certifications, Key milestones"
+                    />
                   </div>
 
                   <div>

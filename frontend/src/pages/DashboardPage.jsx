@@ -39,6 +39,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 
   const userId = user?.id ?? user?._id;
   const onboardingKey = userId ? `leadsher_onboarding_mentorprofile_${userId}` : '';
+  const [mentorProfile, setMentorProfile] = useState(null);
 
   const toList = (v) => String(v || '').split(',').map((t) => t.trim()).filter(Boolean);
   const isComplete = (p) => {
@@ -59,6 +60,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     mentorApi.getMyProfile()
       .then((res) => {
         const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        setMentorProfile(p);
         if (!isComplete(p)) {
           setOnboardOpen(true);
           if (p) {
@@ -81,6 +83,21 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
       })
       .finally(() => setOnboardLoading(false));
   }, [userId, onboardingKey]);
+
+  useEffect(() => {
+    if (!userId) return;
+    mentorApi.getMyProfile()
+      .then((res) => {
+        const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        setMentorProfile(p);
+      })
+      .catch(() => setMentorProfile(null));
+  }, [userId]);
+
+  const avatarSrc =
+    user?.profilePicture ||
+    user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   const saveOnboarding = async () => {
     setOnboardError('');
@@ -218,10 +235,15 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <img
                   alt="User avatar"
                   className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
+                  src={avatarSrc}
                 />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
+              <span
+                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
+                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
+                }`}
+                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
+              />
             </div>
             <div className="text-center">
               <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
@@ -318,7 +340,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <img
                     alt="Avatar"
                     className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
+                    src={avatarSrc}
                   />
                 </button>
 

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorshipApi } from '../api/mentorshipApi';
+import { mentorApi } from '../api/mentorApi';
 
 function safeList(res) {
   const data = res?.data;
@@ -35,6 +36,7 @@ export default function MentorDashboardMentorshipPage() {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mentorProfile, setMentorProfile] = useState(null);
   const [tab, setTab] = useState('requests'); // requests | active | history
 
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,22 @@ export default function MentorDashboardMentorshipPage() {
   };
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    const userId = user?.id ?? user?._id;
+    if (!userId) return;
+    mentorApi.getMyProfile()
+      .then((res) => {
+        const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        setMentorProfile(p);
+      })
+      .catch(() => setMentorProfile(null));
+  }, [user?.id, user?._id]);
+
+  const avatarSrc =
+    user?.profilePicture ||
+    user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   const accept = async (id) => {
     setRespondingId(id);
@@ -203,10 +221,15 @@ export default function MentorDashboardMentorshipPage() {
                 <img
                   alt="User avatar"
                   className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
+                  src={avatarSrc}
                 />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
+              <span
+                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
+                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
+                }`}
+                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
+              />
             </div>
             <div className="text-center">
               <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
@@ -259,7 +282,7 @@ export default function MentorDashboardMentorshipPage() {
                   <img
                     alt="Avatar"
                     className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
+                    src={avatarSrc}
                   />
                 </button>
                 {profileOpen && (
