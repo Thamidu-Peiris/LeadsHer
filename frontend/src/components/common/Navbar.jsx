@@ -4,10 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const navLinks = [
-  { to: '/',         label: 'Home' },
-  { to: '/stories',  label: 'Stories' },
-  { to: '/events',   label: 'Events' },
-  { to: '/mentors',  label: 'Mentors' },
+  { to: '/',           label: 'Home' },
+  { to: '/stories',    label: 'Stories' },
+  { to: '/events',     label: 'Events' },
+  { to: '/mentors',    label: 'Mentors' },
+  { to: '/resources',  label: 'Resources' },
 ];
 
 export default function Navbar() {

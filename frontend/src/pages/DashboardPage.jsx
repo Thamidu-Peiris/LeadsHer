@@ -231,7 +231,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
-              { to: '/resources', icon: 'library_books', label: 'Resources' },
+              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
               { to: '/forum', icon: 'forum', label: 'Forum' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (

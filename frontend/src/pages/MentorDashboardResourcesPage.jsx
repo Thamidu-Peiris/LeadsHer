@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -7,220 +7,291 @@ import Spinner from '../components/common/Spinner';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
-const TYPES = ['article', 'ebook', 'video', 'podcast', 'tool', 'guide'];
+const TYPES    = ['article', 'ebook', 'video', 'podcast', 'tool', 'guide'];
 const CATEGORIES = [
-  'leadership-skills',
-  'communication',
-  'negotiation',
-  'time-management',
-  'career-planning',
-  'work-life-balance',
-  'networking',
+  { value: '', label: 'All Categories' },
+  { value: 'leadership-skills',  label: 'Leadership Skills' },
+  { value: 'communication',      label: 'Communication' },
+  { value: 'negotiation',        label: 'Negotiation' },
+  { value: 'time-management',    label: 'Time Management' },
+  { value: 'career-planning',    label: 'Career Planning' },
+  { value: 'work-life-balance',  label: 'Work-Life Balance' },
+  { value: 'networking',         label: 'Networking' },
 ];
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 const SORTS = [
-  { value: '-createdAt', label: 'Newest' },
-  { value: 'createdAt', label: 'Oldest' },
-  { value: '-averageRating', label: 'Top Rated' },
-  { value: '-views', label: 'Most Viewed' },
-  { value: '-downloads', label: 'Most Downloaded' },
+  { value: '-createdAt',     label: 'Newest First' },
+  { value: 'createdAt',      label: 'Oldest First' },
+  { value: '-averageRating', label: 'Highest Rated' },
+  { value: '-views',         label: 'Most Viewed' },
+  { value: '-downloads',     label: 'Most Downloaded' },
 ];
 
-const TYPE_META = {
-  article:  { icon: 'article',        color: 'bg-blue-50 text-blue-700 border-blue-100' },
-  ebook:    { icon: 'menu_book',       color: 'bg-purple-50 text-purple-700 border-purple-100' },
-  video:    { icon: 'play_circle',     color: 'bg-red-50 text-red-700 border-red-100' },
-  podcast:  { icon: 'podcasts',        color: 'bg-orange-50 text-orange-700 border-orange-100' },
-  tool:     { icon: 'build',           color: 'bg-green-50 text-green-700 border-green-100' },
-  guide:    { icon: 'local_library',   color: 'bg-teal-50 text-teal-700 border-teal-100' },
-};
-const TYPE_BG = {
-  article:  'bg-blue-100',
-  ebook:    'bg-purple-100',
-  video:    'bg-red-100',
-  podcast:  'bg-orange-100',
-  tool:     'bg-green-100',
-  guide:    'bg-teal-100',
-};
-const DIFF_COLOR = {
-  beginner:     'bg-green-50 text-green-700 border-green-100',
-  intermediate: 'bg-amber-50 text-amber-700 border-amber-100',
-  advanced:     'bg-red-50 text-red-700 border-red-100',
+/* Type visual config */
+const TYPE_CFG = {
+  article: {
+    icon: 'article',
+    label: 'Article',
+    thumb: 'from-slate-700 to-slate-900',
+    badge: 'bg-slate-800/80',
+  },
+  ebook: {
+    icon: 'menu_book',
+    label: 'Ebook',
+    thumb: 'from-violet-700 to-purple-900',
+    badge: 'bg-violet-800/80',
+  },
+  video: {
+    icon: 'play_circle',
+    label: 'Video',
+    thumb: 'from-red-700 to-rose-900',
+    badge: 'bg-red-800/80',
+  },
+  podcast: {
+    icon: 'podcasts',
+    label: 'Podcast',
+    thumb: 'from-amber-600 to-orange-800',
+    badge: 'bg-amber-700/80',
+  },
+  tool: {
+    icon: 'build',
+    label: 'Tool',
+    thumb: 'from-emerald-700 to-teal-900',
+    badge: 'bg-emerald-800/80',
+  },
+  guide: {
+    icon: 'local_library',
+    label: 'Guide',
+    thumb: 'from-[#6242a3] to-[#3a1f7a]',
+    badge: 'bg-[#6242a3]/80',
+  },
 };
 
-const fmt = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0));
-const fmtCat = (c) => (c || '').split('-').map((w) => w[0]?.toUpperCase() + w.slice(1)).join(' ');
+const DIFF_BADGE = {
+  beginner:     'bg-emerald-500/80',
+  intermediate: 'bg-amber-500/80',
+  advanced:     'bg-red-500/80',
+};
+
+const fmt     = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0));
+const fmtDate = (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }); } catch { return ''; } };
+const fmtCat  = (c) => (c || '').split('-').map((w) => w[0]?.toUpperCase() + w.slice(1)).join(' ');
 
 const EMPTY_FORM = {
-  title: '',
-  description: '',
-  type: 'article',
-  category: 'leadership-skills',
-  tags: '',
-  difficulty: 'beginner',
-  externalLink: '',
-  author: '',
-  isPremium: false,
-  fileMode: 'link', // 'link' | 'file'
+  title: '', description: '', type: 'article', category: 'leadership-skills',
+  tags: '', difficulty: 'beginner', externalLink: '', author: '',
+  isPremium: false, fileMode: 'link',
 };
 
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
-function ResourceCard({ resource, userId, isMentor, onBookmark, onDownload, onRate, onEdit, onDelete }) {
-  const isOwner = resource.uploadedBy?._id === userId || resource.uploadedBy === userId;
-  const meta = TYPE_META[resource.type] || TYPE_META.article;
-  const bg = TYPE_BG[resource.type] || 'bg-gray-100';
-  const diffColor = DIFF_COLOR[resource.difficulty] || DIFF_COLOR.beginner;
-  const bookmarked = resource._bookmarked;
+function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, onDownload, onRate, onEdit, onDelete }) {
+  const isOwner   = resource.uploadedBy?._id === userId || resource.uploadedBy === userId;
+  const cfg       = TYPE_CFG[resource.type] || TYPE_CFG.article;
+  const diffBadge = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
+  const isBookmarked = bookmarkedIds.has(resource._id);
 
-  const handleDownload = () => {
+  const handleAccess = () => {
     onDownload(resource._id);
     const url = resource.file?.url || resource.externalLink;
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    else toast('No link or file attached to this resource.', { icon: 'ℹ️' });
   };
 
   return (
-    <div className="bg-white border border-outline-variant/20 editorial-shadow flex flex-col group hover:border-gold-accent/30 transition-all duration-200">
-      {/* Top color band */}
-      <div className={`h-1.5 w-full ${bg}`} />
+    <div className="group bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
 
-      <div className="p-5 flex flex-col flex-1 gap-3">
+      {/* Thumbnail */}
+      <div className="relative aspect-video overflow-hidden flex-shrink-0">
+        {resource.thumbnail ? (
+          <img
+            src={resource.thumbnail}
+            alt={resource.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${cfg.thumb} flex items-center justify-center group-hover:scale-105 transition-transform duration-500`}>
+            <span className="material-symbols-outlined text-white/30 text-[64px]">{cfg.icon}</span>
+          </div>
+        )}
+
         {/* Type + Difficulty badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${meta.color}`}>
-            <span className="material-symbols-outlined text-[13px]">{meta.icon}</span>
-            {resource.type}
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          <span className={`px-2 py-1 ${cfg.badge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
+            {cfg.label}
           </span>
-          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${diffColor}`}>
+          <span className={`px-2 py-1 ${diffBadge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
             {resource.difficulty}
           </span>
           {resource.isPremium && (
-            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-gold-accent/10 text-gold-accent border border-gold-accent/20">
+            <span className="px-2 py-1 bg-gold-accent/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
               Premium
             </span>
           )}
           {isOwner && !resource.isApproved && (
-            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-amber-50 text-amber-700 border border-amber-100">
+            <span className="px-2 py-1 bg-amber-500/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
               Pending
             </span>
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="font-serif-alt text-base font-bold text-on-surface leading-snug line-clamp-2 group-hover:text-gold-accent transition-colors">
+        {/* Bookmark heart button */}
+        <button
+          onClick={() => onBookmark(resource._id)}
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+            isBookmarked
+              ? 'bg-gold-accent text-white'
+              : 'bg-black/20 text-white hover:bg-gold-accent hover:text-white'
+          }`}
+          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {isBookmarked ? 'bookmark' : 'bookmark_border'}
+          </span>
+        </button>
+      </div>
+
+      {/* Card body */}
+      <div className="p-5 flex flex-col flex-1 gap-3">
+        <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
           {resource.title}
         </h3>
-
-        {/* Description */}
-        <p className="text-xs text-outline leading-relaxed line-clamp-2 flex-1">
+        <p className="text-sm text-slate-500 line-clamp-2 flex-1">
           {resource.description}
         </p>
 
-        {/* Meta row */}
-        <div className="flex items-center gap-2 text-[10px] text-outline flex-wrap">
-          <span className="font-medium">{fmtCat(resource.category)}</span>
-          {resource.author && (
-            <>
-              <span>·</span>
-              <span>{resource.author}</span>
-            </>
-          )}
+        {/* Author + date */}
+        <div className="flex items-center justify-between text-[11px] text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">person</span>
+            {resource.author || resource.uploadedBy?.name || 'LeadsHer'}
+          </span>
+          <span>{fmtDate(resource.createdAt)}</span>
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 text-[11px] text-outline">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px] text-gold-accent">star</span>
-            {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
-            {resource.ratingCount > 0 && <span className="text-[10px]">({resource.ratingCount})</span>}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">visibility</span>
-            {fmt(resource.views)}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">download</span>
-            {fmt(resource.downloads)}
-          </span>
-        </div>
-
-        {/* Tags */}
-        {resource.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {resource.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-[10px] px-2 py-0.5 bg-surface text-outline border border-outline-variant/20 font-medium">
-                {tag}
-              </span>
-            ))}
-            {resource.tags.length > 3 && (
-              <span className="text-[10px] px-2 py-0.5 text-outline">+{resource.tags.length - 3}</span>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 pt-1 border-t border-outline-variant/10 flex-wrap">
-          {/* Bookmark */}
-          <button
-            onClick={() => onBookmark(resource._id)}
-            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium border transition-all ${
-              bookmarked
-                ? 'bg-gold-accent/10 text-gold-accent border-gold-accent/30'
-                : 'text-outline border-outline-variant/20 hover:border-gold-accent/30 hover:text-gold-accent'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">
-              {bookmarked ? 'bookmark' : 'bookmark_border'}
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1 font-semibold text-gold-accent">
+              <span className="material-symbols-outlined text-[14px]">download</span>
+              {fmt(resource.downloads)}
             </span>
-            {bookmarked ? 'Saved' : 'Save'}
-          </button>
-
-          {/* Rate */}
+            <span className="flex items-center gap-1 font-semibold text-yellow-500">
+              <span className="material-symbols-outlined text-[14px]">star</span>
+              {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
+            </span>
+          </div>
           <button
             onClick={() => onRate(resource)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-outline-variant/20 text-outline hover:border-gold-accent/30 hover:text-gold-accent transition-all"
+            className="text-[11px] text-slate-400 hover:text-gold-accent transition-colors flex items-center gap-0.5"
           >
-            <span className="material-symbols-outlined text-[14px]">star_border</span>
+            <span className="material-symbols-outlined text-[13px]">star_border</span>
             Rate
           </button>
-
-          {/* Open / Download */}
-          {(resource.file?.url || resource.externalLink) && (
-            <button
-              onClick={handleDownload}
-              className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gold-accent text-white hover:opacity-90 transition-all"
-            >
-              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-              Open
-            </button>
-          )}
         </div>
+
+        {/* Access button */}
+        <button
+          onClick={handleAccess}
+          className="w-full py-2 rounded-lg border border-gold-accent/40 text-gold-accent text-sm font-bold hover:bg-gold-accent hover:text-white transition-all"
+        >
+          Access Resource
+        </button>
 
         {/* Owner controls */}
         {isOwner && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-2">
             <button
               onClick={() => onEdit(resource)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-outline-variant/20 text-outline hover:border-primary/40 hover:text-primary transition-all"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 text-slate-500 hover:border-primary/40 hover:text-primary rounded-lg transition-all"
             >
-              <span className="material-symbols-outlined text-[14px]">edit</span>
+              <span className="material-symbols-outlined text-[13px]">edit</span>
               Edit
             </button>
             <button
               onClick={() => onDelete(resource._id)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-outline-variant/20 text-outline hover:border-red-400 hover:text-red-600 transition-all"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 text-slate-500 hover:border-red-400 hover:text-red-600 rounded-lg transition-all"
             >
-              <span className="material-symbols-outlined text-[14px]">delete</span>
+              <span className="material-symbols-outlined text-[13px]">delete</span>
               Delete
             </button>
-            {isOwner && resource.isApproved && (
-              <div className="ml-auto flex items-center gap-1 text-[10px] text-green-700">
-                <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                Approved
-              </div>
-            )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Bookmarks Drawer ───────────────────────────────────────────────────── */
+
+function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className="fixed bottom-0 z-50 transition-all"
+      style={{ left: sidebarWidth, right: 0 }}
+    >
+      <div className="mx-6">
+        <div className={`bg-white border-x border-t border-slate-200 rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ${open ? '' : ''}`}>
+          {/* Summary / toggle */}
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gold-accent/10 flex items-center justify-center text-gold-accent">
+                <span className="material-symbols-outlined text-[18px]">bookmarks</span>
+              </div>
+              <span className="text-sm font-bold text-on-surface">Your Bookmarks</span>
+              {bookmarkCount > 0 && (
+                <span className="text-xs bg-gold-accent text-white px-2 py-0.5 rounded-full font-bold">
+                  {bookmarkCount}
+                </span>
+              )}
+            </div>
+            <span className={`material-symbols-outlined text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+              keyboard_arrow_up
+            </span>
+          </button>
+
+          {/* Drawer content */}
+          {open && (
+            <div className="border-t border-slate-100 p-5 pt-3">
+              {bookmarks.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">No bookmarks yet. Save resources to find them here.</p>
+              ) : (
+                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                  {bookmarks.map((r) => {
+                    const cfg = TYPE_CFG[r.type] || TYPE_CFG.article;
+                    return (
+                      <div key={r._id} className="flex-shrink-0 w-56 flex gap-3 p-3 bg-slate-50 rounded-xl border border-transparent hover:border-gold-accent/30 transition-all cursor-pointer">
+                        <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${cfg.thumb} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+                          {r.thumbnail ? (
+                            <img src={r.thumbnail} alt={r.title} className="w-full h-full object-cover rounded-lg" />
+                          ) : (
+                            <span className="material-symbols-outlined text-white/50 text-[22px]">{cfg.icon}</span>
+                          )}
+                        </div>
+                        <div className="flex flex-col justify-center overflow-hidden flex-1 min-w-0">
+                          <h4 className="text-xs font-bold truncate text-on-surface">{r.title}</h4>
+                          <span className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{cfg.label}</span>
+                        </div>
+                        <button
+                          onClick={() => onRemove(r._id)}
+                          className="self-start text-slate-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
+                          title="Remove bookmark"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -230,10 +301,10 @@ function ResourceCard({ resource, userId, isMentor, onBookmark, onDownload, onRa
 
 function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]       = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-  const [fileRef, setFileRef] = useState(null);
+  const [error, setError]         = useState('');
+  const fileInputRef              = useRef(null);
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -258,9 +329,9 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
   const handleSubmit = async () => {
     setError('');
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
-    if (!form.title.trim()) { setError('Title is required'); return; }
+    if (!form.title.trim())       { setError('Title is required'); return; }
     if (!form.description.trim()) { setError('Description is required'); return; }
-    if (tags.length < 2) { setError('At least 2 tags required (comma-separated)'); return; }
+    if (tags.length < 2)          { setError('At least 2 tags required (comma-separated)'); return; }
 
     const payload = {
       title: form.title.trim(),
@@ -276,150 +347,111 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
     };
 
     setSaving(true);
-    try {
-      await onSave(payload);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
+    try { await onSave(payload); }
+    catch (err) { setError(err.response?.data?.message || 'Failed to save'); }
+    finally { setSaving(false); }
   };
 
-  const labelClass = 'block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5';
+  const lbl = 'block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5';
+  const inp = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent/50 transition-all';
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white border border-outline-variant/20 editorial-shadow max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-outline-variant/15 flex items-center justify-between sticky top-0 bg-white z-10">
+    <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
           <h2 className="font-serif-alt text-xl font-bold text-on-surface">
-            {mode === 'edit' ? 'Edit Resource' : 'Upload Resource'}
+            {mode === 'edit' ? 'Edit Resource' : 'Upload New Resource'}
           </h2>
-          <button onClick={onClose} className="text-outline hover:text-on-surface transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
           {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-100 text-red-700 text-sm">
+            <div className="px-4 py-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg">
               {error}
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className={labelClass}>Title *</label>
-              <input className="w-full input" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Resource title" />
+              <label className={lbl}>Title *</label>
+              <input className={inp} value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Resource title" />
             </div>
-
             <div className="sm:col-span-2">
-              <label className={labelClass}>Description *</label>
-              <textarea className="w-full input h-24 resize-y" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Brief description of this resource..." />
+              <label className={lbl}>Description *</label>
+              <textarea className={`${inp} h-24 resize-y`} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Brief description..." />
             </div>
-
             <div>
-              <label className={labelClass}>Type *</label>
-              <select className="w-full input" value={form.type} onChange={(e) => set('type', e.target.value)}>
+              <label className={lbl}>Type *</label>
+              <select className={inp} value={form.type} onChange={(e) => set('type', e.target.value)}>
                 {TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
               </select>
             </div>
-
             <div>
-              <label className={labelClass}>Category *</label>
-              <select className="w-full input" value={form.category} onChange={(e) => set('category', e.target.value)}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{fmtCat(c)}</option>)}
+              <label className={lbl}>Category *</label>
+              <select className={inp} value={form.category} onChange={(e) => set('category', e.target.value)}>
+                {CATEGORIES.filter((c) => c.value).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
-
             <div>
-              <label className={labelClass}>Difficulty</label>
-              <select className="w-full input" value={form.difficulty} onChange={(e) => set('difficulty', e.target.value)}>
+              <label className={lbl}>Difficulty</label>
+              <select className={inp} value={form.difficulty} onChange={(e) => set('difficulty', e.target.value)}>
                 {DIFFICULTIES.map((d) => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
               </select>
             </div>
-
             <div>
-              <label className={labelClass}>Author</label>
-              <input className="w-full input" value={form.author} onChange={(e) => set('author', e.target.value)} placeholder="Author name (optional)" />
+              <label className={lbl}>Author</label>
+              <input className={inp} value={form.author} onChange={(e) => set('author', e.target.value)} placeholder="Author name (optional)" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={lbl}>Tags * (comma-separated, min 2)</label>
+              <input className={inp} value={form.tags} onChange={(e) => set('tags', e.target.value)} placeholder="leadership, women, strategy" />
             </div>
 
+            {/* Content source */}
             <div className="sm:col-span-2">
-              <label className={labelClass}>Tags * (comma-separated, min 2)</label>
-              <input className="w-full input" value={form.tags} onChange={(e) => set('tags', e.target.value)} placeholder="leadership, women, strategy, communication" />
-            </div>
-
-            {/* Content source toggle */}
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Content Source</label>
+              <label className={lbl}>Content Source</label>
               <div className="flex gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => set('fileMode', 'link')}
-                  className={`px-4 py-2 text-xs font-bold border transition-all ${form.fileMode === 'link' ? 'bg-gold-accent text-white border-gold-accent' : 'border-outline-variant/20 text-outline hover:border-gold-accent/30'}`}
-                >
-                  External Link
-                </button>
-                <button
-                  type="button"
-                  onClick={() => set('fileMode', 'file')}
-                  className={`px-4 py-2 text-xs font-bold border transition-all ${form.fileMode === 'file' ? 'bg-gold-accent text-white border-gold-accent' : 'border-outline-variant/20 text-outline hover:border-gold-accent/30'}`}
-                >
-                  Upload File
-                </button>
+                {['link', 'file'].map((m) => (
+                  <button key={m} type="button" onClick={() => set('fileMode', m)}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${form.fileMode === m ? 'bg-gold-accent text-white border-gold-accent' : 'border-slate-200 text-slate-500 hover:border-gold-accent/40'}`}>
+                    {m === 'link' ? 'External Link' : 'Upload File'}
+                  </button>
+                ))}
               </div>
-
               {form.fileMode === 'link' ? (
-                <input
-                  className="w-full input"
-                  value={form.externalLink}
-                  onChange={(e) => set('externalLink', e.target.value)}
-                  placeholder="https://..."
-                  type="url"
-                />
+                <input className={inp} value={form.externalLink} onChange={(e) => set('externalLink', e.target.value)} placeholder="https://..." type="url" />
               ) : (
-                <div className="border border-dashed border-outline-variant/30 p-4 text-center">
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-gold-accent/40 transition-colors">
                   {uploading ? (
                     <div className="flex justify-center"><Spinner /></div>
                   ) : uploadedFile ? (
-                    <div className="text-sm text-green-700 flex items-center justify-center gap-2">
+                    <div className="text-sm text-emerald-600 flex items-center justify-center gap-2 font-medium">
                       <span className="material-symbols-outlined text-[18px]">check_circle</span>
                       File uploaded successfully
                     </div>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[32px] text-outline">cloud_upload</span>
-                      <p className="text-sm text-outline mt-1">Click to select file</p>
+                      <span className="material-symbols-outlined text-[40px] text-slate-300">cloud_upload</span>
+                      <p className="text-sm text-slate-400 mt-2">PDF, DOC, MP4, MP3, ZIP supported</p>
+                      <button type="button" onClick={() => fileInputRef.current?.click()}
+                        className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-all">
+                        Choose File
+                      </button>
                     </>
                   )}
-                  <input
-                    ref={(r) => setFileRef(r)}
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mp3,.zip"
-                  />
-                  {!uploading && !uploadedFile && (
-                    <button
-                      type="button"
-                      onClick={() => fileRef?.click()}
-                      className="mt-2 px-4 py-2 text-xs font-bold border border-outline-variant/20 text-outline hover:border-gold-accent/30 hover:text-gold-accent transition-all"
-                    >
-                      Choose File
-                    </button>
-                  )}
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mp3,.zip" />
                 </div>
               )}
             </div>
 
             {isMentor && (
               <div className="sm:col-span-2 flex items-center gap-3">
-                <input
-                  id="isPremium"
-                  type="checkbox"
-                  checked={form.isPremium}
-                  onChange={(e) => set('isPremium', e.target.checked)}
-                  className="w-4 h-4 accent-gold-accent"
-                />
+                <input id="isPremium" type="checkbox" checked={form.isPremium} onChange={(e) => set('isPremium', e.target.checked)}
+                  className="w-4 h-4 accent-gold-accent rounded" />
                 <label htmlFor="isPremium" className="text-sm text-on-surface font-medium cursor-pointer">
                   Mark as Premium resource
                 </label>
@@ -428,20 +460,13 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-outline-variant/15 flex justify-end gap-3 sticky bottom-0 bg-white">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 text-sm font-bold border border-outline-variant/25 text-outline hover:border-outline/50 transition-colors"
-          >
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+          <button onClick={onClose}
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-500 hover:border-slate-300 rounded-lg transition-colors">
             Cancel
           </button>
-          <button
-            type="button"
-            disabled={saving || uploading}
-            onClick={handleSubmit}
-            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 transition-all"
-          >
+          <button disabled={saving || uploading} onClick={handleSubmit}
+            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
             {saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Upload Resource'}
           </button>
         </div>
@@ -453,80 +478,57 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
 /* ─── Rate Modal ─────────────────────────────────────────────────────────── */
 
 function RateModal({ resource, onClose, onSave }) {
-  const [rating, setRating] = useState(resource._userRating?.rating || 0);
+  const [rating, setRating]   = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [review, setReview] = useState(resource._userRating?.review || '');
-  const [saving, setSaving] = useState(false);
+  const [review, setReview]   = useState('');
+  const [saving, setSaving]   = useState(false);
 
   const handleSubmit = async () => {
     if (!rating) { toast.error('Please select a rating'); return; }
     setSaving(true);
-    try {
-      await onSave(resource._id, { rating, review });
-      onClose();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit rating');
-    } finally {
-      setSaving(false);
-    }
+    try { await onSave(resource._id, { rating, review }); onClose(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to submit rating'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-outline-variant/20 editorial-shadow">
-        <div className="p-5 border-b border-outline-variant/15 flex items-center justify-between">
+    <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-serif-alt text-lg font-bold text-on-surface">Rate this Resource</h2>
-          <button onClick={onClose} className="text-outline hover:text-on-surface transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm font-medium text-on-surface line-clamp-1">{resource.title}</p>
-
+        <div className="p-6 space-y-4">
+          <p className="text-sm font-semibold text-on-surface line-clamp-1">{resource.title}</p>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onMouseEnter={() => setHovered(star)}
-                onMouseLeave={() => setHovered(0)}
-                onClick={() => setRating(star)}
-                className="transition-transform hover:scale-110"
-              >
-                <span className={`material-symbols-outlined text-[32px] ${
-                  star <= (hovered || rating) ? 'text-gold-accent' : 'text-outline/30'
-                }`}>
+              <button key={star} type="button"
+                onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
+                onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200'}`}>
                   {star <= (hovered || rating) ? 'star' : 'star_border'}
                 </span>
               </button>
             ))}
-            <span className="ml-2 text-sm text-outline font-medium">
-              {rating ? ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating] : 'Select'}
+            <span className="ml-2 text-sm text-slate-500 font-medium">
+              {rating ? ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating] : 'Select rating'}
             </span>
           </div>
-
           <div>
-            <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-1.5">
-              Review (optional)
-            </label>
-            <textarea
-              className="w-full input h-20 resize-none"
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              placeholder="Share your thoughts about this resource..."
-              maxLength={500}
-            />
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Review (optional)</label>
+            <textarea className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              value={review} onChange={(e) => setReview(e.target.value)} placeholder="Share your thoughts..." maxLength={500} />
           </div>
         </div>
-        <div className="px-5 py-4 border-t border-outline-variant/15 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2.5 text-sm font-bold border border-outline-variant/25 text-outline hover:border-outline/50 transition-colors">
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+          <button onClick={onClose}
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-500 rounded-lg hover:border-slate-300 transition-colors">
             Cancel
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !rating}
-            className="px-5 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 transition-all"
-          >
+          <button onClick={handleSubmit} disabled={saving || !rating}
+            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
             {saving ? 'Submitting…' : 'Submit Rating'}
           </button>
         </div>
@@ -542,50 +544,45 @@ export default function MentorDashboardResourcesPage() {
   const navigate = useNavigate();
 
   const firstName = user?.name?.split(' ')?.[0] || 'User';
-  const isMentor = user?.role === 'mentor' || user?.role === 'admin';
+  const isMentor  = user?.role === 'mentor' || user?.role === 'admin';
+
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Tabs: all | mine | bookmarks
-  const [tab, setTab] = useState('all');
-
-  // Resources list state
-  const [resources, setResources] = useState([]);
+  /* ── Resources state ── */
+  const [resources, setResources]   = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]       = useState(true);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
+  /* ── Filter state ── */
+  const [searchInput, setSearchInput]         = useState('');
+  const [search, setSearch]                   = useState('');
+  const [activeType, setActiveType]           = useState('all');   // 'all' | type | 'mine'
+  const [filterCategory, setFilterCategory]   = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
-  const [sort, setSort] = useState('-createdAt');
-  const [page, setPage] = useState(1);
+  const [sort, setSort]                       = useState('-createdAt');
+  const [page, setPage]                       = useState(1);
 
-  // Stats
-  const [myStats, setMyStats] = useState({ uploads: 0, downloads: 0, bookmarks: 0 });
+  /* ── Bookmarks state ── */
+  const [bookmarks, setBookmarks]     = useState([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
 
-  // Modals
+  /* ── Modals ── */
   const [uploadModal, setUploadModal] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [rateTarget, setRateTarget] = useState(null);
+  const [editTarget, setEditTarget]   = useState(null);
+  const [rateTarget, setRateTarget]   = useState(null);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
     setLoading(true);
     try {
       let res;
-      if (tab === 'mine') {
+      if (activeType === 'mine') {
         res = await resourceApi.getMyResources({ page, limit: 12 });
-      } else if (tab === 'bookmarks') {
-        res = await resourceApi.getBookmarks({ page, limit: 12 });
       } else {
         res = await resourceApi.getAll({
-          page,
-          limit: 12,
-          sort,
+          page, limit: 12, sort,
           ...(search ? { search } : {}),
-          ...(filterType ? { type: filterType } : {}),
+          ...(activeType !== 'all' ? { type: activeType } : {}),
           ...(filterCategory ? { category: filterCategory } : {}),
           ...(filterDifficulty ? { difficulty: filterDifficulty } : {}),
         });
@@ -598,53 +595,45 @@ export default function MentorDashboardResourcesPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, page, sort, search, filterType, filterCategory, filterDifficulty]);
+  }, [activeType, page, sort, search, filterCategory, filterDifficulty]);
 
-  useEffect(() => {
-    fetchResources();
-  }, [fetchResources]);
+  useEffect(() => { fetchResources(); }, [fetchResources]);
 
-  /* ── Load my stats once ── */
-  useEffect(() => {
-    if (!user?._id) return;
-    Promise.allSettled([
-      resourceApi.getMyResources({ limit: 1 }),
-      resourceApi.getBookmarks({ limit: 1 }),
-    ]).then(([mine, bk]) => {
-      setMyStats({
-        uploads: mine.status === 'fulfilled' ? (mine.value.data?.pagination?.total ?? 0) : 0,
-        bookmarks: bk.status === 'fulfilled' ? (bk.value.data?.pagination?.total ?? 0) : 0,
-        downloads: 0,
-      });
-    });
-  }, [user?._id]);
+  /* ── Fetch bookmarks on mount ── */
+  const fetchBookmarks = useCallback(async () => {
+    try {
+      const res = await resourceApi.getBookmarks({ limit: 50 });
+      const bk  = res.data?.resources || [];
+      setBookmarks(bk);
+      setBookmarkedIds(new Set(bk.map((r) => r._id)));
+    } catch { /* silently ignore */ }
+  }, []);
+
+  useEffect(() => { fetchBookmarks(); }, [fetchBookmarks]);
 
   /* ── Handlers ── */
   const handleBookmark = async (id) => {
     try {
       const res = await resourceApi.toggleBookmark(id);
-      setResources((prev) =>
-        prev.map((r) =>
-          r._id === id
-            ? { ...r, _bookmarked: res.data.bookmarked, bookmarkCount: res.data.bookmarkCount }
-            : r
-        )
-      );
+      if (res.data.bookmarked) {
+        setBookmarkedIds((prev) => new Set([...prev, id]));
+        // Add to bookmarks drawer
+        const target = resources.find((r) => r._id === id);
+        if (target) setBookmarks((prev) => [target, ...prev.filter((b) => b._id !== id)]);
+      } else {
+        setBookmarkedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+        setBookmarks((prev) => prev.filter((b) => b._id !== id));
+      }
       toast.success(res.data.bookmarked ? 'Saved to bookmarks' : 'Removed from bookmarks');
     } catch {
       toast.error('Failed to update bookmark');
     }
   };
 
+  const handleRemoveBookmark = (id) => handleBookmark(id);
+
   const handleDownload = async (id) => {
-    try {
-      await resourceApi.trackDownload(id);
-      setResources((prev) =>
-        prev.map((r) => (r._id === id ? { ...r, downloads: (r.downloads || 0) + 1 } : r))
-      );
-    } catch {
-      // silently ignore tracking failure
-    }
+    try { await resourceApi.trackDownload(id); } catch { /* ignore */ }
   };
 
   const handleRate = (resource) => setRateTarget(resource);
@@ -652,11 +641,7 @@ export default function MentorDashboardResourcesPage() {
   const submitRating = async (id, data) => {
     const res = await resourceApi.rate(id, data);
     setResources((prev) =>
-      prev.map((r) =>
-        r._id === id
-          ? { ...r, averageRating: res.data.averageRating, ratingCount: res.data.ratingCount }
-          : r
-      )
+      prev.map((r) => r._id === id ? { ...r, averageRating: res.data.averageRating, ratingCount: res.data.ratingCount } : r)
     );
     toast.success('Rating submitted');
   };
@@ -673,13 +658,10 @@ export default function MentorDashboardResourcesPage() {
   };
 
   const handleCreate = async (payload) => {
-    const res = await resourceApi.create(payload);
+    await resourceApi.create(payload);
     toast.success('Resource uploaded — pending admin approval');
     setUploadModal(false);
-    setMyStats((s) => ({ ...s, uploads: s.uploads + 1 }));
-    if (tab === 'mine') {
-      setResources((prev) => [res.data, ...prev]);
-    }
+    if (activeType === 'mine') fetchResources();
   };
 
   const handleEdit = (resource) => {
@@ -692,7 +674,7 @@ export default function MentorDashboardResourcesPage() {
 
   const handleUpdate = async (payload) => {
     const res = await resourceApi.update(editTarget._id, payload);
-    setResources((prev) => prev.map((r) => (r._id === editTarget._id ? { ...r, ...res.data } : r)));
+    setResources((prev) => prev.map((r) => r._id === editTarget._id ? { ...r, ...res.data } : r));
     toast.success('Resource updated');
     setEditTarget(null);
   };
@@ -703,43 +685,48 @@ export default function MentorDashboardResourcesPage() {
     setPage(1);
   };
 
-  const handleTabChange = (t) => {
-    setTab(t);
+  const handleTypeChange = (type) => {
+    setActiveType(type);
     setPage(1);
     setSearch('');
     setSearchInput('');
-    setFilterType('');
-    setFilterCategory('');
     setFilterDifficulty('');
+    setFilterCategory('');
     setSort('-createdAt');
   };
 
   /* ── Sidebar nav ── */
-  const mentorNav = [
-    { to: '/dashboard',            icon: 'dashboard',      label: 'Dashboard'   },
-    { to: '/dashboard/stories',    icon: 'auto_stories',   label: 'Stories'     },
-    { to: '/dashboard/mentorship', icon: 'groups',         label: 'Mentorship'  },
-    { to: '/events',               icon: 'event',          label: 'Events'      },
-    { to: '/resources',            icon: 'library_books',  label: 'Resources'   },
-    { to: '/forum',                icon: 'forum',          label: 'Forum'       },
-    { to: '/dashboard/settings',   icon: 'settings',       label: 'Settings'    },
+  const sidebarNav = [
+    { to: '/dashboard',            icon: 'dashboard',     label: 'Dashboard'  },
+    { to: '/dashboard/stories',    icon: 'auto_stories',  label: 'Stories'    },
+    { to: '/dashboard/mentorship', icon: 'groups',        label: 'Mentorship' },
+    { to: '/events',               icon: 'event',         label: 'Events'     },
+    { to: '/dashboard/resources',   icon: 'library_books', label: 'Resources'  },
+    { to: '/forum',                icon: 'forum',         label: 'Forum'      },
+    { to: '/dashboard/settings',   icon: 'settings',      label: 'Settings'   },
   ];
 
-  /* ─────────────────────────────── RENDER ─────────────────────────────── */
-  return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+  const SIDEBAR_W = 260;
 
-        {/* ── Sidebar ────────────────────────────────────────────────── */}
+  /* ─── Type pill buttons ─── */
+  const typePills = [
+    { key: 'all',  label: 'All Resources' },
+    ...TYPES.map((t) => ({ key: t, label: TYPE_CFG[t].label + 's' })),
+    ...(isMentor ? [{ key: 'mine', label: 'My Uploads' }] : []),
+  ];
+
+  /* ──────────────────────── RENDER ──────────────────────────────── */
+  return (
+    <div className="min-h-screen bg-[#f8f6f6]">
+      <div className="relative flex min-h-screen overflow-hidden text-on-surface">
+
+        {/* ── Sidebar ─────────────────────────────────────────────── */}
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
-                />
+                <img alt="User avatar" className="w-full h-full object-cover"
+                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80" />
               </div>
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
             </div>
@@ -754,19 +741,15 @@ export default function MentorDashboardResourcesPage() {
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {mentorNav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/resources'}
+            {sidebarNav.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.to === '/dashboard/resources'}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
+                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive
                       ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
                       : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
                   }`
-                }
-              >
+                }>
                 <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
                 <span className="text-sm font-medium">{item.label}</span>
               </NavLink>
@@ -788,11 +771,11 @@ export default function MentorDashboardResourcesPage() {
           </div>
         </aside>
 
-        {/* ── Main area ──────────────────────────────────────────────── */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
+        {/* ── Main ────────────────────────────────────────────────── */}
+        <main className="ml-[260px] flex-1 flex flex-col min-h-screen pb-20">
 
           {/* Top header */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -804,13 +787,10 @@ export default function MentorDashboardResourcesPage() {
             <div className="max-w-md w-full px-4 hidden md:block">
               <form onSubmit={handleSearch}>
                 <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
-                    search
-                  </span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">search</span>
                   <input
-                    className="w-full bg-surface-container-lowest border border-outline-variant/25 rounded-full py-2 pl-10 pr-4 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-1 focus:ring-gold-accent transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all"
                     placeholder="Search resources..."
-                    type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
@@ -819,36 +799,28 @@ export default function MentorDashboardResourcesPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="w-10 h-10 rounded-full bg-white border border-outline-variant/25 flex items-center justify-center text-outline hover:text-gold-accent transition-colors">
+              <button className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-gold-accent transition-colors">
                 <span className="material-symbols-outlined">help_outline</span>
               </button>
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
+                <button type="button" onClick={() => setProfileOpen((v) => !v)}
+                  className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40">
+                  <img alt="Avatar" className="w-full h-full object-cover"
+                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80" />
                 </button>
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">{user?.name}</p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">{user?.email}</p>
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50">
+                    <div className="px-5 py-4 border-b border-slate-100">
+                      <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name}</p>
+                      <p className="text-xs text-slate-400 line-clamp-1">{user?.email}</p>
                     </div>
-                    <button
-                      type="button"
+                    <button type="button"
                       onClick={async () => {
                         try { await logout(); toast.success('You have signed out.'); }
                         finally { setProfileOpen(false); navigate('/'); }
                       }}
-                      className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
+                      className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-red-50 transition-colors flex items-center gap-2 rounded-b-xl"
+                      role="menuitem">
                       <span className="material-symbols-outlined text-[18px]">logout</span>
                       Sign out
                     </button>
@@ -858,246 +830,191 @@ export default function MentorDashboardResourcesPage() {
             </div>
           </header>
 
-          {/* Page content */}
-          <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+          {/* ── Page content ── */}
+          <div className="flex-1">
 
-            {/* Page header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resources</h1>
-                <p className="text-sm text-outline mt-1">
-                  {tab === 'all' && 'Explore curated resources for women leaders'}
-                  {tab === 'mine' && 'Manage your uploaded resources'}
-                  {tab === 'bookmarks' && 'Your saved resources'}
-                </p>
+
+            {/* Type pills */}
+            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 pt-6 pb-6 px-6">
+              {typePills.map((pill) => (
+                <button
+                  key={pill.key}
+                  onClick={() => handleTypeChange(pill.key)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                    activeType === pill.key
+                      ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
+                      : 'bg-transparent border border-slate-200 text-slate-600 hover:border-gold-accent/50 hover:text-gold-accent'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Filter row */}
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 px-8 py-5">
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                {/* Category dropdown */}
+                <div className="relative min-w-[180px]">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                  >
+                    {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">expand_more</span>
+                </div>
+
+                {/* Difficulty segmented control */}
+                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                  <button
+                    onClick={() => { setFilterDifficulty(''); setPage(1); }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                      !filterDifficulty ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {DIFFICULTIES.map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => { setFilterDifficulty(d); setPage(1); }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
+                        filterDifficulty === d ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'
+                      }`}
+                    >
+                      {d.charAt(0).toUpperCase() + d.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort dropdown */}
+                <div className="relative min-w-[150px]">
+                  <select
+                    value={sort}
+                    onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                  >
+                    {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">sort</span>
+                </div>
+
+                {(search || filterCategory || filterDifficulty) && (
+                  <button
+                    onClick={() => { setSearch(''); setSearchInput(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
+                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">close</span>
+                    Clear
+                  </button>
+                )}
               </div>
+
+              {/* Upload button */}
               {isMentor && (
                 <button
                   onClick={() => setUploadModal(true)}
-                  className="flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10 self-start sm:self-auto"
+                  className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-gold-accent/20"
                 >
-                  <span className="material-symbols-outlined text-[18px]">upload</span>
+                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
                   Upload Resource
                 </button>
               )}
             </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-white border border-outline-variant/20 editorial-shadow p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gold-accent/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-gold-accent text-[20px]">upload_file</span>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-outline font-bold">My Uploads</p>
-                  <p className="text-xl font-bold text-on-surface">{myStats.uploads}</p>
-                </div>
-              </div>
-              <div className="bg-white border border-outline-variant/20 editorial-shadow p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-[20px]">bookmark</span>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-outline font-bold">Bookmarks</p>
-                  <p className="text-xl font-bold text-on-surface">{myStats.bookmarks}</p>
-                </div>
-              </div>
-              <div className="bg-white border border-outline-variant/20 editorial-shadow p-4 flex items-center gap-3 col-span-2 sm:col-span-1">
-                <div className="w-10 h-10 bg-tertiary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-tertiary text-[20px]">library_books</span>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-outline font-bold">Total Found</p>
-                  <p className="text-xl font-bold text-on-surface">{pagination.total}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 border-b border-outline-variant/20">
-              {[
-                { key: 'all',       label: 'All Resources', icon: 'library_books' },
-                { key: 'mine',      label: 'My Uploads',    icon: 'upload_file',   show: isMentor },
-                { key: 'bookmarks', label: 'Bookmarks',     icon: 'bookmark' },
-              ].filter((t) => t.show !== false).map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => handleTabChange(t.key)}
-                  className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 -mb-px transition-all ${
-                    tab === t.key
-                      ? 'text-gold-accent border-gold-accent'
-                      : 'text-outline border-transparent hover:text-on-surface'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Filters (only for "all" tab) */}
-            {tab === 'all' && (
-              <div className="flex flex-wrap gap-3 items-center">
-                {/* Search */}
-                <form onSubmit={handleSearch} className="flex gap-2">
-                  <input
-                    className="input py-2 pl-3 pr-3 text-sm w-48"
-                    placeholder="Search..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                  />
-                  <button type="submit" className="px-4 py-2 bg-gold-accent/10 text-gold-accent border border-gold-accent/20 text-xs font-bold hover:bg-gold-accent/20 transition-all">
-                    Go
-                  </button>
-                </form>
-
-                <select
-                  className="input py-2 text-sm"
-                  value={filterType}
-                  onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
-                >
-                  <option value="">All Types</option>
-                  {TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                </select>
-
-                <select
-                  className="input py-2 text-sm"
-                  value={filterCategory}
-                  onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                >
-                  <option value="">All Categories</option>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{fmtCat(c)}</option>)}
-                </select>
-
-                <select
-                  className="input py-2 text-sm"
-                  value={filterDifficulty}
-                  onChange={(e) => { setFilterDifficulty(e.target.value); setPage(1); }}
-                >
-                  <option value="">All Levels</option>
-                  {DIFFICULTIES.map((d) => <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>)}
-                </select>
-
-                <select
-                  className="input py-2 text-sm ml-auto"
-                  value={sort}
-                  onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                >
-                  {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-
-                {(search || filterType || filterCategory || filterDifficulty) && (
-                  <button
-                    onClick={() => { setSearch(''); setSearchInput(''); setFilterType(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
-                    className="flex items-center gap-1 text-xs text-outline hover:text-red-600 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">close</span>
-                    Clear filters
-                  </button>
-                )}
-              </div>
-            )}
-
             {/* Resource grid */}
-            {loading ? (
-              <div className="flex justify-center py-20">
-                <Spinner size="lg" />
-              </div>
-            ) : resources.length === 0 ? (
-              <div className="bg-white border border-outline-variant/20 editorial-shadow p-16 text-center">
-                <span className="material-symbols-outlined text-[48px] text-outline/30">
-                  {tab === 'bookmarks' ? 'bookmark_border' : tab === 'mine' ? 'upload_file' : 'library_books'}
-                </span>
-                <p className="text-outline mt-3 font-medium">
-                  {tab === 'bookmarks' && "You haven't bookmarked any resources yet."}
-                  {tab === 'mine' && "You haven't uploaded any resources yet."}
-                  {tab === 'all' && (search || filterType || filterCategory || filterDifficulty)
-                    ? 'No resources match your filters.'
-                    : tab === 'all' && 'No approved resources yet.'}
-                </p>
-                {tab === 'mine' && isMentor && (
-                  <button
-                    onClick={() => setUploadModal(true)}
-                    className="mt-4 inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 font-bold text-sm hover:opacity-90 transition-all"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">upload</span>
-                    Upload Your First Resource
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {resources.map((resource) => (
-                  <ResourceCard
-                    key={resource._id}
-                    resource={resource}
-                    userId={user?._id}
-                    isMentor={isMentor}
-                    onBookmark={handleBookmark}
-                    onDownload={handleDownload}
-                    onRate={handleRate}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="px-8 pb-8">
+              {loading ? (
+                <div className="flex justify-center py-24">
+                  <Spinner size="lg" />
+                </div>
+              ) : resources.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
+                  <span className="material-symbols-outlined text-[56px] text-slate-200">library_books</span>
+                  <p className="text-slate-400 mt-3 font-medium">
+                    {activeType === 'mine'
+                      ? "You haven't uploaded any resources yet."
+                      : search || filterCategory || filterDifficulty
+                        ? 'No resources match your filters.'
+                        : 'No approved resources available yet.'}
+                  </p>
+                  {activeType === 'mine' && isMentor && (
+                    <button
+                      onClick={() => setUploadModal(true)}
+                      className="mt-5 inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 font-bold text-sm rounded-lg hover:opacity-90 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">upload</span>
+                      Upload Your First Resource
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {resources.map((resource) => (
+                    <ResourceCard
+                      key={resource._id}
+                      resource={resource}
+                      userId={user?._id}
+                      isMentor={isMentor}
+                      bookmarkedIds={bookmarkedIds}
+                      onBookmark={handleBookmark}
+                      onDownload={handleDownload}
+                      onRate={handleRate}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              )}
 
-            {/* Pagination */}
-            {!loading && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="px-4 py-2 text-sm font-medium border border-outline-variant/20 text-outline hover:border-gold-accent/30 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  ← Prev
-                </button>
-                <span className="px-4 py-2 text-sm text-outline">
-                  Page {pagination.page} of {pagination.totalPages}
-                </span>
-                <button
-                  disabled={page >= pagination.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="px-4 py-2 text-sm font-medium border border-outline-variant/20 text-outline hover:border-gold-accent/30 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
+              {/* Pagination */}
+              {!loading && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    ← Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm text-slate-500">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <button disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)}
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Footer */}
-            <footer className="text-center text-xs text-outline/50 pt-4 pb-2">
+            <div className="text-center text-xs text-slate-400 py-4">
               © 2026 LEADSHER. BUILT FOR BRILLIANCE.
-            </footer>
+            </div>
           </div>
         </main>
       </div>
 
-      {/* ── Modals ────────────────────────────────────────────────────── */}
+      {/* ── Bookmarks bottom drawer ──────────────────────────────── */}
+      <BookmarksDrawer
+        bookmarks={bookmarks}
+        bookmarkCount={bookmarkedIds.size}
+        onRemove={handleRemoveBookmark}
+        sidebarWidth={SIDEBAR_W}
+      />
+
+      {/* ── Modals ────────────────────────────────────────────────── */}
       {uploadModal && (
-        <ResourceFormModal
-          mode="create"
-          isMentor={isMentor}
-          onClose={() => setUploadModal(false)}
-          onSave={handleCreate}
-        />
+        <ResourceFormModal mode="create" isMentor={isMentor}
+          onClose={() => setUploadModal(false)} onSave={handleCreate} />
       )}
       {editTarget && (
-        <ResourceFormModal
-          mode="edit"
-          initial={editTarget}
-          isMentor={isMentor}
-          onClose={() => setEditTarget(null)}
-          onSave={handleUpdate}
-        />
+        <ResourceFormModal mode="edit" initial={editTarget} isMentor={isMentor}
+          onClose={() => setEditTarget(null)} onSave={handleUpdate} />
       )}
       {rateTarget && (
-        <RateModal
-          resource={rateTarget}
-          onClose={() => setRateTarget(null)}
-          onSave={submitRating}
-        />
+        <RateModal resource={rateTarget}
+          onClose={() => setRateTarget(null)} onSave={submitRating} />
       )}
     </div>
   );
