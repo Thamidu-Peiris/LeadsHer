@@ -97,7 +97,7 @@ export default function MentorDashboardCreateStoryPage() {
   return (
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
@@ -148,7 +148,7 @@ export default function MentorDashboardCreateStoryPage() {
         </aside>
 
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">
                 Home
@@ -182,7 +182,7 @@ export default function MentorDashboardCreateStoryPage() {
                 </button>
 
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
                         {user?.name || 'Mentor'}
@@ -217,7 +217,7 @@ export default function MentorDashboardCreateStoryPage() {
           {/* Luminary Editor */}
           <div className="flex h-[calc(100vh-64px)] overflow-hidden">
             {/* Left: Editorial Canvas */}
-            <section className="w-[65%] h-full overflow-y-auto bg-white border-r border-outline-variant/15">
+            <section className="w-[65%] h-full overflow-y-auto bg-white dark:bg-surface-container-lowest border-r border-outline-variant/15">
               <div className="max-w-4xl mx-auto px-12 py-10">
                 {/* Upload Zone */}
                 <div className="mb-12">
@@ -289,7 +289,7 @@ export default function MentorDashboardCreateStoryPage() {
                 </div>
 
                 {/* Editor Toolbar (visual) */}
-                <div className="sticky top-4 z-40 mb-8 p-1 bg-white border border-outline-variant/25 rounded-xl shadow-xl shadow-black/5 flex items-center gap-1 w-fit mx-auto">
+                <div className="sticky top-4 z-40 mb-8 p-1 bg-white dark:bg-surface-container border border-outline-variant/25 rounded-xl shadow-xl shadow-black/5 flex items-center gap-1 w-fit mx-auto">
                   {[
                     'format_bold', 'format_italic', 'format_quote',
                     'DIV',
@@ -367,7 +367,7 @@ export default function MentorDashboardCreateStoryPage() {
                         className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1.5 transition-all ${
                           active
                             ? 'border-primary bg-primary/10 text-on-surface'
-                            : 'border-outline-variant/25 bg-white hover:border-primary/40'
+                            : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-primary/40'
                         }`}
                       >
                         <span className={`material-symbols-outlined ${active ? 'text-primary' : 'opacity-50'}`}>
@@ -398,7 +398,7 @@ export default function MentorDashboardCreateStoryPage() {
                 <input
                   value={form.tags}
                   onChange={(e) => setField('tags', e.target.value)}
-                  className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-3 text-sm focus:ring-primary focus:border-primary outline-none transition-all"
+                  className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm focus:ring-primary focus:border-primary outline-none transition-all"
                   placeholder="Add tags (comma-separated)…"
                 />
               </div>
@@ -423,7 +423,7 @@ export default function MentorDashboardCreateStoryPage() {
           </div>
 
           {/* Editor top actions bar (inside main) */}
-          <div className="fixed top-0 right-0 left-[260px] h-16 bg-white/80 backdrop-blur-md border-b border-outline-variant/20 z-40 flex items-center justify-between px-6">
+          <div className="fixed top-0 right-0 left-[260px] h-16 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/20 z-40 flex items-center justify-between px-6">
             <div className="flex items-center gap-6">
               <button
                 type="button"

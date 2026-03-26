@@ -2,13 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Light mode tokens ────────────────────────────────────────────── */
+:root {
+  --c-outline:                    123 117 131;
+  --c-surface-dim:                218 218 216;
+  --c-error-container:            255 218 214;
+  --c-on-tertiary-fixed-variant:  121 43 69;
+  --c-on-error:                   255 255 255;
+  --c-on-primary:                 255 255 255;
+  --c-inverse-primary:            210 188 255;
+  --c-surface-container-high:     233 232 230;
+  --c-surface:                    250 249 247;
+  --c-on-background:              26 28 27;
+  --c-secondary:                  137 75 98;
+  --c-tertiary-fixed-dim:         255 177 196;
+  --c-error:                      186 26 26;
+  --c-on-surface-variant:         73 69 81;
+  --c-background:                 250 249 247;
+  --c-tertiary:                   139 57 83;
+  --c-on-secondary-fixed:         56 8 31;
+  --c-secondary-container:        255 176 203;
+  --c-inverse-surface:            47 49 48;
+  --c-inverse-on-surface:         241 241 239;
+  --c-surface-container:          239 238 236;
+  --c-on-primary-fixed:           37 0 90;
+  --c-secondary-fixed:            255 217 227;
+  --c-primary-container:          123 91 190;
+  --c-outline-variant:            203 195 211;
+  --c-surface-bright:             250 249 247;
+  --c-on-surface:                 26 28 27;
+  --c-surface-container-highest:  227 226 224;
+  --c-on-secondary-container:     123 63 86;
+  --c-surface-container-lowest:   255 255 255;
+  --c-primary-fixed-dim:          210 188 255;
+  --c-on-secondary:               255 255 255;
+  --c-primary:                    98 66 163;
+  --c-on-tertiary:                255 255 255;
+  --c-primary-fixed:              234 221 255;
+  --c-surface-container-low:      244 243 241;
+  --c-surface-tint:               107 75 173;
+  --c-tertiary-fixed:             255 217 224;
+  --c-on-tertiary-container:      255 236 239;
+  --c-on-primary-container:       247 238 255;
+  --c-on-error-container:         147 0 10;
+  --c-on-primary-fixed-variant:   83 50 148;
+  --c-tertiary-container:         169 81 107;
+  --c-surface-variant:            227 226 224;
+  --c-on-secondary-fixed-variant: 109 52 74;
+  --c-secondary-fixed-dim:        255 176 203;
+  --c-gold-accent:                212 175 55;
+}
+
+/* ─── Dark mode tokens ─────────────────────────────────────────────── */
+.dark {
+  --c-outline:                    154 147 168;
+  --c-surface-dim:                16 15 22;
+  --c-error-container:            147 0 10;
+  --c-on-tertiary-fixed-variant:  239 184 200;
+  --c-on-error:                   105 0 5;
+  --c-on-primary:                 53 0 94;
+  --c-inverse-primary:            98 66 163;
+  --c-surface-container-high:     52 49 71;
+  --c-surface:                    16 15 22;
+  --c-on-background:              230 224 240;
+  --c-secondary:                  215 183 193;
+  --c-tertiary-fixed-dim:         239 184 200;
+  --c-error:                      255 180 171;
+  --c-on-surface-variant:         203 197 217;
+  --c-background:                 16 15 22;
+  --c-tertiary:                   239 184 200;
+  --c-on-secondary-fixed:         56 8 31;
+  --c-secondary-container:        97 60 78;
+  --c-inverse-surface:            230 224 240;
+  --c-inverse-on-surface:         47 49 48;
+  --c-surface-container:          43 41 59;
+  --c-on-primary-fixed:           37 0 90;
+  --c-secondary-fixed:            97 60 78;
+  --c-primary-container:          79 55 139;
+  --c-outline-variant:            71 69 90;
+  --c-surface-bright:             36 34 51;
+  --c-on-surface:                 230 224 240;
+  --c-surface-container-highest:  62 60 84;
+  --c-on-secondary-container:     215 183 193;
+  --c-surface-container-lowest:   26 24 36;
+  --c-primary-fixed-dim:          79 55 139;
+  --c-on-secondary:               75 14 37;
+  --c-primary:                    208 188 255;
+  --c-on-tertiary:                78 14 37;
+  --c-primary-fixed:              79 55 139;
+  --c-surface-container-low:      34 32 47;
+  --c-surface-tint:               208 188 255;
+  --c-tertiary-fixed:             99 59 72;
+  --c-on-tertiary-container:      239 184 200;
+  --c-on-primary-container:       208 188 255;
+  --c-on-error-container:         255 180 171;
+  --c-on-primary-fixed-variant:   208 188 255;
+  --c-tertiary-container:         99 59 72;
+  --c-surface-variant:            71 69 90;
+  --c-on-secondary-fixed-variant: 215 183 193;
+  --c-secondary-fixed-dim:        97 60 78;
+  --c-gold-accent:                228 196 80;
+}
+
 @layer base {
   html { scroll-behavior: smooth; }
   body {
-    background-color: #FAF9F7;
-    color: #1A1C1B;
+    background-color: rgb(var(--c-surface));
+    color: rgb(var(--c-on-surface));
     font-family: 'DM Sans', sans-serif;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
@@ -48,13 +151,19 @@
     @apply bg-surface-container-lowest border border-outline-variant/10;
   }
   .editorial-shadow {
-    box-shadow: 0 20px 40px rgba(26, 28, 27, 0.04);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+  }
+  .dark .editorial-shadow {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
   }
   /* Glass nav */
   .glass-nav {
-    background: rgba(250, 249, 247, 0.7);
+    background: rgba(250, 249, 247, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+  }
+  .dark .glass-nav {
+    background: rgba(16, 15, 22, 0.85);
   }
   /* Marquee */
   .marquee { display: flex; overflow: hidden; user-select: none; gap: 2rem; }

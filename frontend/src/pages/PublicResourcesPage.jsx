@@ -56,7 +56,7 @@ function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, on
   const isBookmarked = bookmarkedIds.has(resource._id);
 
   return (
-    <div className="group bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -108,12 +108,12 @@ function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, on
         <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
           {resource.title}
         </h3>
-        <p className="text-sm text-slate-500 line-clamp-2 flex-1">
+        <p className="text-sm text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1">
           {resource.description}
         </p>
 
         {/* Author + date */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-outline">
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">person</span>
             {resource.author || resource.uploadedBy?.name || 'LeadsHer'}
@@ -122,7 +122,7 @@ function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, on
         </div>
 
         {/* Stats */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-outline-variant/20">
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1 font-semibold text-gold-accent">
               <span className="material-symbols-outlined text-[14px]">download</span>
@@ -260,14 +260,14 @@ export default function PublicResourcesPage() {
 
   /* ─── RENDER ──────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#f8f6f6] pt-[72px]">
+    <div className="min-h-screen bg-[#f8f6f6] dark:bg-[#100f16] pt-[72px]">
 
       {/* Hero */}
       <div className="text-center px-6 pt-16 pb-10">
         <h1 className="font-serif-alt text-5xl md:text-7xl font-bold text-on-surface mb-4">
           Leadership Resource Library
         </h1>
-        <p className="text-lg text-slate-500 max-w-xl mx-auto mb-8">
+        <p className="text-lg text-slate-500 dark:text-on-surface-variant max-w-xl mx-auto mb-8">
           Curated guides, ebooks, videos, and tools designed to accelerate your growth as a visionary leader.
         </p>
         {/* Hero search */}
@@ -275,7 +275,7 @@ export default function PublicResourcesPage() {
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gold-accent text-[22px]">search</span>
             <input
-              className="w-full h-14 pl-12 pr-4 bg-white border border-slate-200 rounded-xl text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/50 focus:border-gold-accent/50 transition-all shadow-sm"
+              className="w-full h-14 pl-12 pr-4 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-xl text-base placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/50 focus:border-gold-accent/50 transition-all shadow-sm"
               placeholder="Search for articles, workshops, or mentors..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -285,7 +285,7 @@ export default function PublicResourcesPage() {
       </div>
 
       {/* Type pills */}
-      <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 pb-6 px-6">
+      <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pb-6 px-6">
         {typePills.map((pill) => (
           <button
             key={pill.key}
@@ -293,7 +293,7 @@ export default function PublicResourcesPage() {
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
               activeType === pill.key
                 ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
-                : 'bg-transparent border border-slate-200 text-slate-600 hover:border-gold-accent/50 hover:text-gold-accent'
+                : 'bg-transparent border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
             }`}
           >
             {pill.label}
@@ -310,18 +310,18 @@ export default function PublicResourcesPage() {
             <select
               value={filterCategory}
               onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
             >
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
-            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">expand_more</span>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">expand_more</span>
           </div>
 
           {/* Difficulty segmented control */}
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <div className="flex bg-slate-100 dark:bg-surface-container-high p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40">
             <button
               onClick={() => { setFilterDifficulty(''); setPage(1); }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${!filterDifficulty ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'}`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${!filterDifficulty ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'}`}
             >
               All
             </button>
@@ -329,7 +329,7 @@ export default function PublicResourcesPage() {
               <button
                 key={d}
                 onClick={() => { setFilterDifficulty(d); setPage(1); }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${filterDifficulty === d ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'}`}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${filterDifficulty === d ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'}`}
               >
                 {d.charAt(0).toUpperCase() + d.slice(1)}
               </button>
@@ -341,17 +341,17 @@ export default function PublicResourcesPage() {
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); setPage(1); }}
-              className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
             >
               {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">sort</span>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">sort</span>
           </div>
 
           {(search || filterCategory || filterDifficulty) && (
             <button
               onClick={() => { setSearch(''); setSearchInput(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors"
+              className="flex items-center gap-1 text-xs text-slate-400 dark:text-outline hover:text-red-500 transition-colors"
             >
               <span className="material-symbols-outlined text-[15px]">close</span>
               Clear filters
@@ -384,9 +384,9 @@ export default function PublicResourcesPage() {
         {loading ? (
           <div className="flex justify-center py-24"><Spinner size="lg" /></div>
         ) : resources.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
-            <span className="material-symbols-outlined text-[56px] text-slate-200">library_books</span>
-            <p className="text-slate-400 mt-3 font-medium">
+          <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-2xl p-16 text-center">
+            <span className="material-symbols-outlined text-[56px] text-slate-200 dark:text-outline">library_books</span>
+            <p className="text-slate-400 dark:text-on-surface-variant mt-3 font-medium">
               {search || filterCategory || filterDifficulty
                 ? 'No resources match your filters.'
                 : 'No resources available yet. Check back soon!'}
@@ -413,17 +413,17 @@ export default function PublicResourcesPage() {
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="px-5 py-2 text-sm font-semibold border border-slate-200 bg-white text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               ← Previous
             </button>
-            <span className="px-4 py-2 text-sm text-slate-500">
+            <span className="px-4 py-2 text-sm text-slate-500 dark:text-on-surface-variant">
               Page {pagination.page} of {pagination.totalPages}
             </span>
             <button
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="px-5 py-2 text-sm font-semibold border border-slate-200 bg-white text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               Next →
             </button>
@@ -433,11 +433,11 @@ export default function PublicResourcesPage() {
 
       {/* Guest CTA banner */}
       {!isAuthenticated && (
-        <div className="bg-gradient-to-r from-primary/5 via-gold-accent/5 to-tertiary/5 border-t border-slate-200 py-12 px-6 text-center">
+        <div className="bg-gradient-to-r from-primary/5 via-gold-accent/5 to-tertiary/5 border-t border-slate-200 dark:border-outline-variant/40 py-12 px-6 text-center">
           <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-2">
             Unlock the Full Library
           </h2>
-          <p className="text-slate-500 mb-6 max-w-md mx-auto text-sm">
+          <p className="text-slate-500 dark:text-on-surface-variant mb-6 max-w-md mx-auto text-sm">
             Create a free account to bookmark resources, track your downloads, rate content, and upload your own.
           </p>
           <div className="flex justify-center gap-3">
@@ -446,7 +446,7 @@ export default function PublicResourcesPage() {
               Create Free Account
             </Link>
             <Link to="/login"
-              className="border border-slate-200 bg-white text-slate-600 px-6 py-3 rounded-lg font-bold text-sm hover:border-gold-accent/40 hover:text-gold-accent transition-all">
+              className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-600 dark:text-on-surface-variant px-6 py-3 rounded-lg font-bold text-sm hover:border-gold-accent/40 hover:text-gold-accent transition-all">
               Sign In
             </Link>
           </div>

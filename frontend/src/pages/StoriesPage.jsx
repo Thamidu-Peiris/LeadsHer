@@ -61,7 +61,7 @@ export default function StoriesPage() {
       </div>
 
       {/* Filters bar */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8 space-y-4">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-gray-100 dark:border-outline-variant/20 shadow-sm p-4 mb-8 space-y-4">
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
@@ -82,7 +82,7 @@ export default function StoriesPage() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 filters.category === c
                   ? 'bg-brand-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-surface-container text-gray-600 dark:text-on-surface-variant hover:bg-gray-200 dark:hover:bg-surface-container-high'
               }`}
             >
               {c === 'all' ? 'All' : c.charAt(0).toUpperCase() + c.slice(1)}
@@ -104,14 +104,14 @@ export default function StoriesPage() {
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : stories.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-lg mb-4">No stories found.</p>
+          <p className="text-gray-400 dark:text-on-surface-variant text-lg mb-4">No stories found.</p>
           {isAuthenticated && (
             <Link to={newStoryHref} className="btn-primary">Be the first to share</Link>
           )}
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-400 mb-4">{pagination.total} stories</p>
+          <p className="text-sm text-gray-400 dark:text-on-surface-variant mb-4">{pagination.total} stories</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {stories.map((s) => <StoryCard key={s._id} story={s} />)}
           </div>

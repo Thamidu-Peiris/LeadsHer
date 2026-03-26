@@ -99,7 +99,7 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
   };
 
   return (
-    <div className="group bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -156,12 +156,12 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
         <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
           {resource.title}
         </h3>
-        <p className="text-sm text-slate-500 line-clamp-2 flex-1">
+        <p className="text-sm text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1">
           {resource.description}
         </p>
 
         {/* Author + date */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-outline">
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">person</span>
             {resource.author || resource.uploadedBy?.name || 'LeadsHer'}
@@ -170,7 +170,7 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
         </div>
 
         {/* Stats */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-outline-variant/20">
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1 font-semibold text-gold-accent">
               <span className="material-symbols-outlined text-[14px]">download</span>
@@ -183,7 +183,7 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
           </div>
           <button
             onClick={() => onRate(resource)}
-            className="text-[11px] text-slate-400 hover:text-gold-accent transition-colors flex items-center gap-0.5"
+            className="text-[11px] text-slate-400 dark:text-outline hover:text-gold-accent transition-colors flex items-center gap-0.5"
           >
             <span className="material-symbols-outlined text-[13px]">star_border</span>
             Rate
@@ -203,14 +203,14 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
           <div className="flex gap-2">
             <button
               onClick={() => onEdit(resource)}
-              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 text-slate-500 hover:border-primary/40 hover:text-primary rounded-lg transition-all"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-primary/40 hover:text-primary rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-[13px]">edit</span>
               Edit
             </button>
             <button
               onClick={() => onDelete(resource._id)}
-              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 text-slate-500 hover:border-red-400 hover:text-red-600 rounded-lg transition-all"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-red-400 hover:text-red-600 rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-[13px]">delete</span>
               Delete
@@ -233,11 +233,11 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
       style={{ left: sidebarWidth, right: 0 }}
     >
       <div className="mx-6">
-        <div className={`bg-white border-x border-t border-slate-200 rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ${open ? '' : ''}`}>
+        <div className={`bg-white dark:bg-surface-container border-x border-t border-slate-200 dark:border-outline-variant/40 rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 ${open ? '' : ''}`}>
           {/* Summary / toggle */}
           <button
             onClick={() => setOpen((v) => !v)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-surface-container-high transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gold-accent/10 flex items-center justify-center text-gold-accent">
@@ -250,22 +250,22 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
                 </span>
               )}
             </div>
-            <span className={`material-symbols-outlined text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+            <span className={`material-symbols-outlined text-slate-400 dark:text-outline transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
               keyboard_arrow_up
             </span>
           </button>
 
           {/* Drawer content */}
           {open && (
-            <div className="border-t border-slate-100 p-5 pt-3">
+            <div className="border-t border-slate-100 dark:border-outline-variant/20 p-5 pt-3">
               {bookmarks.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">No bookmarks yet. Save resources to find them here.</p>
+                <p className="text-sm text-slate-400 dark:text-outline text-center py-4">No bookmarks yet. Save resources to find them here.</p>
               ) : (
                 <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
                   {bookmarks.map((r) => {
                     const cfg = TYPE_CFG[r.type] || TYPE_CFG.article;
                     return (
-                      <div key={r._id} className="flex-shrink-0 w-56 flex gap-3 p-3 bg-slate-50 rounded-xl border border-transparent hover:border-gold-accent/30 transition-all cursor-pointer">
+                      <div key={r._id} className="flex-shrink-0 w-56 flex gap-3 p-3 bg-slate-50 dark:bg-surface-container rounded-xl border border-transparent hover:border-gold-accent/30 transition-all cursor-pointer">
                         <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${cfg.thumb} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
                           {r.thumbnail ? (
                             <img src={r.thumbnail} alt={r.title} className="w-full h-full object-cover rounded-lg" />
@@ -275,11 +275,11 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
                         </div>
                         <div className="flex flex-col justify-center overflow-hidden flex-1 min-w-0">
                           <h4 className="text-xs font-bold truncate text-on-surface">{r.title}</h4>
-                          <span className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{cfg.label}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-outline mt-1 uppercase font-bold tracking-widest">{cfg.label}</span>
                         </div>
                         <button
                           onClick={() => onRemove(r._id)}
-                          className="self-start text-slate-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
+                          className="self-start text-slate-300 dark:text-outline hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
                           title="Remove bookmark"
                         >
                           <span className="material-symbols-outlined text-[16px]">close</span>
@@ -352,24 +352,24 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
     finally { setSaving(false); }
   };
 
-  const lbl = 'block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5';
-  const inp = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent/50 transition-all';
+  const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
+  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent/50 transition-all';
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+      <div className="w-full max-w-2xl bg-white dark:bg-surface-container rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between sticky top-0 bg-white dark:bg-surface-container z-10 rounded-t-2xl">
           <h2 className="font-serif-alt text-xl font-bold text-on-surface">
             {mode === 'edit' ? 'Edit Resource' : 'Upload New Resource'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
+          <button onClick={onClose} className="text-slate-400 dark:text-outline hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg">
+            <div className="px-4 py-3 bg-red-50 dark:bg-error-container/30 border border-red-100 dark:border-error/30 text-red-700 dark:text-on-error-container text-sm rounded-lg">
               {error}
             </div>
           )}
@@ -424,7 +424,7 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
               {form.fileMode === 'link' ? (
                 <input className={inp} value={form.externalLink} onChange={(e) => set('externalLink', e.target.value)} placeholder="https://..." type="url" />
               ) : (
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-gold-accent/40 transition-colors">
+                <div className="border-2 border-dashed border-slate-200 dark:border-outline-variant/40 rounded-xl p-6 text-center hover:border-gold-accent/40 transition-colors">
                   {uploading ? (
                     <div className="flex justify-center"><Spinner /></div>
                   ) : uploadedFile ? (
@@ -434,10 +434,10 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
                     </div>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[40px] text-slate-300">cloud_upload</span>
-                      <p className="text-sm text-slate-400 mt-2">PDF, DOC, MP4, MP3, ZIP supported</p>
+                      <span className="material-symbols-outlined text-[40px] text-slate-300 dark:text-outline">cloud_upload</span>
+                      <p className="text-sm text-slate-400 dark:text-on-surface-variant mt-2">PDF, DOC, MP4, MP3, ZIP supported</p>
                       <button type="button" onClick={() => fileInputRef.current?.click()}
-                        className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-all">
+                        className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-all">
                         Choose File
                       </button>
                     </>
@@ -460,9 +460,9 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-outline-variant/20 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-surface-container rounded-b-2xl">
           <button onClick={onClose}
-            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-500 hover:border-slate-300 rounded-lg transition-colors">
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-slate-300 rounded-lg transition-colors">
             Cancel
           </button>
           <button disabled={saving || uploading} onClick={handleSubmit}
@@ -493,8 +493,8 @@ function RateModal({ resource, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+      <div className="w-full max-w-md bg-white dark:bg-surface-container rounded-2xl shadow-2xl">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between">
           <h2 className="font-serif-alt text-lg font-bold text-on-surface">Rate this Resource</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
             <span className="material-symbols-outlined">close</span>
@@ -507,24 +507,24 @@ function RateModal({ resource, onClose, onSave }) {
               <button key={star} type="button"
                 onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
                 onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
-                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200'}`}>
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline'}`}>
                   {star <= (hovered || rating) ? 'star' : 'star_border'}
                 </span>
               </button>
             ))}
-            <span className="ml-2 text-sm text-slate-500 font-medium">
+            <span className="ml-2 text-sm text-slate-500 dark:text-on-surface-variant font-medium">
               {rating ? ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating] : 'Select rating'}
             </span>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Review (optional)</label>
-            <textarea className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5">Review (optional)</label>
+            <textarea className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
               value={review} onChange={(e) => setReview(e.target.value)} placeholder="Share your thoughts..." maxLength={500} />
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-outline-variant/20 flex justify-end gap-3">
           <button onClick={onClose}
-            className="px-5 py-2.5 text-sm font-bold border border-slate-200 text-slate-500 rounded-lg hover:border-slate-300 transition-colors">
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-slate-300 transition-colors">
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving || !rating}
@@ -717,11 +717,11 @@ export default function MentorDashboardResourcesPage() {
 
   /* ──────────────────────── RENDER ──────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#f8f6f6]">
+    <div className="min-h-screen bg-[#f8f6f6] dark:bg-[#100f16]">
       <div className="relative flex min-h-screen overflow-hidden text-on-surface">
 
         {/* ── Sidebar ─────────────────────────────────────────────── */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
@@ -775,7 +775,7 @@ export default function MentorDashboardResourcesPage() {
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen pb-20">
 
           {/* Top header */}
-          <header className="h-16 min-h-[64px] border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-slate-200 dark:border-outline-variant/40 bg-white/80 dark:bg-[#1a1824]/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -789,7 +789,7 @@ export default function MentorDashboardResourcesPage() {
                 <div className="relative group">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">search</span>
                   <input
-                    className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all"
+                    className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all"
                     placeholder="Search resources..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
@@ -799,7 +799,7 @@ export default function MentorDashboardResourcesPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-gold-accent transition-colors">
+              <button className="w-10 h-10 rounded-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 flex items-center justify-center text-slate-400 dark:text-outline hover:text-gold-accent transition-colors">
                 <span className="material-symbols-outlined">help_outline</span>
               </button>
               <div className="relative">
@@ -809,7 +809,7 @@ export default function MentorDashboardResourcesPage() {
                     src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80" />
                 </button>
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50">
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 rounded-xl shadow-xl z-50">
                     <div className="px-5 py-4 border-b border-slate-100">
                       <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name}</p>
                       <p className="text-xs text-slate-400 line-clamp-1">{user?.email}</p>
@@ -835,7 +835,7 @@ export default function MentorDashboardResourcesPage() {
 
 
             {/* Type pills */}
-            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 pt-6 pb-6 px-6">
+            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-6 pb-6 px-6">
               {typePills.map((pill) => (
                 <button
                   key={pill.key}
@@ -843,7 +843,7 @@ export default function MentorDashboardResourcesPage() {
                   className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     activeType === pill.key
                       ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
-                      : 'bg-transparent border border-slate-200 text-slate-600 hover:border-gold-accent/50 hover:text-gold-accent'
+                      : 'bg-transparent border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
                   }`}
                 >
                   {pill.label}
@@ -859,19 +859,19 @@ export default function MentorDashboardResourcesPage() {
                   <select
                     value={filterCategory}
                     onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                    className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
                   >
                     {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">expand_more</span>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">expand_more</span>
                 </div>
 
                 {/* Difficulty segmented control */}
-                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <div className="flex bg-slate-100 dark:bg-surface-container-high p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40">
                   <button
                     onClick={() => { setFilterDifficulty(''); setPage(1); }}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                      !filterDifficulty ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'
+                      !filterDifficulty ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
                     All
@@ -881,7 +881,7 @@ export default function MentorDashboardResourcesPage() {
                       key={d}
                       onClick={() => { setFilterDifficulty(d); setPage(1); }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
-                        filterDifficulty === d ? 'bg-white shadow-sm text-on-surface' : 'text-slate-500 hover:text-on-surface'
+                        filterDifficulty === d ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                       }`}
                     >
                       {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -894,17 +894,17 @@ export default function MentorDashboardResourcesPage() {
                   <select
                     value={sort}
                     onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                    className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
                   >
                     {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[18px]">sort</span>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">sort</span>
                 </div>
 
                 {(search || filterCategory || filterDifficulty) && (
                   <button
                     onClick={() => { setSearch(''); setSearchInput(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors"
+                    className="flex items-center gap-1 text-xs text-slate-400 dark:text-outline hover:text-red-500 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[15px]">close</span>
                     Clear
@@ -931,9 +931,9 @@ export default function MentorDashboardResourcesPage() {
                   <Spinner size="lg" />
                 </div>
               ) : resources.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
-                  <span className="material-symbols-outlined text-[56px] text-slate-200">library_books</span>
-                  <p className="text-slate-400 mt-3 font-medium">
+                <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-2xl p-16 text-center">
+                  <span className="material-symbols-outlined text-[56px] text-slate-200 dark:text-outline">library_books</span>
+                  <p className="text-slate-400 dark:text-on-surface-variant mt-3 font-medium">
                     {activeType === 'mine'
                       ? "You haven't uploaded any resources yet."
                       : search || filterCategory || filterDifficulty
@@ -973,14 +973,14 @@ export default function MentorDashboardResourcesPage() {
               {!loading && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                   <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-                    className="px-5 py-2 text-sm font-semibold border border-slate-200 text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                     ← Previous
                   </button>
-                  <span className="px-4 py-2 text-sm text-slate-500">
+                  <span className="px-4 py-2 text-sm text-slate-500 dark:text-on-surface-variant">
                     Page {pagination.page} of {pagination.totalPages}
                   </span>
                   <button disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)}
-                    className="px-5 py-2 text-sm font-semibold border border-slate-200 text-slate-500 rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                     Next →
                   </button>
                 </div>
@@ -988,7 +988,7 @@ export default function MentorDashboardResourcesPage() {
             </div>
 
             {/* Footer */}
-            <div className="text-center text-xs text-slate-400 py-4">
+            <div className="text-center text-xs text-slate-400 dark:text-outline py-4">
               © 2026 LEADSHER. BUILT FOR BRILLIANCE.
             </div>
           </div>
