@@ -19,6 +19,16 @@ function formatDate(d) {
   }
 }
 
+/** YYYY-MM-DD in local timezone (for `<input type="date">` and API). */
+function localYmd(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  if (isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const mo = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
 export default function MentorDashboardMentorshipPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -37,6 +47,11 @@ export default function MentorDashboardMentorshipPage() {
 
   const [sessionFor, setSessionFor] = useState(null);
   const [sessionForm, setSessionForm] = useState({ date: '', duration: 30, notes: '', topics: '' });
+
+  const [goalsFor, setGoalsFor] = useState(null);
+  const [goalsInput, setGoalsInput] = useState('');
+
+  const [expandedId, setExpandedId] = useState(null);
 
   const [feedbackFor, setFeedbackFor] = useState(null);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
@@ -100,7 +115,23 @@ export default function MentorDashboardMentorshipPage() {
       await loadAll();
       setFeedbackFor({ _id: id });
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to complete mentorship');
+      const msg = e.response?.data?.requirements?.join(' · ') || e.response?.data?.message || 'Failed to complete';
+      toast.error(msg);
+    }
+  };
+
+  const updateGoals = async () => {
+    if (!goalsFor?._id) return;
+    const goals = goalsInput.split(',').map((g) => g.trim()).filter(Boolean);
+    if (!goals.length) { toast.error('Add at least one goal'); return; }
+    try {
+      await mentorshipApi.updateGoals(goalsFor._id, { goals });
+      toast.success('Goals updated');
+      setGoalsFor(null);
+      setGoalsInput('');
+      await loadAll();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update goals');
     }
   };
 
@@ -152,6 +183,14 @@ export default function MentorDashboardMentorshipPage() {
     { to: '/forum', icon: 'forum', label: 'Forum' },
     { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
   ];
+
+  const sessionModalMin = sessionFor?.startDate ? localYmd(new Date(sessionFor.startDate)) : '';
+  const sessionModalMax = localYmd(new Date());
+  const sessionDateInvalid =
+    !!sessionFor &&
+    (!sessionForm.date ||
+      (sessionModalMin && sessionForm.date < sessionModalMin) ||
+      (sessionModalMax && sessionForm.date > sessionModalMax));
 
   return (
     <div className="min-h-screen">
@@ -368,46 +407,94 @@ export default function MentorDashboardMentorshipPage() {
                 {tab === 'active' && (
                   <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentees</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">Log sessions, mark complete, and submit feedback.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">Log sessions, update goals, mark complete, and submit feedback.</p>
 
                     {active.length === 0 ? (
                       <p className="text-on-surface-variant">No active mentorships.</p>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         {active.map((m) => {
                           const menteeName = m?.mentee?.name || 'Mentee';
+                          const menteeEmail = m?.mentee?.email || '';
                           const started = formatDate(m?.startDate);
-                          const sessions = m?.sessions?.length || 0;
+                          const sessionCount = m?.sessions?.length || 0;
+                          const goals = m?.goals || [];
+                          const isExpanded = expandedId === m._id;
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="min-w-0">
                                   <h3 className="font-serif-alt text-xl font-bold text-on-surface">{menteeName}</h3>
-                                  <p className="text-xs text-outline mt-1">Started: {started || '—'} · Sessions: {sessions}</p>
+                                  {menteeEmail && <p className="text-xs text-outline">{menteeEmail}</p>}
+                                  <p className="text-xs text-outline mt-1">Started: {started || '—'} · Sessions logged: {sessionCount}</p>
                                 </div>
-                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline">
+                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
                                   {m?.status || 'active'}
                                 </span>
                               </div>
+
+                              {/* Goals */}
+                              <div className="mt-4">
+                                <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {goals.length ? goals.map((g) => (
+                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                  )) : <span className="text-sm text-on-surface-variant">No goals set</span>}
+                                </div>
+                              </div>
+
+                              {/* Session history expandable */}
+                              {sessionCount > 0 && (
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedId(isExpanded ? null : m._id)}
+                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      {isExpanded ? 'expand_less' : 'expand_more'}
+                                    </span>
+                                    {isExpanded ? 'Hide' : 'View'} sessions ({sessionCount})
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="mt-3 space-y-2">
+                                      {(m.sessions || []).map((s, i) => (
+                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-semibold text-on-surface">{formatDate(s.date)}</span>
+                                            <span className="text-outline">{s.duration} min</span>
+                                          </div>
+                                          {s.topics?.length > 0 && (
+                                            <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>
+                                          )}
+                                          {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
 
                               <div className="mt-5 flex gap-2 flex-wrap">
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setSessionFor(m);
-                                    const today = new Date();
-                                    const start = m?.startDate ? new Date(m.startDate) : null;
-                                    const defaultDate = start && start > today ? start : today;
-                                    setSessionForm({
-                                      date: defaultDate.toISOString().slice(0, 10),
-                                      duration: 30,
-                                      notes: '',
-                                      topics: '',
-                                    });
+                                    const todayStr = localYmd(new Date());
+                                    const startStr = m?.startDate ? localYmd(new Date(m.startDate)) : todayStr;
+                                    const defaultStr = startStr && startStr <= todayStr ? todayStr : startStr;
+                                    setSessionForm({ date: defaultStr || todayStr, duration: 30, notes: '', topics: '' });
                                   }}
                                   className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
                                 >
                                   Log session
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                                >
+                                  Set goals
                                 </button>
                                 <button
                                   type="button"
@@ -428,34 +515,89 @@ export default function MentorDashboardMentorshipPage() {
                 {tab === 'history' && (
                   <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">Completed mentorships and feedback.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">Completed and past mentorships.</p>
 
                     {history.length === 0 ? (
                       <p className="text-on-surface-variant">No history yet.</p>
                     ) : (
                       <div className="space-y-4">
-                        {history.map((m) => (
-                          <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <h3 className="font-serif-alt text-xl font-bold text-on-surface">
-                                  {m?.mentee?.name || 'Mentee'}
-                                </h3>
-                                <p className="text-xs text-outline mt-1">
-                                  Started: {formatDate(m?.startDate)} · Completed: {formatDate(m?.completedAt)}
-                                </p>
+                        {history.map((m) => {
+                          const sessionCount = m?.sessions?.length || 0;
+                          const hasMentorFeedback = !!m?.feedback?.mentorRating;
+                          return (
+                            <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <h3 className="font-serif-alt text-xl font-bold text-on-surface">
+                                    {m?.mentee?.name || 'Mentee'}
+                                  </h3>
+                                  <p className="text-xs text-outline mt-1">
+                                    Started: {formatDate(m?.startDate)} · {m?.completedAt ? `Completed: ${formatDate(m.completedAt)}` : `Ended: ${formatDate(m?.endDate)}`}
+                                  </p>
+                                  <p className="text-xs text-outline">Sessions: {sessionCount}</p>
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border text-outline shrink-0 ${
+                                  m?.status === 'completed' ? 'border-green-300 text-green-700 bg-green-50' :
+                                  m?.status === 'terminated' ? 'border-red-300 text-red-700 bg-red-50' :
+                                  'border-outline-variant/25'
+                                }`}>
+                                  {m?.status}
+                                </span>
                               </div>
-                              <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline">
-                                {m?.status || 'completed'}
-                              </span>
+                              {m?.status === 'completed' && !hasMentorFeedback && (
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
+                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  >
+                                    Submit feedback
+                                  </button>
+                                </div>
+                              )}
+                              {hasMentorFeedback && (
+                                <p className="mt-3 text-xs text-green-700 font-semibold">✓ Feedback submitted (Rating: {m.feedback.mentorRating}/5)</p>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
               </>
+            )}
+
+            {/* Goals modal */}
+            {goalsFor && (
+              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
+                <div className="w-full max-w-lg bg-white border border-outline-variant/20 editorial-shadow p-6">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Goals</h3>
+                      <p className="text-xs text-outline">Mentee: {goalsFor?.mentee?.name || 'Mentee'}</p>
+                    </div>
+                    <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                  <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Goals (comma-separated)</label>
+                  <input
+                    value={goalsInput}
+                    onChange={(e) => setGoalsInput(e.target.value)}
+                    className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
+                    placeholder="Career growth, Leadership, Negotiation"
+                  />
+                  <div className="mt-5 flex gap-2 justify-end">
+                    <button type="button" onClick={() => setGoalsFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={updateGoals} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
+                      Save goals
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Session modal */}
@@ -476,6 +618,8 @@ export default function MentorDashboardMentorshipPage() {
                       <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Date</label>
                       <input
                         type="date"
+                        min={sessionModalMin || undefined}
+                        max={sessionModalMax}
                         value={sessionForm.date}
                         onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))}
                         className="w-full bg-white border border-outline-variant/25 rounded-lg px-4 py-2 text-sm"
@@ -485,6 +629,9 @@ export default function MentorDashboardMentorshipPage() {
                           Must be on/after start date: <span className="font-semibold text-on-surface">{formatDate(sessionFor.startDate)}</span>
                         </p>
                       )}
+                      <p className="mt-1 text-[11px] text-outline">
+                        Use <span className="font-semibold text-on-surface">today or a past date</span> only — the API does not allow future session dates.
+                      </p>
                       {sessionFor?.startDate && new Date(sessionFor.startDate) > new Date() && (
                         <p className="mt-1 text-[11px] text-tertiary">
                           You can’t log sessions yet because this mentorship starts in the future.
@@ -528,7 +675,7 @@ export default function MentorDashboardMentorshipPage() {
                       type="button"
                       onClick={submitSession}
                       disabled={
-                        new Date(sessionForm.date) > new Date() ||
+                        sessionDateInvalid ||
                         Number(sessionForm.duration) < 15
                       }
                       className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"

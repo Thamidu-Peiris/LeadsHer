@@ -1,5 +1,6 @@
 const Mentorship = require('../models/Mentorship');
 const MentorProfile = require('../models/MentorProfile');
+const { validateSessionCalendarDate } = require('../utils/sessionDate');
 
 const getActiveMentorships = async (userId, userRole, queryRole) => {
   let filter = { status: 'active' };
@@ -37,8 +38,8 @@ const logSession = async (mentorshipId, userId, sessionData) => {
     err.status = 404;
     throw err;
   }
-  if (mentorship.mentor.toString() !== userId.toString() && mentorship.mentee.toString() !== userId.toString()) {
-    const err = new Error('You do not have access to this mentorship');
+  if (mentorship.mentor.toString() !== userId.toString()) {
+    const err = new Error('Only the mentor can log sessions');
     err.status = 403;
     throw err;
   }
@@ -47,17 +48,14 @@ const logSession = async (mentorshipId, userId, sessionData) => {
     err.status = 400;
     throw err;
   }
-  const sessionDate = new Date(date);
-  if (sessionDate > new Date()) {
-    const err = new Error('Session date cannot be in the future');
+  const ymd = typeof date === 'string' ? date.trim().slice(0, 10) : '';
+  const validated = validateSessionCalendarDate(ymd, mentorship.startDate);
+  if (!validated.ok) {
+    const err = new Error(validated.error);
     err.status = 400;
     throw err;
   }
-  if (sessionDate < mentorship.startDate) {
-    const err = new Error('Session date cannot be before mentorship start date');
-    err.status = 400;
-    throw err;
-  }
+  const sessionDate = validated.sessionDate;
   mentorship.sessions.push({ date: sessionDate, duration: parseInt(duration), notes: notes || '', topics: topics || [] });
   await mentorship.save();
   await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
@@ -144,13 +142,14 @@ const submitFeedback = async (mentorshipId, userId, { rating, comment }) => {
     throw err;
   }
   if (!mentorship.feedback) mentorship.feedback = {};
+  const numericRating = Number(rating);
   if (isMentor) {
     if (mentorship.feedback.mentorRating) {
       const err = new Error('You have already submitted feedback for this mentorship');
       err.status = 400;
       throw err;
     }
-    mentorship.feedback.mentorRating = rating;
+    mentorship.feedback.mentorRating = numericRating;
     mentorship.feedback.mentorComment = comment;
   } else {
     if (mentorship.feedback.menteeRating) {
@@ -158,13 +157,16 @@ const submitFeedback = async (mentorshipId, userId, { rating, comment }) => {
       err.status = 400;
       throw err;
     }
-    mentorship.feedback.menteeRating = rating;
+    mentorship.feedback.menteeRating = numericRating;
     mentorship.feedback.menteeComment = comment;
   }
   await mentorship.save();
   if (isMentee && mentorship.feedback.menteeRating) {
     const mentorProfile = await MentorProfile.findOne({ user: mentorship.mentor });
-    if (mentorProfile) await mentorProfile.updateRating(mentorship.feedback.menteeRating);
+    if (mentorProfile) {
+      await mentorProfile.updateRating(mentorship.feedback.menteeRating);
+      await mentorProfile.save();
+    }
   }
   await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
   return mentorship;
