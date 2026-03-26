@@ -21,7 +21,8 @@ import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPa
 import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage';
 import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MenteeProfilePage from './pages/MenteeProfilePage';
-import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
+import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
@@ -35,9 +36,10 @@ function MainLayout() {
   const location = useLocation();
   const { user } = useAuth();
 
+  const roleLc = (user?.role || '').toLowerCase();
   const hideChromeForRoleDashboard =
     location.pathname.startsWith('/dashboard') &&
-    (user?.role === 'mentor' || user?.role === 'mentee') &&
+    (roleLc === 'mentor' || roleLc === 'mentee') &&
     !location.pathname.startsWith('/dashboard/profile');
 
   return (
@@ -67,6 +69,7 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/"            element={<HomePage />} />
             <Route path="/stories"     element={<StoriesPage />} />
             <Route path="/stories/:id" element={<StoryDetailPage />} />
@@ -87,7 +90,7 @@ export default function App() {
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/settings" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardSettingsPage /></ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><DashboardSettingsRouter /></ProtectedRoute>
             } />
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>

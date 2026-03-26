@@ -728,7 +728,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/settings', icon: 'settings', label: 'Settings' },
+              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
                 key={item.to}
