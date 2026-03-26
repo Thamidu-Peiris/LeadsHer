@@ -45,7 +45,7 @@ const createResource = async (data, userId, userRole) => {
     difficulty: data.difficulty || 'beginner',
     duration: data.duration || 0,
     isPremium: data.isPremium || false,
-    isApproved: userRole === 'Admin',
+    isApproved: userRole === 'Admin' || userRole === 'Mentor',
   });
 
   await resource.populate('uploadedBy', 'name email avatar');

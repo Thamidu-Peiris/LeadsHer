@@ -24,12 +24,20 @@ import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
 import MentorsPage      from './pages/MentorsPage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
+import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
 const MENTEE_ONLY  = ['mentee'];
+
+/* Role-based resources page */
+function ResourcesRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'mentee') return <MenteeDashboardResourcesPage />;
+  return <MentorDashboardResourcesPage />;
+}
 
 
 /* Layout with Navbar + Footer */
@@ -96,7 +104,7 @@ export default function App() {
             } />
             <Route path="/resources" element={<PublicResourcesPage />} />
             <Route path="/dashboard/resources" element={
-              <ProtectedRoute roles={ANY_USER}><MentorDashboardResourcesPage /></ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><ResourcesRoute /></ProtectedRoute>
             } />
             <Route path="/stories/new" element={
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
