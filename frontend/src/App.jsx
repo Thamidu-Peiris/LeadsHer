@@ -20,7 +20,9 @@ import MentorDashboardStoriesPage from './pages/MentorDashboardStoriesPage';
 import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPage';
 import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage';
 import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
-import MentorDashboardSettingsPage from './pages/MentorDashboardSettingsPage';
+import MenteeProfilePage from './pages/MenteeProfilePage';
+import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
@@ -34,8 +36,11 @@ function MainLayout() {
   const location = useLocation();
   const { user } = useAuth();
 
+  const roleLc = (user?.role || '').toLowerCase();
   const hideChromeForRoleDashboard =
-    location.pathname.startsWith('/dashboard') && (user?.role === 'mentor' || user?.role === 'mentee');
+    location.pathname.startsWith('/dashboard') &&
+    (roleLc === 'mentor' || roleLc === 'mentee') &&
+    !location.pathname.startsWith('/dashboard/profile');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -57,13 +62,21 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
+        <Toaster
+          position="bottom-center"
+          containerStyle={{ pointerEvents: 'none' }}
+          toastOptions={{
+            duration: 2500,
+            style: { pointerEvents: 'auto' },
+          }}
+        />
         <Routes>
 
           {/* All pages — with Navbar + Footer */}
           <Route element={<MainLayout />}>
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/"            element={<HomePage />} />
             <Route path="/stories"     element={<StoriesPage />} />
             <Route path="/stories/:id" element={<StoryDetailPage />} />
@@ -84,10 +97,13 @@ export default function App() {
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/settings" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardSettingsPage /></ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><DashboardSettingsRouter /></ProtectedRoute>
             } />
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/profile" element={
+              <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
             } />
             <Route path="/stories/new" element={
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>

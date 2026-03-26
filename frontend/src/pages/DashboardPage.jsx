@@ -4,6 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
 import { mentorApi } from '../api/mentorApi';
+import { authApi } from '../api/authApi';
+
+function buildMenteeBio(main, goals, interests) {
+  const parts = [main?.trim() || ''];
+  if (goals?.trim()) parts.push(`\n\n[Goals]\n${goals.trim()}`);
+  if (interests?.trim()) parts.push(`\n\n[Interests]\n${interests.trim()}`);
+  return parts.join('').trim();
+}
 import StoryCard from '../components/stories/StoryCard';
 import EventCard from '../components/events/EventCard';
 import Spinner from '../components/common/Spinner';
@@ -29,7 +37,8 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     timezone: 'UTC',
   });
 
-  const onboardingKey = `leadsher_onboarding_mentorprofile_${user?._id}`;
+  const userId = user?.id ?? user?._id;
+  const onboardingKey = userId ? `leadsher_onboarding_mentorprofile_${userId}` : '';
 
   const toList = (v) => String(v || '').split(',').map((t) => t.trim()).filter(Boolean);
   const isComplete = (p) => {
@@ -44,7 +53,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   };
 
   useEffect(() => {
-    const shouldTry = user?._id && !localStorage.getItem(onboardingKey);
+    const shouldTry = userId && onboardingKey && !localStorage.getItem(onboardingKey);
     if (!shouldTry) return;
     setOnboardLoading(true);
     mentorApi.getMyProfile()
@@ -71,7 +80,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
         setOnboardOpen(true);
       })
       .finally(() => setOnboardLoading(false));
-  }, [user?._id]);
+  }, [userId, onboardingKey]);
 
   const saveOnboarding = async () => {
     setOnboardError('');
@@ -238,6 +247,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
                     isActive
@@ -515,38 +525,175 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 function MenteeDashboard({ user, myStories, myEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, updateUser } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const menteeUserId = user?.id ?? user?._id;
+  const menteePromptKey = menteeUserId ? `leadsher_mentee_dashboard_profile_${menteeUserId}` : '';
+  const [menteeProfileOpen, setMenteeProfileOpen] = useState(false);
+  const [menteeSaving, setMenteeSaving] = useState(false);
+  const [menteeForm, setMenteeForm] = useState({
+    bio: '',
+    learningGoals: '',
+    interests: '',
+    avatar: '',
+  });
+
+  useEffect(() => {
+    if (!menteePromptKey) return;
+    if (localStorage.getItem(menteePromptKey)) return;
+    if (user?.bio?.trim()) {
+      localStorage.setItem(menteePromptKey, 'complete');
+      return;
+    }
+    setMenteeProfileOpen(true);
+  }, [menteePromptKey, user?.bio]);
+
+  const handleMenteeFormChange = (e) => {
+    const { name, value } = e.target;
+    setMenteeForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const dismissMenteeProfilePrompt = () => {
+    if (menteePromptKey) localStorage.setItem(menteePromptKey, 'skipped');
+    setMenteeProfileOpen(false);
+  };
+
+  const saveMenteeProfilePrompt = async () => {
+    setMenteeSaving(true);
+    try {
+      const bio = buildMenteeBio(menteeForm.bio, menteeForm.learningGoals, menteeForm.interests);
+      const { data } = await authApi.updateProfile({
+        bio: bio || undefined,
+        avatar: menteeForm.avatar?.trim() || undefined,
+      });
+      const u = data?.user || data;
+      if (u) updateUser(u);
+      if (menteePromptKey) localStorage.setItem(menteePromptKey, 'complete');
+      toast.success('Profile saved');
+      setMenteeProfileOpen(false);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not save profile');
+    } finally {
+      setMenteeSaving(false);
+    }
+  };
 
   const totalViews = useMemo(
     () => myStories.reduce((a, s) => a + (s.views || 0), 0),
     [myStories]
   );
 
+  const menteeAvatarSrc =
+    user?.profilePicture || user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
   return (
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+        {/* First-time mentee profile modal */}
+        {menteeProfileOpen && (
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mentee-dash-profile-title"
+          >
+            <div className="w-full max-w-lg bg-white border-2 border-outline-variant/30 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="px-6 sm:px-8 pt-8 pb-6 border-b border-outline-variant/20">
+                <h2 id="mentee-dash-profile-title" className="font-accent text-2xl text-on-surface">
+                  Complete your profile
+                </h2>
+                <p className="font-sans-modern text-sm text-on-surface-variant mt-2">
+                  First time here? Tell mentors a bit about you — you can update this anytime from Profile.
+                </p>
+              </div>
+              <div className="px-6 sm:px-8 py-6 space-y-5">
+                <div>
+                  <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">
+                    About you
+                  </label>
+                  <textarea
+                    name="bio"
+                    value={menteeForm.bio}
+                    onChange={handleMenteeFormChange}
+                    rows={3}
+                    placeholder="Short introduction"
+                    className="w-full border border-outline-variant/40 focus:border-primary bg-surface-container-lowest px-4 py-3 font-sans-modern text-sm outline-none resize-y min-h-[80px]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">
+                    Learning goals
+                  </label>
+                  <textarea
+                    name="learningGoals"
+                    value={menteeForm.learningGoals}
+                    onChange={handleMenteeFormChange}
+                    rows={2}
+                    placeholder="What do you want to learn or achieve?"
+                    className="w-full border border-outline-variant/40 focus:border-primary bg-surface-container-lowest px-4 py-3 font-sans-modern text-sm outline-none resize-y"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">
+                    Interests
+                  </label>
+                  <input
+                    name="interests"
+                    value={menteeForm.interests}
+                    onChange={handleMenteeFormChange}
+                    placeholder="e.g. leadership, STEM, entrepreneurship"
+                    className="w-full border-b-2 border-outline-variant focus:border-primary bg-transparent py-2.5 font-sans-modern text-sm outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">
+                    Avatar URL (optional)
+                  </label>
+                  <input
+                    name="avatar"
+                    type="url"
+                    value={menteeForm.avatar}
+                    onChange={handleMenteeFormChange}
+                    placeholder="https://..."
+                    className="w-full border-b-2 border-outline-variant focus:border-primary bg-transparent py-2.5 font-sans-modern text-sm outline-none"
+                  />
+                </div>
+              </div>
+              <div className="px-6 sm:px-8 pb-8 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={dismissMenteeProfilePrompt}
+                  className="flex-1 border border-outline-variant py-3.5 font-brand text-xs tracking-[0.18em] uppercase text-outline hover:border-primary"
+                >
+                  Skip for now
+                </button>
+                <button
+                  type="button"
+                  onClick={saveMenteeProfilePrompt}
+                  disabled={menteeSaving}
+                  className="flex-1 bg-gold-accent text-white py-3.5 font-brand text-xs tracking-[0.18em] uppercase hover:opacity-90 disabled:opacity-60"
+                >
+                  {menteeSaving ? 'Saving…' : 'Save & continue'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Fixed left sidebar */}
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          {/* Profile */}
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
-                />
+          {/* Profile — icon opens menu with Profile link */}
+          <div className="p-4 border-b border-outline-variant/20">
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
+                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
+                </div>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-primary/10 text-primary text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-primary/20">
-                  Mentee
-                </span>
-              </div>
+              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
             </div>
           </div>
 
@@ -557,11 +704,12 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/settings', icon: 'settings', label: 'Settings' },
+              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
                     isActive
@@ -611,7 +759,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                   <img
                     alt="Avatar"
                     className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
+                    src={menteeAvatarSrc}
                   />
                 </button>
 
@@ -625,6 +773,14 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                         {user?.email}
                       </p>
                     </div>
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                      role="menuitem"
+                    >
+                      Profile
+                    </Link>
                     <button
                       type="button"
                       onClick={async () => {
@@ -797,13 +953,15 @@ export default function DashboardPage() {
   const [myEvents, setMyEvents]     = useState([]);
   const [loading, setLoading]       = useState(true);
 
+  const userId = user?.id ?? user?._id;
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !userId) return;
     const fetchAll = async () => {
       setLoading(true);
       try {
         const [sRes, eRes] = await Promise.allSettled([
-          storyApi.getByUser(user._id, { limit: 6 }),
+          storyApi.getByUser(userId, { limit: 6 }),
           eventApi.getMyEvents(),
         ]);
         if (sRes.status === 'fulfilled') {
@@ -817,7 +975,7 @@ export default function DashboardPage() {
       }
     };
     fetchAll();
-  }, [user]);
+  }, [user, userId]);
 
   const handleDeleteStory = async (id) => {
     if (!window.confirm('Delete this story?')) return;
@@ -830,7 +988,8 @@ export default function DashboardPage() {
 
   if (loading) return <div className="flex justify-center py-32"><Spinner size="lg" /></div>;
 
-  if (user?.role === 'mentor') {
+  const roleLc = (user?.role || '').toLowerCase();
+  if (roleLc === 'mentor') {
     return (
       <MentorDashboard
         user={user}
@@ -840,7 +999,7 @@ export default function DashboardPage() {
       />
     );
   }
-  if (user?.role === 'mentee') {
+  if (roleLc === 'mentee') {
     return (
       <MenteeDashboard
         user={user}
