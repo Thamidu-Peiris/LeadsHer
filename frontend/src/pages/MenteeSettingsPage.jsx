@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,6 @@ import { authApi } from '../api/authApi';
 export default function MenteeSettingsPage() {
   const { user, updateUser } = useAuth();
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
-  const [sidebarProfileMenuOpen, setSidebarProfileMenuOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState(user?.email || '');
   const [sendingReset, setSendingReset] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -17,12 +16,18 @@ export default function MenteeSettingsPage() {
     bio: '',
     learningGoals: '',
     interests: '',
-    avatar: '',
   });
+  const [profileFile, setProfileFile] = useState(null);
+  const [profilePreview, setProfilePreview] = useState('');
 
   const menteeAvatarSrc =
     user?.profilePicture || user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
+  const currentProfilePicture = useMemo(
+    () => user?.profilePicture || user?.avatar || '',
+    [user?.profilePicture, user?.avatar]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +43,6 @@ export default function MenteeSettingsPage() {
           bio: main,
           learningGoals: goals,
           interests,
-          avatar: u.avatar || u.profilePicture || '',
         });
         if (!resetEmail) setResetEmail(u.email || '');
       })
@@ -69,19 +73,42 @@ export default function MenteeSettingsPage() {
     setProfileForm((f) => ({ ...f, [name]: value }));
   };
 
+  const handleProfileFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    setProfileFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setProfilePreview(url);
+    } else {
+      setProfilePreview('');
+    }
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setProfileSaving(true);
     try {
       const combinedBio = buildCombinedBio(profileForm.bio, profileForm.learningGoals, profileForm.interests);
-      const { data } = await authApi.updateProfile({
-        name: profileForm.name,
-        bio: combinedBio,
-        avatar: profileForm.avatar,
-      });
+      let data;
+      if (profileFile) {
+        const fd = new FormData();
+        fd.append('name', profileForm.name);
+        fd.append('bio', combinedBio);
+        fd.append('profilePicture', profileFile);
+        const res = await authApi.updateProfileMultipart(fd);
+        data = res.data;
+      } else {
+        const res = await authApi.updateProfile({
+          name: profileForm.name,
+          bio: combinedBio,
+        });
+        data = res.data;
+      }
       const u = data?.user || data;
       if (u) updateUser(u);
       toast.success('Profile saved');
+      setProfileFile(null);
+      setProfilePreview('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not save profile');
     } finally {
@@ -93,40 +120,16 @@ export default function MenteeSettingsPage() {
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-4 border-b border-outline-variant/20 relative">
+          <div className="p-4 border-b border-outline-variant/20">
             <div className="flex flex-col items-center gap-2">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
                   <img alt="" className="w-full h-full object-cover" src={menteeAvatarSrc} />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSidebarProfileMenuOpen((v) => !v)}
-                  className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white border border-outline-variant/30 shadow-sm flex items-center justify-center hover:border-gold-accent hover:bg-gold-accent/5 transition-colors"
-                  aria-expanded={sidebarProfileMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="Open profile menu"
-                >
-                  <span className="material-symbols-outlined text-[20px] text-gold-accent">account_circle</span>
-                </button>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
               <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
             </div>
-            {sidebarProfileMenuOpen && (
-              <div
-                role="menu"
-                className="absolute left-3 right-3 top-full mt-2 z-50 bg-white border border-outline-variant/20 editorial-shadow py-1 rounded-lg"
-              >
-                <Link
-                  to="/dashboard/profile"
-                  role="menuitem"
-                  onClick={() => setSidebarProfileMenuOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm font-medium text-on-surface hover:bg-gold-accent/5 hover:text-gold-accent transition-colors"
-                >
-                  Profile
-                </Link>
-              </div>
-            )}
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
@@ -200,6 +203,35 @@ export default function MenteeSettingsPage() {
                     ) : (
                       <form onSubmit={handleSaveProfile} className="mt-5 space-y-4">
                         <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Profile picture</label>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-full overflow-hidden border border-outline-variant/30 bg-surface-container-lowest">
+                              <img
+                                alt=""
+                                className="w-full h-full object-cover"
+                                src={profilePreview || currentProfilePicture || menteeAvatarSrc}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                                  Choose image
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleProfileFile}
+                                    className="hidden"
+                                  />
+                                </label>
+                                <span className="text-xs text-outline truncate">
+                                  {profileFile?.name || 'No file chosen'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB.</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
                           <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Name</label>
                           <input
                             name="name"
@@ -238,17 +270,6 @@ export default function MenteeSettingsPage() {
                             onChange={handleProfileChange}
                             className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
                             placeholder="e.g. leadership, STEM, entrepreneurship"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Avatar URL</label>
-                          <input
-                            name="avatar"
-                            type="url"
-                            value={profileForm.avatar}
-                            onChange={handleProfileChange}
-                            className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
-                            placeholder="https://..."
                           />
                         </div>
                         <button

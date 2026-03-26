@@ -32,7 +32,6 @@ export default function MenteeDashboardMentorsPage() {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [sidebarProfileMenuOpen, setSidebarProfileMenuOpen] = useState(false);
   const [tab, setTab] = useState('directory'); // directory | requests | active
 
   const menteeAvatarSrc =
@@ -154,40 +153,16 @@ export default function MenteeDashboardMentorsPage() {
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         {/* Sidebar */}
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-4 border-b border-outline-variant/20 relative">
+          <div className="p-4 border-b border-outline-variant/20">
             <div className="flex flex-col items-center gap-2">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
                   <img alt="" className="w-full h-full object-cover" src={menteeAvatarSrc} />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSidebarProfileMenuOpen((v) => !v)}
-                  className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white border border-outline-variant/30 shadow-sm flex items-center justify-center hover:border-gold-accent hover:bg-gold-accent/5 transition-colors"
-                  aria-expanded={sidebarProfileMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="Open profile menu"
-                >
-                  <span className="material-symbols-outlined text-[20px] text-gold-accent">account_circle</span>
-                </button>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
               <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
             </div>
-            {sidebarProfileMenuOpen && (
-              <div
-                role="menu"
-                className="absolute left-3 right-3 top-full mt-2 z-50 bg-white border border-outline-variant/20 editorial-shadow py-1 rounded-lg"
-              >
-                <Link
-                  to="/dashboard/profile"
-                  role="menuitem"
-                  onClick={() => setSidebarProfileMenuOpen(false)}
-                  className="block w-full text-left px-4 py-3 text-sm font-medium text-on-surface hover:bg-gold-accent/5 hover:text-gold-accent transition-colors"
-                >
-                  Profile
-                </Link>
-              </div>
-            )}
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">

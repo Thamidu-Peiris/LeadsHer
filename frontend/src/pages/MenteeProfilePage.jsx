@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/authApi';
@@ -11,10 +11,16 @@ export default function MenteeProfilePage() {
   const [form, setForm] = useState({
     name: '',
     bio: '',
-    avatar: '',
     learningGoals: '',
     interests: '',
   });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
+
+  const currentProfilePicture = useMemo(
+    () => user?.profilePicture || user?.avatar || '',
+    [user?.profilePicture, user?.avatar]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +33,6 @@ export default function MenteeProfilePage() {
         setForm({
           name: u.name || '',
           bio: main,
-          avatar: u.avatar || '',
           learningGoals: goals,
           interests: interests,
         });
@@ -41,18 +46,37 @@ export default function MenteeProfilePage() {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
+  const handleFile = (e) => {
+    const f = e.target.files?.[0] || null;
+    setFile(f);
+    if (f) setPreview(URL.createObjectURL(f));
+    else setPreview('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       const combinedBio = buildCombinedBio(form.bio, form.learningGoals, form.interests);
-      const { data } = await authApi.updateProfile({
-        name: form.name,
-        bio: combinedBio,
-        avatar: form.avatar,
-      });
-      updateUser(data);
+      let data;
+      if (file) {
+        const fd = new FormData();
+        fd.append('name', form.name);
+        fd.append('bio', combinedBio);
+        fd.append('profilePicture', file);
+        const res = await authApi.updateProfileMultipart(fd);
+        data = res.data;
+      } else {
+        const res = await authApi.updateProfile({
+          name: form.name,
+          bio: combinedBio,
+        });
+        data = res.data;
+      }
+      updateUser(data?.user || data);
       toast.success('Profile saved');
+      setFile(null);
+      setPreview('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not save profile');
     } finally {
@@ -77,6 +101,29 @@ export default function MenteeProfilePage() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">Profile picture</label>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full overflow-hidden border border-outline-variant/30 bg-surface-container-lowest">
+              <img
+                alt=""
+                className="w-full h-full object-cover"
+                src={preview || currentProfilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80'}
+              />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                  Choose image
+                  <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+                </label>
+                <span className="text-xs text-outline truncate">{file?.name || 'No file chosen'}</span>
+              </div>
+              <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB.</p>
+            </div>
+          </div>
+          <p className="text-[10px] mt-2 text-outline tracking-wider uppercase">Uploaded to Cloudinary</p>
+        </div>
         <div>
           <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">Display name</label>
           <input
@@ -115,17 +162,6 @@ export default function MenteeProfilePage() {
             value={form.interests}
             onChange={handleChange}
             placeholder="e.g. leadership, STEM, entrepreneurship"
-            className="w-full border-b-2 border-outline-variant focus:border-primary bg-transparent py-2.5 outline-none"
-          />
-        </div>
-        <div>
-          <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2">Avatar URL (optional)</label>
-          <input
-            name="avatar"
-            type="url"
-            value={form.avatar}
-            onChange={handleChange}
-            placeholder="https://..."
             className="w-full border-b-2 border-outline-variant focus:border-primary bg-transparent py-2.5 outline-none"
           />
         </div>
