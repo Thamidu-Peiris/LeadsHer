@@ -43,6 +43,10 @@ export default function MenteeDashboardMentorsPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState('directory'); // directory | requests | active | history
 
+  const menteeAvatarSrc =
+    user?.profilePicture || user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [mentors, setMentors] = useState([]);
@@ -162,24 +166,15 @@ export default function MenteeDashboardMentorsPage() {
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         {/* Sidebar */}
         <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
-                />
+          <div className="p-4 border-b border-outline-variant/20">
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
+                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
+                </div>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-primary/10 text-primary text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-primary/20">
-                  Mentee
-                </span>
-              </div>
+              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
             </div>
           </div>
 
@@ -194,6 +189,7 @@ export default function MenteeDashboardMentorsPage() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive
@@ -238,11 +234,7 @@ export default function MenteeDashboardMentorsPage() {
                   onClick={() => setProfileOpen((v) => !v)}
                   className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
                 >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
+                  <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
                 </button>
                 {profileOpen && (
                   <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
@@ -254,6 +246,14 @@ export default function MenteeDashboardMentorsPage() {
                         {user?.email}
                       </p>
                     </div>
+                    <Link
+                      to="/dashboard/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                      role="menuitem"
+                    >
+                      Profile
+                    </Link>
                     <button
                       type="button"
                       onClick={async () => {
