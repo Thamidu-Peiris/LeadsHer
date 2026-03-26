@@ -43,9 +43,11 @@ export default function MenteeDashboardMentorsPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState('directory'); // directory | requests | active | history
 
+
   const menteeAvatarSrc =
     user?.profilePicture || user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
