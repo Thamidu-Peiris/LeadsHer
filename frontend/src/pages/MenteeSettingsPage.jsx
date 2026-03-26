@@ -140,6 +140,7 @@ export default function MenteeSettingsPage() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive
