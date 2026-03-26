@@ -48,7 +48,7 @@ export default function MentorSpotlight() {
   };
 
   return (
-    <section className="py-32 bg-[#F1EFEA]">
+    <section className="py-32 bg-[#F1EFEA] dark:bg-surface-container-lowest">
       <div className="container mx-auto px-8 md:px-12">
         <div className="flex flex-col md:flex-row justify-between items-center mb-16">
           <div>
@@ -58,10 +58,10 @@ export default function MentorSpotlight() {
             </p>
           </div>
           <div className="flex gap-4 mt-8 md:mt-0">
-            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-white transition-colors">
+            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
-            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-white transition-colors">
+            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>
@@ -88,7 +88,7 @@ export default function MentorSpotlight() {
                     />
                     <div className={`absolute inset-0 bg-gradient-to-t ${BG_PALETTE[i % BG_PALETTE.length]} opacity-15`} />
                   </div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-tertiary rounded-full flex items-center justify-center border-2 border-white">
+                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-tertiary rounded-full flex items-center justify-center border-2 border-white dark:border-surface-container-lowest">
                     <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                       verified
                     </span>

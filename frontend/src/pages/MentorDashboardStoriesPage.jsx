@@ -39,7 +39,7 @@ export default function MentorDashboardStoriesPage() {
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
@@ -67,7 +67,7 @@ export default function MentorDashboardStoriesPage() {
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
-              { to: '/resources', icon: 'library_books', label: 'Resources' },
+              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
               { to: '/forum', icon: 'forum', label: 'Forum' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
@@ -98,7 +98,7 @@ export default function MentorDashboardStoriesPage() {
 
         {/* Main */}
         <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
               <Link className="hover:text-gold-accent transition-colors" to="/">
                 Home
@@ -128,7 +128,7 @@ export default function MentorDashboardStoriesPage() {
                 </button>
 
                 {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
                         {user?.name || 'Mentor'}
@@ -161,7 +161,7 @@ export default function MentorDashboardStoriesPage() {
           </header>
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Published Stories</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -178,7 +178,7 @@ export default function MentorDashboardStoriesPage() {
                 {canManageEvents && (
                   <Link
                     to="/events/new"
-                    className="px-6 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                    className="px-6 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
                   >
                     + New Event
                   </Link>
@@ -189,12 +189,12 @@ export default function MentorDashboardStoriesPage() {
             {loading ? (
               <div className="flex justify-center py-16"><Spinner size="lg" /></div>
             ) : stories.length === 0 ? (
-              <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-10 text-center">
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-10 text-center">
                 <p className="text-on-surface-variant mb-5">No stories yet.</p>
                 <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
               </div>
             ) : (
-              <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl overflow-hidden">
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-outline-variant/10">
                   {stories.map((s) => (
                     <div key={s._id} className="p-6">
@@ -224,14 +224,14 @@ export default function MentorDashboardStoriesPage() {
                       <div className="mt-5 flex gap-2">
                         <Link
                           to={`/stories/${s._id}/edit`}
-                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
                         >
                           Edit
                         </Link>
                         <button
                           type="button"
                           onClick={() => handleDelete(s._id)}
-                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-tertiary/30 text-tertiary hover:bg-tertiary/5 transition-colors bg-white"
+                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-tertiary/30 text-tertiary hover:bg-tertiary/5 transition-colors bg-white dark:bg-surface-container"
                         >
                           Delete
                         </button>
