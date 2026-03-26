@@ -45,7 +45,7 @@ export default function MentorsPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8 flex gap-2">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-gray-100 dark:border-outline-variant/20 shadow-sm p-4 mb-8 flex gap-2">
         <input
           type="text" placeholder="Search mentors by name or expertise…"
           value={search} onChange={(e) => setSearch(e.target.value)}
@@ -59,7 +59,7 @@ export default function MentorsPage() {
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : mentors.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-lg">No mentors found.</p>
+          <p className="text-gray-400 dark:text-on-surface-variant text-lg">No mentors found.</p>
         </div>
       ) : (
         <>
@@ -72,13 +72,13 @@ export default function MentorsPage() {
                     {m.name?.[0]?.toUpperCase() || 'M'}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{m.name}</h3>
-                    <p className="text-xs text-gray-500">{m.title || 'Mentor'}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-on-surface">{m.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-on-surface-variant">{m.title || 'Mentor'}</p>
                   </div>
                 </div>
 
                 {m.bio && (
-                  <p className="text-sm text-gray-600 line-clamp-3 mb-4 flex-1">{m.bio}</p>
+                  <p className="text-sm text-gray-600 dark:text-on-surface-variant line-clamp-3 mb-4 flex-1">{m.bio}</p>
                 )}
 
                 {m.expertise?.length > 0 && (

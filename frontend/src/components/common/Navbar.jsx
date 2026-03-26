@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const navLinks = [
-  { to: '/',         label: 'Home' },
-  { to: '/stories',  label: 'Stories' },
-  { to: '/events',   label: 'Events' },
-  { to: '/mentors',  label: 'Mentors' },
+  { to: '/',           label: 'Home' },
+  { to: '/stories',    label: 'Stories' },
+  { to: '/events',     label: 'Events' },
+  { to: '/mentors',    label: 'Mentors' },
+  { to: '/resources',  label: 'Resources' },
 ];
 
 export default function Navbar() {
-  const { isAuthenticated, user, logout, isMentee } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
@@ -55,6 +58,17 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="hidden md:flex items-center gap-4">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-on-surface-variant hover:text-primary transition-colors"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <span className="material-symbols-outlined text-[22px]">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
           {isAuthenticated ? (
             <div className="relative">
               <button
@@ -124,6 +138,18 @@ export default function Navbar() {
               }
             >{label}</NavLink>
           ))}
+          <hr className="border-outline-variant/20 my-4" />
+          {/* Theme toggle (mobile) */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
           <hr className="border-outline-variant/20 my-4" />
           {isAuthenticated ? (
             <>
