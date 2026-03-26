@@ -45,7 +45,7 @@ const createResource = async (data, userId, userRole) => {
     difficulty: data.difficulty || 'beginner',
     duration: data.duration || 0,
     isPremium: data.isPremium || false,
-    isApproved: userRole === 'Admin',
+    isApproved: userRole === 'Admin' || userRole === 'Mentor',
   });
 
   await resource.populate('uploadedBy', 'name email avatar');
@@ -317,6 +317,37 @@ const getRecommendedResources = async (userId, { limit = 10 }) => {
   }));
 };
 
+const getMyResources = async (userId, { page = 1, limit = 20, sort = '-createdAt' }) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  limit = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const skip = (page - 1) * limit;
+
+  const query = { uploadedBy: userId };
+
+  const [resources, total] = await Promise.all([
+    Resource.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('uploadedBy', 'name avatar')
+      .lean(),
+    Resource.countDocuments(query),
+  ]);
+
+  const result = resources.map((r) => ({
+    ...r,
+    bookmarkCount: r.bookmarkedBy ? r.bookmarkedBy.length : 0,
+    ratingCount: r.ratings ? r.ratings.length : 0,
+    bookmarkedBy: undefined,
+    ratings: undefined,
+  }));
+
+  return {
+    resources: result,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -328,4 +359,5 @@ module.exports = {
   trackDownload,
   rateResource,
   getRecommendedResources,
+  getMyResources,
 };

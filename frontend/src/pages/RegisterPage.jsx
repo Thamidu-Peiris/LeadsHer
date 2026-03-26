@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const TESTIMONIALS = [
@@ -31,6 +32,7 @@ function strengthInfo(pw) {
 
 export default function RegisterPage() {
   const { register, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const [step, setStep]         = useState(1);
@@ -74,12 +76,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex w-full bg-white min-h-[calc(100vh-4rem)]">
+    <div className="flex w-full bg-white dark:bg-surface min-h-[calc(100vh-4rem)]">
 
       {/* ─── LEFT PANEL ─────────────────────────────────── */}
       <aside
         className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-between sticky top-16 self-start h-[calc(100vh-4rem)]"
-        style={{
+        style={theme === 'dark' ? {
+          background: 'rgb(43 41 59)',
+          backgroundImage:
+            'radial-gradient(circle at 15% 15%, rgba(208,188,255,0.08) 0%, transparent 45%),' +
+            'radial-gradient(circle at 85% 60%, rgba(239,184,200,0.08) 0%, transparent 45%)',
+        } : {
           background: '#FDF0F3',
           backgroundImage:
             'radial-gradient(circle at 15% 15%, rgba(212,175,55,0.10) 0%, transparent 45%),' +
@@ -109,7 +116,7 @@ export default function RegisterPage() {
 
         {/* Stat badge */}
         <div className="z-10">
-          <div className="inline-flex items-center gap-2.5 bg-white px-5 py-2.5 shadow-sm border border-outline-variant/20">
+          <div className="inline-flex items-center gap-2.5 bg-white dark:bg-surface-container px-5 py-2.5 shadow-sm border border-outline-variant/20">
             <span className="w-2 h-2 rounded-full bg-gold-accent animate-pulse flex-shrink-0" />
             <p className="font-sans-modern text-sm font-medium text-on-surface">
               Join <span className="text-gold-accent font-bold">2,400+</span> women leaders
@@ -160,7 +167,7 @@ export default function RegisterPage() {
                     <input
                       type="text" name="name" value={form.name} onChange={handleChange}
                       placeholder="Alexandra Sterling" autoComplete="name"
-                      className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                   </div>
 
@@ -172,7 +179,7 @@ export default function RegisterPage() {
                     <input
                       type="email" name="email" value={form.email} onChange={handleChange}
                       placeholder="you@leadsher.com" autoComplete="email"
-                      className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                   </div>
 
@@ -219,7 +226,7 @@ export default function RegisterPage() {
                     <input
                       type="password" name="confirm" value={form.confirm} onChange={handleChange}
                       placeholder="Repeat your password" autoComplete="new-password"
-                      className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                     {form.confirm && form.confirm !== form.password && (
                       <p className="text-[10px] mt-1.5 text-error tracking-wider uppercase">Passwords do not match</p>
@@ -249,7 +256,7 @@ export default function RegisterPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white transition-all"
+                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all"
                       >
                         <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -261,7 +268,7 @@ export default function RegisterPage() {
                       </button>
                       <button
                         type="button"
-                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white transition-all"
+                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all"
                       >
                         <svg className="w-4 h-4 fill-[#0077b5] flex-shrink-0" viewBox="0 0 24 24">
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
@@ -287,8 +294,8 @@ export default function RegisterPage() {
                           key={value}
                           className={`cursor-pointer border-2 p-7 flex flex-col items-center text-center transition-all select-none ${
                             active
-                              ? 'border-gold-accent shadow-[0_0_24px_rgba(212,175,55,0.25)] bg-white'
-                              : 'border-outline-variant bg-white hover:border-gold-accent/60'
+                              ? 'border-gold-accent shadow-[0_0_24px_rgba(212,175,55,0.25)] bg-white dark:bg-surface-container'
+                              : 'border-outline-variant bg-white dark:bg-surface-container hover:border-gold-accent/60'
                           }`}
                         >
                           <input type="radio" name="role" value={value}
@@ -314,7 +321,7 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Review summary */}
-                  <div className="bg-blue-50 border border-blue-200 divide-y divide-blue-200/60">
+                  <div className="bg-blue-50 dark:bg-surface-container border border-blue-200 dark:border-outline-variant/30 divide-y divide-blue-200/60 dark:divide-outline-variant/20">
                     {[
                       { label: 'Name',  value: form.name },
                       { label: 'Email', value: form.email },

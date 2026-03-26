@@ -1,5 +1,19 @@
 const resourceService = require('../services/resourceService');
 
+// GET /api/resources/my
+exports.getMyResources = async (req, res) => {
+  try {
+    const result = await resourceService.getMyResources(req.user._id, {
+      page: req.query.page,
+      limit: req.query.limit,
+      sort: req.query.sort,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get your resources.' });
+  }
+};
+
 // POST /api/resources
 exports.createResource = async (req, res) => {
   try {

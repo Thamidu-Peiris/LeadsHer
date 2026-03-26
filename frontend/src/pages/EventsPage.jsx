@@ -55,7 +55,7 @@ export default function EventsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8 space-y-4">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-gray-100 dark:border-outline-variant/20 shadow-sm p-4 mb-8 space-y-4">
         <div className="flex gap-2">
           <input
             type="text" placeholder="Search events…"
@@ -67,13 +67,13 @@ export default function EventsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-gray-500 self-center">Category:</span>
+          <span className="text-xs text-gray-500 dark:text-on-surface-variant self-center">Category:</span>
           {CATEGORIES.map((c) => (
             <button
               key={c}
               onClick={() => setFilter('category', c)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filters.category === c ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filters.category === c ? 'bg-brand-600 text-white' : 'bg-gray-100 dark:bg-surface-container text-gray-600 dark:text-on-surface-variant hover:bg-gray-200 dark:hover:bg-surface-container-high'
               }`}
             >
               {c === 'all' ? 'All' : c}
@@ -82,13 +82,13 @@ export default function EventsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-gray-500 self-center">Status:</span>
+          <span className="text-xs text-gray-500 dark:text-on-surface-variant self-center">Status:</span>
           {STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => setFilter('status', s)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filters.status === s ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filters.status === s ? 'bg-brand-600 text-white' : 'bg-gray-100 dark:bg-surface-container text-gray-600 dark:text-on-surface-variant hover:bg-gray-200 dark:hover:bg-surface-container-high'
               }`}
             >
               {s === 'all' ? 'All' : s}
@@ -102,11 +102,11 @@ export default function EventsPage() {
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : events.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-lg">No events found.</p>
+          <p className="text-gray-400 dark:text-on-surface-variant text-lg">No events found.</p>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-400 mb-4">{pagination.total} events</p>
+          <p className="text-sm text-gray-400 dark:text-on-surface-variant mb-4">{pagination.total} events</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((e) => <EventCard key={e._id} event={e} />)}
           </div>
