@@ -16,6 +16,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
 
+  const avatarSrc = user?.profilePicture || user?.avatar || '';
+
   const handleLogout = async () => {
     await logout();
     toast.success('You have signed out.');
@@ -59,8 +61,12 @@ export default function Navbar() {
                 onClick={() => setDropOpen((v) => !v)}
                 className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-sm">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-container flex items-center justify-center text-white font-bold text-sm">
+                  {avatarSrc ? (
+                    <img alt="" src={avatarSrc} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{user?.name?.[0]?.toUpperCase() || 'U'}</span>
+                  )}
                 </div>
                 {user?.name?.split(' ')[0]}
               </button>
