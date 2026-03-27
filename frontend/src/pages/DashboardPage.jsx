@@ -1092,6 +1092,16 @@ function AdminDashboard({ user, myStories, myEvents }) {
     () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentee'),
     [mentorMenteeUsers]
   );
+  const newestUnverifiedMentors = useMemo(() => (
+    mentorProfiles
+      .filter((p) => !p?.isVerified)
+      .sort((a, b) => {
+        const ta = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+        const tb = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+        return tb - ta;
+      })
+      .slice(0, 5)
+  ), [mentorProfiles]);
 
   return (
     <div className="min-h-screen">
@@ -1529,6 +1539,48 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 </>
                 )}
               </>
+            )}
+
+            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
+                <Link
+                  to="/dashboard/manage-account"
+                  className="text-xs uppercase tracking-widest font-bold text-primary hover:underline"
+                >
+                  Manage verifications
+                </Link>
+              </div>
+              {newestUnverifiedMentors.length === 0 ? (
+                <p className="text-on-surface-variant text-sm">No pending mentors right now.</p>
+              ) : (
+                <div className="space-y-3">
+                  {newestUnverifiedMentors.map((m) => {
+                    const mentorUser = m?.user || {};
+                    const avatar = mentorUser?.profilePicture || mentorUser?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+                    return (
+                      <div key={m._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-surface-container-lowest/60">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-md overflow-hidden border border-outline-variant/25 shrink-0">
+                              <img src={avatar} alt={mentorUser?.name || 'Mentor'} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-on-surface line-clamp-1">{mentorUser?.name || 'Mentor'}</p>
+                              <p className="text-xs text-outline line-clamp-1">{mentorUser?.email || ''}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-red-200 bg-red-50 text-red-600 font-bold">
+                            Pending Verify
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             )}
 
             {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
