@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
 import Spinner from '../components/common/Spinner';
+import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -52,7 +53,7 @@ const SIDEBAR_W = 260;
 
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
-function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate }) {
+function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate, onPreview }) {
   const cfg        = TYPE_CFG[resource.type] || TYPE_CFG.article;
   const diffBadge  = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
   const isBookmarked = bookmarkedIds.has(resource._id);
@@ -61,17 +62,7 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate 
     onDownload(resource._id);
     const rawUrl = resource.file?.url || resource.externalLink;
     if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
-    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
-    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
-      window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`, '_blank', 'noopener,noreferrer');
-    } else if (ext === 'zip') {
-      const a = document.createElement('a');
-      a.href = rawUrl; a.setAttribute('download', resource.title || 'download');
-      a.target = '_blank'; a.rel = 'noopener noreferrer';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else {
-      window.open(rawUrl, '_blank', 'noopener,noreferrer');
-    }
+    onPreview(resource);
   };
 
   return (
@@ -362,6 +353,7 @@ export default function MenteeDashboardResourcesPage() {
 
   /* ── Rate modal ── */
   const [rateTarget, setRateTarget] = useState(null);
+  const [previewResource, setPreviewResource] = useState(null);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
@@ -726,6 +718,7 @@ export default function MenteeDashboardResourcesPage() {
                       onBookmark={handleBookmark}
                       onDownload={handleDownload}
                       onRate={setRateTarget}
+                      onPreview={setPreviewResource}
                     />
                   ))}
                 </div>
@@ -776,6 +769,9 @@ export default function MenteeDashboardResourcesPage() {
           onClose={() => setRateTarget(null)}
           onSave={submitRating}
         />
+      )}
+      {previewResource && (
+        <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
       )}
     </div>
   );
