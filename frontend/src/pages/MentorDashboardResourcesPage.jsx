@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
 import Spinner from '../components/common/Spinner';
+import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
@@ -85,7 +86,7 @@ const EMPTY_FORM = {
 
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
-function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, onDownload, onRate, onEdit, onDelete }) {
+function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, onDownload, onRate, onEdit, onDelete, onPreview }) {
   const isOwner   = resource.uploadedBy?._id === userId || resource.uploadedBy === userId;
   const cfg       = TYPE_CFG[resource.type] || TYPE_CFG.article;
   const diffBadge = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
@@ -95,31 +96,7 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
     onDownload(resource._id);
     const rawUrl = resource.file?.url || resource.externalLink;
     if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
-
-    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
-
-    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
-      // Use Google Docs Viewer — works with any publicly accessible URL
-      // and doesn't depend on browser PDF plugin or Cloudinary Content-Type headers
-      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
-      window.open(viewerUrl, '_blank', 'noopener,noreferrer');
-    } else if (ext === 'mp4' || ext === 'mp3') {
-      // Video/audio — Cloudinary video URLs stream correctly
-      window.open(rawUrl, '_blank', 'noopener,noreferrer');
-    } else if (ext === 'zip') {
-      // ZIP — force download
-      const a = document.createElement('a');
-      a.href = rawUrl;
-      a.setAttribute('download', resource.title || 'download');
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } else {
-      // External links or unknown types
-      window.open(rawUrl, '_blank', 'noopener,noreferrer');
-    }
+    onPreview(resource);
   };
 
   return (
@@ -594,6 +571,7 @@ export default function MentorDashboardResourcesPage() {
   const [uploadModal, setUploadModal] = useState(false);
   const [editTarget, setEditTarget]   = useState(null);
   const [rateTarget, setRateTarget]   = useState(null);
+  const [previewResource, setPreviewResource] = useState(null);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
@@ -988,6 +966,7 @@ export default function MentorDashboardResourcesPage() {
                       onRate={handleRate}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
+                      onPreview={setPreviewResource}
                     />
                   ))}
                 </div>
@@ -1039,6 +1018,9 @@ export default function MentorDashboardResourcesPage() {
       {rateTarget && (
         <RateModal resource={rateTarget}
           onClose={() => setRateTarget(null)} onSave={submitRating} />
+      )}
+      {previewResource && (
+        <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
       )}
     </div>
   );
