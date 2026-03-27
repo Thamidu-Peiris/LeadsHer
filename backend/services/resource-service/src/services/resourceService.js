@@ -16,7 +16,11 @@ const recalcAverageRating = (ratings) => {
 
 // --- CRUD ---
 
+const normalizeRole = (r) => (r || '').toLowerCase();
+
 const createResource = async (data, userId, userRole) => {
+  const role = normalizeRole(userRole);
+
   // Duplicate detection by title
   const existing = await Resource.findOne({
     title: { $regex: new RegExp(`^${data.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
@@ -26,7 +30,7 @@ const createResource = async (data, userId, userRole) => {
   }
 
   // Premium resources require Mentor or Admin role
-  if (data.isPremium && userRole !== 'Mentor' && userRole !== 'Admin') {
+  if (data.isPremium && role !== 'mentor' && role !== 'admin') {
     throwError('Only mentors or admins can create premium resources.', 403);
   }
 
@@ -45,7 +49,7 @@ const createResource = async (data, userId, userRole) => {
     difficulty: data.difficulty || 'beginner',
     duration: data.duration || 0,
     isPremium: data.isPremium || false,
-    isApproved: userRole === 'Admin' || userRole === 'Mentor',
+    isApproved: role === 'admin',
   });
 
   await resource.populate('uploadedBy', 'name email avatar');
@@ -145,16 +149,17 @@ const getResourceById = async (resourceId, userId) => {
 };
 
 const updateResource = async (resourceId, userId, userRole, updates) => {
+  const role = normalizeRole(userRole);
   const resource = await Resource.findById(resourceId);
   if (!resource) throwError('Resource not found.', 404);
 
   const isOwner = resource.uploadedBy.toString() === userId.toString();
-  const isAdmin = userRole === 'Admin';
+  const isAdmin = role === 'admin';
   if (!isOwner && !isAdmin) {
     throwError('You can only update your own resources.', 403);
   }
 
-  if (updates.isPremium && userRole !== 'Mentor' && userRole !== 'Admin') {
+  if (updates.isPremium && role !== 'mentor' && role !== 'admin') {
     throwError('Only mentors or admins can set premium resources.', 403);
   }
 
@@ -178,11 +183,12 @@ const updateResource = async (resourceId, userId, userRole, updates) => {
 };
 
 const deleteResource = async (resourceId, userId, userRole) => {
+  const role = normalizeRole(userRole);
   const resource = await Resource.findById(resourceId);
   if (!resource) throwError('Resource not found.', 404);
 
   const isOwner = resource.uploadedBy.toString() === userId.toString();
-  const isAdmin = userRole === 'Admin';
+  const isAdmin = role === 'admin';
   if (!isOwner && !isAdmin) {
     throwError('You can only delete your own resources.', 403);
   }
@@ -348,6 +354,129 @@ const getMyResources = async (userId, { page = 1, limit = 20, sort = '-createdAt
   };
 };
 
+// --- Admin ---
+
+const getAdminResources = async ({
+  page = 1,
+  limit = 20,
+  status,
+  category,
+  type,
+  search,
+  sort = '-createdAt',
+}) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  limit = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const skip = (page - 1) * limit;
+
+  const query = {};
+  if (status === 'approved') query.isApproved = true;
+  if (status === 'pending') query.isApproved = false;
+  if (category) query.category = category;
+  if (type) query.type = type;
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { author: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  const [resources, total] = await Promise.all([
+    Resource.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('uploadedBy', 'name email')
+      .lean(),
+    Resource.countDocuments(query),
+  ]);
+
+  return {
+    resources: resources.map((r) => ({
+      ...r,
+      bookmarkCount: r.bookmarkedBy ? r.bookmarkedBy.length : 0,
+      ratingCount: r.ratings ? r.ratings.length : 0,
+      bookmarkedBy: undefined,
+      ratings: undefined,
+    })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+const getAdminAnalytics = async () => {
+  const [totals, byType, byCategory, topDownloads, topViewed] = await Promise.all([
+    Resource.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          approved: { $sum: { $cond: ['$isApproved', 1, 0] } },
+          pending: { $sum: { $cond: ['$isApproved', 0, 1] } },
+          totalDownloads: { $sum: '$downloads' },
+          totalViews: { $sum: '$views' },
+          avgRating: { $avg: '$averageRating' },
+        },
+      },
+    ]),
+    Resource.aggregate([
+      { $group: { _id: '$type', count: { $sum: 1 }, downloads: { $sum: '$downloads' } } },
+      { $sort: { count: -1 } },
+    ]),
+    Resource.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    Resource.find({ isApproved: true })
+      .sort('-downloads')
+      .limit(5)
+      .select('title type downloads views averageRating')
+      .lean(),
+    Resource.find({ isApproved: true })
+      .sort('-views')
+      .limit(5)
+      .select('title type downloads views averageRating')
+      .lean(),
+  ]);
+
+  const t = totals[0] || { total: 0, approved: 0, pending: 0, totalDownloads: 0, totalViews: 0, avgRating: 0 };
+
+  return {
+    overview: {
+      total: t.total,
+      approved: t.approved,
+      pending: t.pending,
+      totalDownloads: t.totalDownloads,
+      totalViews: t.totalViews,
+      avgRating: t.avgRating ? Math.round(t.avgRating * 10) / 10 : 0,
+    },
+    byType,
+    byCategory,
+    topDownloads,
+    topViewed,
+  };
+};
+
+const approveResource = async (resourceId) => {
+  const resource = await Resource.findByIdAndUpdate(
+    resourceId,
+    { isApproved: true },
+    { new: true }
+  ).populate('uploadedBy', 'name email');
+  if (!resource) throwError('Resource not found.', 404);
+  return resource;
+};
+
+const rejectResource = async (resourceId) => {
+  const resource = await Resource.findByIdAndUpdate(
+    resourceId,
+    { isApproved: false },
+    { new: true }
+  ).populate('uploadedBy', 'name email');
+  if (!resource) throwError('Resource not found.', 404);
+  return resource;
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -360,4 +489,8 @@ module.exports = {
   rateResource,
   getRecommendedResources,
   getMyResources,
+  getAdminResources,
+  getAdminAnalytics,
+  approveResource,
+  rejectResource,
 };

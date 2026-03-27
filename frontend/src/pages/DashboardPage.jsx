@@ -1114,6 +1114,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               { to: '/stories', icon: 'auto_stories', label: 'Manage Stories' },
               { to: '/events', icon: 'event', label: 'Manage Events' },
               { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentors' },
+              { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
               { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
             ].map((item) => (
