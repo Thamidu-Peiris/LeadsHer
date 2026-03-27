@@ -69,113 +69,190 @@ export default function StoryDetailPage() {
   if (!story)  return null;
 
   const isOwner = user?._id === (story.author?._id || story.author);
+  const authorName = story.author?.name || 'Unknown Mentor';
+  const authorAvatar = story.author?.profilePicture || story.author?.avatar || '';
+  const currentUserAvatar = user?.profilePicture || user?.avatar || '';
+  const categoryLabel = story.category ? story.category.replace(/-/g, ' ') : 'story';
+  const publishedDate = new Date(story.publishedAt || story.createdAt).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const excerpt = story.excerpt || '';
+  const hasCover = !!story.coverImage;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-400 dark:text-on-surface-variant mb-6">
-        <Link to="/stories" className="hover:text-brand-600">Stories</Link>
-        <span>/</span>
-        <span className="text-gray-600 dark:text-on-surface-variant truncate max-w-xs">{story.title}</span>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-12">
+      <nav className="flex items-center gap-2 text-xs uppercase tracking-widest text-outline mb-6">
+        <Link to="/stories" className="hover:text-gold-accent transition-colors">Stories</Link>
+        <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+        <span className="line-clamp-1 text-on-surface-variant max-w-[65%]">{story.title}</span>
       </nav>
 
-      {/* Category badge */}
-      <span className="badge bg-brand-100 text-brand-700 mb-4">{story.category}</span>
-
-      <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-on-surface leading-tight mb-6">
-        {story.title}
-      </h1>
-
-      {/* Meta */}
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-100 dark:border-outline-variant/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold">
-            {story.author?.name?.[0]?.toUpperCase() || 'A'}
+      <article className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-2xl overflow-hidden editorial-shadow">
+        {hasCover && (
+          <div className="relative h-[240px] sm:h-[320px] lg:h-[380px]">
+            <img
+              src={story.coverImage}
+              alt={story.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+            <div className="absolute bottom-5 left-5 flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                {categoryLabel}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-black/50 text-[10px] font-bold uppercase tracking-widest text-white/95">
+                {story.status || 'published'}
+              </span>
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-sm text-gray-900 dark:text-on-surface">{story.author?.name || 'Unknown'}</p>
-            <p className="text-xs text-gray-400 dark:text-on-surface-variant">
-              {new Date(story.publishedAt || story.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              {' · '}{story.readingTime} min read
-            </p>
-          </div>
-        </div>
+        )}
 
-        <div className="flex items-center gap-2">
-          {isOwner && (
-            <>
-              <Link to={`/stories/${id}/edit`} className="btn-secondary text-xs py-1.5 px-3">Edit</Link>
-              <button onClick={handleDelete} className="btn-ghost text-xs py-1.5 px-3 text-red-500 hover:bg-red-50">Delete</button>
-            </>
+        <div className="p-6 sm:p-8 lg:p-10">
+          {!hasCover && (
+            <span className="inline-flex px-3 py-1 rounded-full border border-gold-accent/35 bg-gold-accent/10 text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4">
+              {categoryLabel}
+            </span>
           )}
+
+          <h1 className="font-serif-alt text-3xl sm:text-4xl lg:text-5xl font-bold text-on-surface leading-tight tracking-tight">
+            {story.title}
+          </h1>
+          {excerpt && (
+            <p className="mt-4 text-base sm:text-lg italic text-on-surface-variant leading-relaxed max-w-3xl">
+              {excerpt}
+            </p>
+          )}
+
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-outline-variant/15">
+            <div className="flex items-center gap-3">
+              {authorAvatar ? (
+                <img
+                  src={authorAvatar}
+                  alt={authorName}
+                  className="w-12 h-12 rounded-full object-cover border border-outline-variant/20"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/40 to-secondary/35 flex items-center justify-center text-white font-bold">
+                  {authorName?.[0]?.toUpperCase() || 'M'}
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-semibold text-on-surface">{authorName}</p>
+                <p className="text-xs text-outline">Mentor storyteller</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="px-3 py-1 rounded-full border border-outline-variant/20 bg-surface-container-low text-on-surface-variant">
+                {publishedDate}
+              </span>
+              <span className="px-3 py-1 rounded-full border border-outline-variant/20 bg-surface-container-low text-on-surface-variant">
+                {story.readingTime || 1} min read
+              </span>
+              <span className="px-3 py-1 rounded-full border border-outline-variant/20 bg-surface-container-low text-on-surface-variant">
+                {story.views || 0} views
+              </span>
+            </div>
+          </div>
+
+          {isOwner && (
+            <div className="mt-5 flex items-center gap-2">
+              <Link to={`/stories/${id}/edit`} className="inline-flex items-center px-4 py-2 rounded-lg border border-outline-variant/30 text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-low transition-colors">
+                Edit story
+              </Link>
+              <button onClick={handleDelete} className="inline-flex items-center px-4 py-2 rounded-lg border border-red-500/25 bg-red-500/[0.08] text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-300 hover:bg-red-500/[0.14] transition-colors">
+                Delete
+              </button>
+            </div>
+          )}
+
+          <div
+            className="mt-8 prose prose-gray dark:prose-invert max-w-none text-gray-700 dark:text-on-surface leading-relaxed text-base story-body-html"
+            dangerouslySetInnerHTML={{ __html: story.content || '' }}
+          />
+
+          {story.tags?.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-2">
+              {story.tags.map((t) => (
+                <span key={t} className="inline-flex px-3 py-1 rounded-full border border-outline-variant/20 bg-surface-container-low text-xs text-on-surface-variant">
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-8 flex items-center justify-between flex-wrap gap-3 py-4 border-y border-outline-variant/15">
+            <button
+              onClick={handleLike}
+              disabled={liking}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                liked
+                  ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border border-red-200 dark:border-red-800/40'
+                  : 'border border-outline-variant/30 text-on-surface-variant hover:border-red-200 hover:text-red-500'
+              }`}
+            >
+              <svg className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 20 20" stroke="currentColor" strokeWidth={1.5}>
+                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+              </svg>
+              {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+            </button>
+            <span className="text-sm text-on-surface-variant">{comments.length} comments</span>
+          </div>
         </div>
-      </div>
+      </article>
 
-      {/* Content — HTML from TinyMCE editor */}
-      <div
-        className="prose prose-gray dark:prose-invert max-w-none text-gray-700 dark:text-on-surface leading-relaxed text-base mb-10 story-body-html"
-        dangerouslySetInnerHTML={{ __html: story.content || '' }}
-      />
-
-      {/* Tags */}
-      {story.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          {story.tags.map((t) => (
-            <span key={t} className="badge bg-gray-100 dark:bg-surface-container text-gray-600 dark:text-on-surface-variant">#{t}</span>
-          ))}
-        </div>
-      )}
-
-      {/* Like */}
-      <div className="flex items-center gap-4 py-6 border-t border-b border-gray-100 dark:border-outline-variant/20 mb-10">
-        <button
-          onClick={handleLike}
-          disabled={liking}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-            liked ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border border-red-200 dark:border-red-800/40' : 'border border-gray-200 dark:border-outline-variant/30 text-gray-500 dark:text-on-surface-variant hover:border-red-200 hover:text-red-500'
-          }`}
-        >
-          <svg className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} viewBox="0 0 20 20" stroke="currentColor" strokeWidth={1.5}>
-            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-          </svg>
-          {likeCount} {likeCount === 1 ? 'like' : 'likes'}
-        </button>
-        <span className="text-sm text-gray-400 dark:text-on-surface-variant">{story.views || 0} views</span>
-      </div>
-
-      {/* Comments */}
-      <section>
-        <h2 className="font-display text-xl font-semibold text-gray-900 dark:text-on-surface mb-6">
+      <section className="mt-10">
+        <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-5">
           Comments ({comments.length})
         </h2>
 
         {isAuthenticated && (
           <form onSubmit={handleComment} className="mb-6 flex gap-3">
-            <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            {currentUserAvatar ? (
+              <img
+                src={currentUserAvatar}
+                alt={user?.name || 'You'}
+                className="w-10 h-10 rounded-full object-cover border border-outline-variant/20 shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/80 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 flex gap-2">
               <input
-                value={comment} onChange={(e) => setComment(e.target.value)}
-                className="input flex-1" placeholder="Add a comment…"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="input flex-1"
+                placeholder="Add a thoughtful comment…"
               />
-              <button type="submit" className="btn-primary px-4">Post</button>
+              <button type="submit" className="btn-primary px-5">Post</button>
             </div>
           </form>
         )}
 
         {comments.length === 0 ? (
-          <p className="text-gray-400 dark:text-on-surface-variant text-sm">No comments yet. Be the first!</p>
+          <p className="text-on-surface-variant text-sm">No comments yet. Be the first!</p>
         ) : (
           <ul className="space-y-4">
             {comments.map((c) => (
               <li key={c._id} className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-surface-container-high flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  {c.user?.name?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <div className="bg-gray-50 dark:bg-surface-container rounded-xl px-4 py-3 flex-1">
-                  <p className="font-medium text-sm text-gray-800 dark:text-on-surface">{c.user?.name || 'User'}</p>
-                  <p className="text-sm text-gray-600 dark:text-on-surface-variant mt-0.5">{c.content}</p>
+                {c.user?.profilePicture || c.user?.avatar ? (
+                  <img
+                    src={c.user?.profilePicture || c.user?.avatar}
+                    alt={c.user?.name || 'User'}
+                    className="w-9 h-9 rounded-full object-cover border border-outline-variant/20 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-white font-bold text-xs shrink-0">
+                    {c.user?.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="bg-white dark:bg-surface-container border border-outline-variant/15 rounded-xl px-4 py-3 flex-1">
+                  <p className="font-medium text-sm text-on-surface">{c.user?.name || 'User'}</p>
+                  <p className="text-sm text-on-surface-variant mt-0.5">{c.content}</p>
                 </div>
               </li>
             ))}
