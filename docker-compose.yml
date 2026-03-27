@@ -89,6 +89,9 @@ services:
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - RESOURCE_SERVICE_PORT=5004
       - DOTENV_PATH=/dev/null
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     volumes:
       - resource-uploads:/app/uploads/resources
     depends_on:

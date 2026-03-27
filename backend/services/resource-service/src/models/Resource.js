@@ -41,6 +41,8 @@ const resourceSchema = new mongoose.Schema(
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     file: {
       url: { type: String, default: '' },
+      publicId: { type: String, default: '' },      // Cloudinary public_id for re-signing
+      resourceType: { type: String, default: 'raw' }, // Cloudinary resource_type
       type: { type: String, default: '' },
       size: { type: Number, default: 0 },
     },
