@@ -1541,7 +1541,7 @@ export default function DashboardPage() {
               <div key={s._id} className="relative group">
                 <StoryCard story={s} />
                 <div className="absolute top-2 right-2 hidden group-hover:flex gap-1.5">
-                  <Link to={`/stories/${s._id}/edit`}
+                  <Link to={`/dashboard/stories/${s._id}/edit`}
                     className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-gray-700 hover:bg-gray-50 border">Edit</Link>
                   <button onClick={() => handleDeleteStory(s._id)}
                     className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 border">Del</button>

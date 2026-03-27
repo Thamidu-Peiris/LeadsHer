@@ -467,7 +467,7 @@ export default function MentorDashboardStoriesPage() {
                             <span className="material-symbols-outlined text-[22px] font-light" aria-hidden>open_in_new</span>
                           </Link>
                           <Link
-                            to={`/stories/${s._id}/edit`}
+                            to={`/dashboard/stories/${s._id}/edit`}
                             className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-outline-variant/35 bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:border-outline-variant/55 hover:bg-surface-container-high/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-accent/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
                           >
                             Edit

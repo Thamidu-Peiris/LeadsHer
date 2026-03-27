@@ -52,13 +52,17 @@ function MainLayout() {
     location.pathname.startsWith('/dashboard') &&
     (user?.role === 'mentor' || user?.role === 'mentee' || user?.role === 'admin');
 
+  const hideChromeForStoryEditor = /^\/stories\/[^/]+\/edit$/.test(location.pathname);
+
+  const hideChrome = hideChromeForRoleDashboard || hideChromeForStoryEditor;
+
   return (
     <div className="min-h-screen flex flex-col">
-      {!hideChromeForRoleDashboard && <Navbar />}
+      {!hideChrome && <Navbar />}
       <div className="flex-1">
         <Outlet />
       </div>
-      {!hideChromeForRoleDashboard && <Footer />}
+      {!hideChrome && <Footer />}
     </div>
   );
 }
@@ -113,6 +117,9 @@ export default function App() {
             <Route path="/dashboard/stories/new" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
             } />
+            <Route path="/dashboard/stories/:id/edit" element={
+              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
+            } />
             <Route path="/dashboard/mentorship" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
             } />
@@ -133,7 +140,7 @@ export default function App() {
               <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
             } />
             <Route path="/stories/:id/edit" element={
-              <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><MentorDashboardCreateStoryPage /></ProtectedRoute>
             } />
             <Route path="/events/new" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>

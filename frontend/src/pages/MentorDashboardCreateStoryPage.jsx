@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
@@ -15,6 +15,9 @@ const CATEGORY_CHOICES = [
 ];
 
 export default function MentorDashboardCreateStoryPage() {
+  const { id: editStoryId } = useParams();
+  const isEditMode = Boolean(editStoryId);
+
   const { user, logout, canManageEvents } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
@@ -34,6 +37,45 @@ export default function MentorDashboardCreateStoryPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState('');
+  const [storyLoading, setStoryLoading] = useState(isEditMode);
+
+  const storiesListPath =
+    user?.role === 'mentor' || user?.role === 'admin' ? '/dashboard/stories' : '/stories';
+
+  useEffect(() => {
+    if (!editStoryId) return;
+    let cancelled = false;
+    (async () => {
+      setStoryLoading(true);
+      setError('');
+      try {
+        const res = await storyApi.getById(editStoryId);
+        const d = res.data;
+        if (cancelled) return;
+        setForm({
+          coverImage: d.coverImage || '',
+          title: d.title || '',
+          excerpt: d.excerpt || '',
+          content: d.content || '',
+          category: d.category || 'leadership',
+          tags: Array.isArray(d.tags) ? d.tags.join(', ') : '',
+        });
+        setStatus(d.status === 'published' ? 'published' : 'draft');
+        setCoverPreviewUrl('');
+        setCoverFile(null);
+      } catch (e) {
+        if (!cancelled) {
+          toast.error(e.response?.data?.message || 'Could not load story.');
+          navigate(user?.role === 'mentor' || user?.role === 'admin' ? '/dashboard/stories' : '/stories');
+        }
+      } finally {
+        if (!cancelled) setStoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editStoryId, navigate, user?.role]);
 
   const tagsList = useMemo(
     () => form.tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -64,9 +106,11 @@ export default function MentorDashboardCreateStoryPage() {
     setForm((f) => ({ ...f, [key]: value }));
   };
 
+  const coverDisplayUrl = coverPreviewUrl || form.coverImage || '';
+
   const handleCoverFileSelect = (file) => {
     if (!file) return;
-    if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+    if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
     const preview = URL.createObjectURL(file);
     setCoverPreviewUrl(preview);
     setCoverFile(file);
@@ -105,19 +149,41 @@ export default function MentorDashboardCreateStoryPage() {
         excerpt: form.excerpt,
         content: form.content,
         category: form.category,
-        coverImage: coverImageUrl || undefined,
         status: nextStatus,
         tags: tagsList.slice(0, 5),
       };
-      const res = await storyApi.create(payload);
-      setStatus(nextStatus);
-      setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      if (nextStatus === 'draft') {
-        toast.success('Draft saved!');
-        navigate('/dashboard/stories');
+      if (isEditMode && editStoryId) {
+        payload.coverImage = coverImageUrl;
       } else {
-        toast.success('Story published!');
-        navigate(`/stories/${res.data._id}`);
+        payload.coverImage = coverImageUrl || undefined;
+      }
+
+      if (isEditMode && editStoryId) {
+        await storyApi.update(editStoryId, payload);
+        setForm((f) => ({ ...f, coverImage: coverImageUrl }));
+        if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
+        setCoverPreviewUrl('');
+        setCoverFile(null);
+        setStatus(nextStatus);
+        setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        if (nextStatus === 'draft') {
+          toast.success('Draft updated!');
+          navigate(storiesListPath);
+        } else {
+          toast.success('Story published!');
+          navigate(`/stories/${editStoryId}`);
+        }
+      } else {
+        const res = await storyApi.create(payload);
+        setStatus(nextStatus);
+        setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        if (nextStatus === 'draft') {
+          toast.success('Draft saved!');
+          navigate('/dashboard/stories');
+        } else {
+          toast.success('Story published!');
+          navigate(`/stories/${res.data._id}`);
+        }
       }
     } catch (e) {
       const msg = e.response?.data?.message || 'Failed to save story.';
@@ -127,6 +193,14 @@ export default function MentorDashboardCreateStoryPage() {
       setSaving(false);
     }
   };
+
+  if (isEditMode && storyLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -197,7 +271,7 @@ export default function MentorDashboardCreateStoryPage() {
                 Stories
               </Link>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">New</span>
+              <span className="text-on-surface">{isEditMode ? 'Edit' : 'New'}</span>
             </div>
 
             <div className="flex items-center gap-4">
@@ -258,19 +332,24 @@ export default function MentorDashboardCreateStoryPage() {
                 <div className="mb-12">
                   <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-3">
                     Cover Image
+                    {coverDisplayUrl && (
+                      <span className="ml-2 font-normal normal-case text-[11px] text-on-surface-variant">
+                        — Replace or remove below
+                      </span>
+                    )}
                   </label>
                   <div className="group relative w-full h-[280px] border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-4 bg-surface-container-lowest hover:border-gold-accent/40 transition-all overflow-hidden">
-                    {coverPreviewUrl ? (
+                    {coverDisplayUrl ? (
                       <>
                         <img
-                          src={coverPreviewUrl}
+                          src={coverDisplayUrl}
                           alt="Cover preview"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/25" />
-                        <div className="relative z-10 flex items-center gap-3">
-                          <label className="cursor-pointer bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-on-surface transition-colors">
-                            Change
+                        <div className="relative z-10 flex flex-wrap items-center justify-center gap-3">
+                          <label className="cursor-pointer bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-on-surface transition-colors shadow-sm">
+                            Replace image
                             <input
                               type="file"
                               accept="image/*"
@@ -280,9 +359,9 @@ export default function MentorDashboardCreateStoryPage() {
                           </label>
                           <button
                             type="button"
-                            className="bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-tertiary transition-colors"
+                            className="bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-tertiary transition-colors shadow-sm"
                             onClick={() => {
-                              if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+                              if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
                               setCoverPreviewUrl('');
                               setCoverFile(null);
                               setForm((f) => ({ ...f, coverImage: '' }));
@@ -464,7 +543,7 @@ export default function MentorDashboardCreateStoryPage() {
             <div className="flex items-center gap-6">
               <button
                 type="button"
-                onClick={() => navigate('/dashboard/stories')}
+                onClick={() => navigate(storiesListPath)}
                 className="flex items-center gap-2 text-outline hover:text-primary transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">arrow_back</span>
