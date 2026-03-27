@@ -53,4 +53,30 @@ const getSignedUrl = (publicId, resourceType = 'raw') => {
   });
 };
 
-module.exports = { uploadBuffer, getSignedUrl };
+/**
+ * Upload an image buffer to Cloudinary (thumbnails).
+ * Uses resource_type: 'image' and stores in leadsher/thumbnails/.
+ */
+const uploadImageBuffer = (buffer, originalname) => {
+  return new Promise((resolve, reject) => {
+    const ext      = (originalname || 'image.jpg').split('.').pop().toLowerCase();
+    const publicId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'leadsher/thumbnails',
+        resource_type: 'image',
+        type: 'upload',
+        public_id: publicId,
+        use_filename: false,
+      },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
+    Readable.from(buffer).pipe(stream);
+  });
+};
+
+module.exports = { uploadBuffer, uploadImageBuffer, getSignedUrl };
