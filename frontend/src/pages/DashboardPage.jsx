@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
 import { mentorApi } from '../api/mentorApi';
 import { authApi } from '../api/authApi';
+import { mentorshipApi } from '../api/mentorshipApi';
 
 function buildMenteeBio(main, goals, interests) {
   const parts = [main?.trim() || ''];
@@ -39,6 +40,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 
   const userId = user?.id ?? user?._id;
   const onboardingKey = userId ? `leadsher_onboarding_mentorprofile_${userId}` : '';
+  const [mentorProfile, setMentorProfile] = useState(null);
 
   const toList = (v) => String(v || '').split(',').map((t) => t.trim()).filter(Boolean);
   const isComplete = (p) => {
@@ -59,6 +61,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     mentorApi.getMyProfile()
       .then((res) => {
         const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        setMentorProfile(p);
         if (!isComplete(p)) {
           setOnboardOpen(true);
           if (p) {
@@ -81,6 +84,21 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
       })
       .finally(() => setOnboardLoading(false));
   }, [userId, onboardingKey]);
+
+  useEffect(() => {
+    if (!userId) return;
+    mentorApi.getMyProfile()
+      .then((res) => {
+        const p = res.data?.data || res.data?.data?.data || res.data?.data || null;
+        setMentorProfile(p);
+      })
+      .catch(() => setMentorProfile(null));
+  }, [userId]);
+
+  const avatarSrc =
+    user?.profilePicture ||
+    user?.avatar ||
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   const saveOnboarding = async () => {
     setOnboardError('');
@@ -217,11 +235,16 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
                 <img
                   alt="User avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
+                  className="w-full h-full object-cover rounded-full"
+                  src={avatarSrc}
                 />
               </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
+              <span
+                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
+                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
+                }`}
+                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
+              />
             </div>
             <div className="text-center">
               <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
@@ -317,8 +340,8 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 >
                   <img
                     alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
+                    className="w-full h-full object-cover rounded-full"
+                    src={avatarSrc}
                   />
                 </button>
 
@@ -947,6 +970,442 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   );
 }
 
+function AdminDashboard({ user, myStories, myEvents }) {
+  const firstName = user?.name?.split(' ')?.[0] || 'Admin';
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [mentorProfiles, setMentorProfiles] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [activeMentorships, setActiveMentorships] = useState([]);
+  const [feedbackRows, setFeedbackRows] = useState([]);
+  const [reportData, setReportData] = useState(null);
+
+  const loadAdminData = async () => {
+    setLoadingAdmin(true);
+    try {
+      const [u, mp, rq, ac, fb, rp] = await Promise.allSettled([
+        authApi.adminListUsers({ limit: 50 }),
+        mentorApi.getAll({ limit: 50 }),
+        mentorshipApi.adminGetRequests(),
+        mentorshipApi.adminGetActive(),
+        mentorshipApi.adminGetFeedback(),
+        mentorshipApi.adminGetReports(),
+      ]);
+      if (u.status === 'fulfilled') setUsers(u.value.data?.data || []);
+      if (mp.status === 'fulfilled') setMentorProfiles(mp.value.data?.data || mp.value.data?.mentors || []);
+      if (rq.status === 'fulfilled') setRequests(rq.value.data?.data || []);
+      if (ac.status === 'fulfilled') setActiveMentorships(ac.value.data?.data || []);
+      if (fb.status === 'fulfilled') setFeedbackRows(fb.value.data?.data || []);
+      if (rp.status === 'fulfilled') setReportData(rp.value.data?.data || null);
+    } finally {
+      setLoadingAdmin(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAdminData();
+  }, []);
+
+  const setRole = async (id, role) => {
+    try {
+      await authApi.adminSetUserRole(id, role);
+      toast.success('User role updated');
+      await loadAdminData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update role');
+    }
+  };
+
+  const setSuspended = async (id, suspended) => {
+    try {
+      await authApi.adminSetSuspension(id, suspended, suspended ? 'Suspended by admin' : '');
+      toast.success(suspended ? 'User suspended' : 'User reactivated');
+      await loadAdminData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update suspension');
+    }
+  };
+
+  const editUserProfile = async (u) => {
+    const name = window.prompt('Update name', u.name || '');
+    if (name === null) return;
+    const bio = window.prompt('Update bio', u.bio || '');
+    if (bio === null) return;
+    try {
+      await authApi.adminUpdateUserProfile(u.id || u._id, { name, bio });
+      toast.success('User profile updated');
+      await loadAdminData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update profile');
+    }
+  };
+
+  const toggleVerifyMentor = async (mentorProfile) => {
+    try {
+      await mentorApi.adminSetVerification(mentorProfile._id, !mentorProfile.isVerified);
+      toast.success(!mentorProfile.isVerified ? 'Mentor verified' : 'Mentor unverified');
+      await loadAdminData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update mentor verification');
+    }
+  };
+
+  const terminateMentorship = async (id) => {
+    if (!window.confirm('Terminate this mentorship?')) return;
+    try {
+      await mentorshipApi.adminTerminate(id, 'Terminated by admin');
+      toast.success('Mentorship terminated');
+      await loadAdminData();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to terminate mentorship');
+    }
+  };
+
+  const mentorProfileByUser = useMemo(() => {
+    const map = new Map();
+    mentorProfiles.forEach((p) => {
+      const id = p?.user?._id || p?.user;
+      if (id) map.set(String(id), p);
+    });
+    return map;
+  }, [mentorProfiles]);
+
+  const isManageAccountRoute = location.pathname.startsWith('/dashboard/manage-account');
+  const isManageMentorsRoute = location.pathname.startsWith('/dashboard/manage-mentors');
+  const isGeneratedReportsRoute = location.pathname.startsWith('/dashboard/generated-reports');
+  const mentorMenteeUsers = useMemo(
+    () => users.filter((u) => ['mentor', 'mentee'].includes((u?.role || '').toLowerCase())),
+    [users]
+  );
+
+  return (
+    <div className="min-h-screen">
+      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+        <aside className="fixed left-0 top-0 h-screen w-[280px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
+          <div className="p-6 border-b border-outline-variant/20">
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
+                  <img
+                    alt="Admin avatar"
+                    className="w-full h-full object-cover"
+                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
+                  />
+                </div>
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
+              </div>
+              <div className="text-center">
+                <p className="text-on-surface font-bold text-lg leading-tight">{user?.name || 'Admin'}</p>
+                <span className="inline-flex mt-2 px-3 py-1 rounded-full bg-gold-accent/15 text-gold-accent text-[10px] font-bold tracking-widest uppercase border border-gold-accent/25">
+                  Admin
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+            {[
+              { to: '/dashboard', icon: 'space_dashboard', label: 'Admin Dashboard' },
+              { to: '/dashboard/manage-account', icon: 'manage_accounts', label: 'Manage User Account' },
+              { to: '/stories', icon: 'auto_stories', label: 'Manage Stories' },
+              { to: '/events', icon: 'event', label: 'Manage Events' },
+              { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentors' },
+              { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
+              { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
+            ].map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/dashboard'}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
+                    isActive
+                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
+                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
+                  }`
+                }
+              >
+                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="ml-[280px] flex-1 flex flex-col min-h-screen">
+          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline mb-1">
+                <Link className="hover:text-gold-accent transition-colors" to="/">
+                  Home
+                </Link>
+                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
+                  Dashboard
+                </Link>
+                {isManageAccountRoute && (
+                  <>
+                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                    <span className="text-on-surface">Manage Account</span>
+                  </>
+                )}
+                {isManageMentorsRoute && (
+                  <>
+                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                    <span className="text-on-surface">Manage Mentors</span>
+                  </>
+                )}
+                {isGeneratedReportsRoute && (
+                  <>
+                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                    <span className="text-on-surface">Generated Reports</span>
+                  </>
+                )}
+              </div>
+              {isManageAccountRoute ? (
+                <>
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
+                  <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
+                </>
+              ) : isManageMentorsRoute ? (
+                <>
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentors</h1>
+                  <p className="text-xs text-outline uppercase tracking-widest">Mentorship administration and moderation</p>
+                </>
+              ) : isGeneratedReportsRoute ? (
+                <>
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h1>
+                  <p className="text-xs text-outline uppercase tracking-widest">Platform report from mentorship admin endpoints</p>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Welcome, {firstName}</h1>
+                  <p className="text-xs text-outline uppercase tracking-widest">Role: Admin · {user?.email}</p>
+                </>
+              )}
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((v) => !v)}
+                className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
+              >
+                <img
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                  src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
+                />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div className="px-5 py-4 border-b border-outline-variant/15">
+                    <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
+                    <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await logout();
+                        toast.success('You have signed out.');
+                      } finally {
+                        setProfileOpen(false);
+                        navigate('/');
+                      }
+                    }}
+                    className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">logout</span>
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          <div className="p-8 space-y-6 max-w-[1280px] mx-auto w-full">
+            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
+                { label: 'Total Events', value: myEvents.length, icon: 'event' },
+                { label: 'Active Mentorships', value: activeMentorships.length, icon: 'groups' },
+                { label: 'Requests', value: requests.length, icon: 'report' },
+              ].map((card) => (
+                <div key={card.label} className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-5">
+                  <div className="flex items-start justify-between">
+                    <p className="text-xs uppercase tracking-widest text-outline font-bold">{card.label}</p>
+                    <span className="material-symbols-outlined text-gold-accent">{card.icon}</span>
+                  </div>
+                  <p className="mt-4 text-3xl font-serif-alt font-bold text-on-surface">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            )}
+
+            {loadingAdmin ? (
+              <div className="py-12 flex justify-center"><Spinner size="lg" /></div>
+            ) : (
+              <>
+                {isManageAccountRoute ? (
+                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentor & Mentee Profiles</h2>
+                    <p className="text-on-surface-variant text-sm mt-2 mb-6">
+                      All mentor and mentee accounts with profile pictures.
+                    </p>
+                    {mentorMenteeUsers.length === 0 ? (
+                      <p className="text-on-surface-variant">No mentor/mentee profiles found.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {mentorMenteeUsers.map((u) => (
+                          <div key={u.id || u._id} className="border border-outline-variant/20 rounded-xl p-4">
+                            <div className="flex flex-col items-center text-center">
+                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent/50">
+                                <img
+                                  src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
+                                  alt={u.name || 'Profile'}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <p className="mt-3 font-semibold text-on-surface line-clamp-1">{u.name}</p>
+                              <p className="text-xs text-outline line-clamp-1">{u.email}</p>
+                              <span className={`mt-2 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                u.role === 'mentor'
+                                  ? 'border-primary/30 bg-primary/10 text-primary'
+                                  : 'border-tertiary/30 bg-tertiary/10 text-tertiary'
+                              }`}>
+                                {u.role}
+                              </span>
+                              <div className="mt-3 w-full grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => editUserProfile(u)}
+                                  className="px-3 py-2 text-[11px] font-bold tracking-wider uppercase border border-outline-variant/25 rounded hover:border-gold-accent/40"
+                                >
+                                  Update profile
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
+                                  className={`px-3 py-2 text-[11px] font-bold tracking-wider uppercase border rounded ${
+                                    u.isSuspended
+                                      ? 'border-green-300 text-green-700 hover:bg-green-50'
+                                      : 'border-red-300 text-red-700 hover:bg-red-50'
+                                  }`}
+                                >
+                                  {u.isSuspended ? 'Reactivate' : 'Suspend'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : isManageMentorsRoute ? (
+                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Admin</h2>
+                  <p className="text-on-surface-variant text-sm mt-2 mb-6">
+                    View all requests/active mentorships, terminate any mentorship, and inspect feedback/ratings.
+                  </p>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">All mentorship requests</h3>
+                      <div className="space-y-2">
+                        {requests.slice(0, 12).map((r) => (
+                          <div key={r._id} className="border border-outline-variant/20 rounded p-3 text-sm">
+                            <p className="font-semibold">{r?.mentee?.name || 'Mentee'} → {r?.mentor?.name || 'Mentor'}</p>
+                            <p className="text-xs text-outline">{r.status} · {new Date(r.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">All active mentorships</h3>
+                      <div className="space-y-2">
+                        {activeMentorships.slice(0, 12).map((m) => (
+                          <div key={m._id} className="border border-outline-variant/20 rounded p-3 text-sm">
+                            <p className="font-semibold">{m?.mentor?.name || 'Mentor'} ↔ {m?.mentee?.name || 'Mentee'}</p>
+                            <p className="text-xs text-outline mb-2">Started: {new Date(m.startDate).toLocaleDateString()}</p>
+                            <button type="button" onClick={() => terminateMentorship(m._id)} className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">
+                              Terminate
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">Feedback & ratings</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {feedbackRows.slice(0, 12).map((f) => (
+                        <div key={f._id} className="border border-outline-variant/20 rounded p-3 text-sm">
+                          <p className="font-semibold">{f?.mentor?.name || 'Mentor'} · {f?.mentee?.name || 'Mentee'}</p>
+                          <p className="text-xs text-outline">
+                            Mentor rating: {f?.feedback?.mentorRating || '-'} · Mentee rating: {f?.feedback?.menteeRating || '-'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                ) : isGeneratedReportsRoute ? (
+                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h2>
+                  <p className="text-on-surface-variant text-sm mt-2 mb-6">Platform report from mentorship admin endpoints.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border border-outline-variant/20 rounded-lg p-4">
+                      <p className="text-xs uppercase tracking-widest text-outline">Mentorships</p>
+                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorships?.total ?? 0}</p>
+                      <p className="text-sm">Active: {reportData?.stats?.mentorships?.active ?? 0}</p>
+                      <p className="text-sm">Completed: {reportData?.stats?.mentorships?.completed ?? 0}</p>
+                    </div>
+                    <div className="border border-outline-variant/20 rounded-lg p-4">
+                      <p className="text-xs uppercase tracking-widest text-outline">Requests</p>
+                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorshipRequests?.total ?? 0}</p>
+                      <p className="text-sm">Pending: {reportData?.stats?.mentorshipRequests?.pending ?? 0}</p>
+                      <p className="text-sm">Accepted: {reportData?.stats?.mentorshipRequests?.accepted ?? 0}</p>
+                    </div>
+                    <div className="border border-outline-variant/20 rounded-lg p-4">
+                      <p className="text-xs uppercase tracking-widest text-outline">Feedback</p>
+                      <p className="text-sm mt-2">Avg mentor rating: {reportData?.stats?.averageMentorRating ?? 0}</p>
+                      <p className="text-sm">Total sessions: {reportData?.stats?.totalSessions ?? 0}</p>
+                    </div>
+                  </div>
+                </div>
+                ) : (
+                <>
+                </>
+                )}
+              </>
+            )}
+
+            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+              <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
+              <p className="text-on-surface-variant text-sm mt-2 mb-6">
+                Use quick links to manage platform entities and moderation workflows.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                <Link to="/stories" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Stories</Link>
+                <Link to="/events" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Events</Link>
+                <Link to="/mentors" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Verify Mentors</Link>
+                <Link to="/dashboard/settings" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Platform Settings</Link>
+              </div>
+            </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, canManageEvents } = useAuth();
   const [myStories, setMyStories]   = useState([]);
@@ -1002,6 +1461,15 @@ export default function DashboardPage() {
   if (roleLc === 'mentee') {
     return (
       <MenteeDashboard
+        user={user}
+        myStories={myStories}
+        myEvents={myEvents}
+      />
+    );
+  }
+  if (roleLc === 'admin') {
+    return (
+      <AdminDashboard
         user={user}
         myStories={myStories}
         myEvents={myEvents}

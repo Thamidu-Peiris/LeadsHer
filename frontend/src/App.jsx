@@ -33,6 +33,7 @@ import NotFoundPage     from './pages/NotFoundPage';
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
 const MENTEE_ONLY  = ['mentee'];
+const ADMIN_ONLY   = ['admin'];
 
 /* Role-based resources page */
 function ResourcesRoute() {
@@ -73,7 +74,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster
-          position="bottom-center"
+          position="top-center"
           containerStyle={{ pointerEvents: 'none' }}
           toastOptions={{
             duration: 2500,
@@ -96,6 +97,15 @@ export default function App() {
 
             <Route path="/dashboard" element={
               <ProtectedRoute roles={ANY_USER}><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/manage-account" element={
+              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/manage-mentors" element={
+              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/generated-reports" element={
+              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/stories" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardStoriesPage /></ProtectedRoute>

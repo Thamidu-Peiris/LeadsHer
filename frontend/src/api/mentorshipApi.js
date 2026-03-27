@@ -18,4 +18,11 @@ export const mentorshipApi = {
   pause:          (id) => api.put(`/mentorship/${id}/pause`),
   resume:         (id) => api.put(`/mentorship/${id}/resume`),
   terminate:      (id, reason) => api.put(`/mentorship/${id}/terminate`, { reason }),
+
+  // Admin
+  adminGetRequests: (params) => api.get('/mentorship/admin/requests', { params }),
+  adminGetActive: () => api.get('/mentorship/admin/active'),
+  adminTerminate: (id, reason) => api.put(`/mentorship/admin/${id}/terminate`, { reason }),
+  adminGetFeedback: () => api.get('/mentorship/admin/feedback'),
+  adminGetReports: () => api.get('/mentorship/admin/reports'),
 };
