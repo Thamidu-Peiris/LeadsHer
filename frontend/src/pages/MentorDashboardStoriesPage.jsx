@@ -62,6 +62,8 @@ export default function MentorDashboardStoriesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [publishingId, setPublishingId] = useState('');
   const [topStoryIndex, setTopStoryIndex] = useState(0);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', title: '' });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -123,14 +125,27 @@ export default function MentorDashboardStoriesPage() {
     user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this story?')) return;
+  const openDeleteDialog = (id, title) => {
+    setDeleteDialog({ open: true, id, title: title || 'Untitled story' });
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setDeleteDialog({ open: false, id: '', title: '' });
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!deleteDialog.id) return;
+    setDeleting(true);
     try {
-      await storyApi.delete(id);
-      setStories((prev) => prev.filter((s) => s._id !== id));
+      await storyApi.delete(deleteDialog.id);
+      setStories((prev) => prev.filter((s) => s._id !== deleteDialog.id));
       toast.success('Story deleted');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to delete story');
+    } finally {
+      setDeleting(false);
+      setDeleteDialog({ open: false, id: '', title: '' });
     }
   };
 
@@ -175,7 +190,7 @@ export default function MentorDashboardStoriesPage() {
     if (stats.topViewed.length <= 1) return undefined;
     const timer = setInterval(() => {
       setTopStoryIndex((idx) => (idx + 1) % stats.topViewed.length);
-    }, 2200);
+    }, 2800);
     return () => clearInterval(timer);
   }, [stats.topViewed.length]);
 
@@ -378,7 +393,8 @@ export default function MentorDashboardStoriesPage() {
                       <div
                         key={`metric-${s._id}-${topStoryIndex}`}
                         style={{
-                          animation: 'storySlideInRight 440ms cubic-bezier(0.22, 1, 0.36, 1) both',
+                          animation: 'storySlideInRight 620ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                          willChange: 'transform, opacity',
                         }}
                       >
                         <div className="flex items-center justify-between text-xs mb-1">
@@ -508,7 +524,7 @@ export default function MentorDashboardStoriesPage() {
                           </Link>
                           <button
                             type="button"
-                            onClick={() => handleDelete(s._id)}
+                            onClick={() => openDeleteDialog(s._id, s.title)}
                             className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-red-500/20 bg-red-500/[0.1] text-red-700 hover:bg-red-500/[0.16] hover:border-red-500/30 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/25 dark:hover:bg-red-500/22 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
                           >
                             Delete
@@ -539,6 +555,45 @@ export default function MentorDashboardStoriesPage() {
           </div>
         </main>
       </div>
+
+      {deleteDialog.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close delete dialog"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={closeDeleteDialog}
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-[0_24px_60px_rgba(15,23,42,0.28)] p-6">
+            <h3 className="font-serif-alt text-2xl font-bold text-on-surface">Delete story?</h3>
+            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+              This will permanently remove
+              {' '}
+              <span className="font-semibold text-on-surface">"{deleteDialog.title}"</span>.
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+                className="px-4 py-2.5 rounded-lg border border-outline-variant/30 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmed}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-60"
+              >
+                {deleting && <Spinner size="sm" className="text-white" />}
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
