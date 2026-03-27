@@ -40,6 +40,7 @@ export default function AdminDashboardStoriesPage() {
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState([]);
   const [deletingId, setDeletingId] = useState('');
+  const [featuringId, setFeaturingId] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', title: '' });
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -86,6 +87,21 @@ export default function AdminDashboardStoriesPage() {
       toast.error(e.response?.data?.message || 'Failed to delete story');
     } finally {
       setDeletingId('');
+    }
+  };
+
+  const handleToggleFeature = async (story) => {
+    setFeaturingId(story._id);
+    try {
+      await storyApi.update(story._id, { isFeatured: !story.isFeatured });
+      setStories((prev) =>
+        prev.map((s) => (s._id === story._id ? { ...s, isFeatured: !s.isFeatured } : s))
+      );
+      toast.success(!story.isFeatured ? 'Story featured' : 'Story unfeatured');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update feature status');
+    } finally {
+      setFeaturingId('');
     }
   };
 
@@ -252,17 +268,34 @@ export default function AdminDashboardStoriesPage() {
                         }`}>
                           {s.status || 'draft'}
                         </span>
+                        {s.isFeatured && (
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-primary/30 bg-primary/10 text-primary font-bold">
+                            Featured
+                          </span>
+                        )}
                         <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-outline-variant/20 bg-surface-container-lowest text-outline font-bold">
                           {(s.views || 0)} views
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 lg:w-[220px]">
+                      <div className="grid grid-cols-3 gap-2 lg:w-[340px]">
                         <Link
                           to={`/dashboard/stories/${s._id}/edit`}
                           className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40 text-center"
                         >
                           Edit
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeature(s)}
+                          disabled={featuringId === s._id}
+                          className={`px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider disabled:opacity-60 ${
+                            s.isFeatured
+                              ? 'border-outline-variant/25 bg-surface-container-lowest text-on-surface hover:border-outline-variant/40'
+                              : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
+                          }`}
+                        >
+                          {featuringId === s._id ? 'Saving...' : s.isFeatured ? 'Unfeature' : 'Feature'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => setDeleteDialog({ open: true, id: s._id, title: s.title || 'Untitled story' })}

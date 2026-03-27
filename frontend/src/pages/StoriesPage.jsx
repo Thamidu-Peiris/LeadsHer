@@ -52,6 +52,7 @@ function splitIntoChunks(text, maxLen = 130) {
 export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
   const [stories, setStories]     = useState([]);
+  const [featuredStories, setFeaturedStories] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -74,6 +75,12 @@ export default function StoriesPage() {
   }, []);
 
   useEffect(() => { fetchStories(filters); }, [filters]);
+
+  useEffect(() => {
+    storyApi.getFeatured()
+      .then((res) => setFeaturedStories(res.data?.stories || []))
+      .catch(() => setFeaturedStories([]));
+  }, []);
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -203,6 +210,61 @@ export default function StoriesPage() {
           </div>
           </div>
         </section>
+
+        {featuredStories.length > 0 && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Featured Stories</h2>
+              <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-primary">Editor picks</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <article className="lg:col-span-7 group rounded-2xl overflow-hidden border border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-sm">
+                <div className="relative aspect-[16/9] bg-surface-container-low">
+                  {featuredStories[0]?.coverImage ? (
+                    <img src={featuredStories[0].coverImage} alt={featuredStories[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/25 to-tertiary/20" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <span className="inline-flex px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                      Featured
+                    </span>
+                    <h3 className="mt-2 font-serif-alt text-2xl text-white leading-tight line-clamp-2">{featuredStories[0].title}</h3>
+                    <p className="mt-1 text-sm text-white/85 line-clamp-1">{featuredStories[0].author?.name || 'Mentor'}</p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm text-on-surface-variant line-clamp-2">
+                    {stripHtmlToText(featuredStories[0].excerpt || featuredStories[0].content).slice(0, 180)}
+                  </p>
+                  <Link to={`/stories/${featuredStories[0]._id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary hover:underline">
+                    Read featured
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </Link>
+                </div>
+              </article>
+              <div className="lg:col-span-5 space-y-3">
+                {featuredStories.slice(1, 4).map((s, idx) => (
+                  <Link key={s._id} to={`/stories/${s._id}`} className="group flex items-center gap-3 rounded-xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest p-3 hover:border-primary/35 transition-colors">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
+                      {s.coverImage ? (
+                        <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Featured</p>
+                      <p className="font-semibold text-sm text-on-surface line-clamp-1">{s.title}</p>
+                      <p className="text-xs text-outline line-clamp-1">{s.author?.name || 'Mentor'}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>
