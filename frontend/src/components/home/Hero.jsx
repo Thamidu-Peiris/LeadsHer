@@ -86,8 +86,8 @@ export default function Hero() {
           <div className="flex flex-col sm:flex-row gap-6">
             {isAuthenticated ? (
               <>
-                <Link to="/stories/new" className="btn-primary shadow-lg shadow-primary/10">
-                  Share Your Story
+                <Link to="/dashboard/stories/new" className="btn-primary shadow-lg shadow-primary/10">
+                  Write a Story
                 </Link>
                 <Link to="/mentors" className="btn-outline">
                   Find a Mentor

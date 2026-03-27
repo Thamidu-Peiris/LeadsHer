@@ -20,6 +20,7 @@ export default function Navbar() {
   const [dropOpen, setDropOpen] = useState(false);
 
   const avatarSrc = user?.profilePicture || user?.avatar || '';
+  const canWriteStory = user?.role === 'mentor' || user?.role === 'admin';
 
   const handleLogout = async () => {
     await logout();
@@ -96,10 +97,12 @@ export default function Navbar() {
                       Profile
                     </Link>
                   )}
-                  <Link to="/dashboard/stories/new" onClick={() => setDropOpen(false)}
-                    className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
-                    Write Story
-                  </Link>
+                  {canWriteStory && (
+                    <Link to="/dashboard/stories/new" onClick={() => setDropOpen(false)}
+                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
+                      Write Story
+                    </Link>
+                  )}
                   <hr className="border-outline-variant/20" />
                   <button onClick={handleLogout}
                     className="block w-full text-left px-5 py-3 font-label text-[11px] tracking-widest uppercase text-tertiary hover:bg-tertiary/5 transition-colors">
