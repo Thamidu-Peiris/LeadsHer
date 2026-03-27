@@ -978,6 +978,16 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [manageAccountTab, setManageAccountTab] = useState('mentors');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    bio: '',
+    profilePicture: '',
+    avatar: '',
+  });
   const [loadingAdmin, setLoadingAdmin] = useState(true);
   const [users, setUsers] = useState([]);
   const [mentorProfiles, setMentorProfiles] = useState([]);
@@ -1032,17 +1042,36 @@ function AdminDashboard({ user, myStories, myEvents }) {
     }
   };
 
-  const editUserProfile = async (u) => {
-    const name = window.prompt('Update name', u.name || '');
-    if (name === null) return;
-    const bio = window.prompt('Update bio', u.bio || '');
-    if (bio === null) return;
+  const editUserProfile = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      name: u?.name || '',
+      bio: u?.bio || '',
+      profilePicture: u?.profilePicture || '',
+      avatar: u?.avatar || '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const submitEditUserProfile = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSaving(true);
     try {
-      await authApi.adminUpdateUserProfile(u.id || u._id, { name, bio });
+      await authApi.adminUpdateUserProfile(editingUser.id || editingUser._id, {
+        name: editForm.name?.trim(),
+        bio: editForm.bio?.trim(),
+        profilePicture: editForm.profilePicture?.trim(),
+        avatar: editForm.avatar?.trim(),
+      });
       toast.success('User profile updated');
+      setEditModalOpen(false);
+      setEditingUser(null);
       await loadAdminData();
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to update profile');
+    } catch (e2) {
+      toast.error(e2.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -1083,6 +1112,24 @@ function AdminDashboard({ user, myStories, myEvents }) {
     () => users.filter((u) => ['mentor', 'mentee'].includes((u?.role || '').toLowerCase())),
     [users]
   );
+  const mentorUsers = useMemo(
+    () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentor'),
+    [mentorMenteeUsers]
+  );
+  const menteeUsers = useMemo(
+    () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentee'),
+    [mentorMenteeUsers]
+  );
+  const newestUnverifiedMentors = useMemo(() => (
+    mentorProfiles
+      .filter((p) => !p?.isVerified)
+      .sort((a, b) => {
+        const ta = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+        const tb = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+        return tb - ta;
+      })
+      .slice(0, 5)
+  ), [mentorProfiles]);
 
   return (
     <div className="min-h-screen">
@@ -1113,9 +1160,9 @@ function AdminDashboard({ user, myStories, myEvents }) {
             {[
               { to: '/dashboard', icon: 'space_dashboard', label: 'Admin Dashboard' },
               { to: '/dashboard/manage-account', icon: 'manage_accounts', label: 'Manage User Account' },
-              { to: '/stories', icon: 'auto_stories', label: 'Manage Stories' },
+              { to: '/dashboard/manage-stories', icon: 'auto_stories', label: 'Manage Stories' },
               { to: '/events', icon: 'event', label: 'Manage Events' },
-              { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentors' },
+              { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentorship' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
               { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
@@ -1256,56 +1303,190 @@ function AdminDashboard({ user, myStories, myEvents }) {
               <>
                 {isManageAccountRoute ? (
                   <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentor & Mentee Profiles</h2>
+                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
                     <p className="text-on-surface-variant text-sm mt-2 mb-6">
-                      All mentor and mentee accounts with profile pictures.
+                      Separate views for mentors and mentees with quick moderation actions.
                     </p>
+
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setManageAccountTab('mentors')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                          manageAccountTab === 'mentors'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        Mentors
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setManageAccountTab('mentees')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                          manageAccountTab === 'mentees'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        Mentees
+                      </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
+                          <span className="material-symbols-outlined text-[15px]">filter_list</span>
+                          Filter
+                        </button>
+                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
+                          <span className="material-symbols-outlined text-[15px]">download</span>
+                          Export
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="h-1" />
+
                     {mentorMenteeUsers.length === 0 ? (
                       <p className="text-on-surface-variant">No mentor/mentee profiles found.</p>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {mentorMenteeUsers.map((u) => (
-                          <div key={u.id || u._id} className="border border-outline-variant/20 rounded-xl p-4">
-                            <div className="flex flex-col items-center text-center">
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent/50">
-                                <img
-                                  src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
-                                  alt={u.name || 'Profile'}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <p className="mt-3 font-semibold text-on-surface line-clamp-1">{u.name}</p>
-                              <p className="text-xs text-outline line-clamp-1">{u.email}</p>
-                              <span className={`mt-2 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border ${
-                                u.role === 'mentor'
-                                  ? 'border-primary/30 bg-primary/10 text-primary'
-                                  : 'border-tertiary/30 bg-tertiary/10 text-tertiary'
-                              }`}>
-                                {u.role}
-                              </span>
-                              <div className="mt-3 w-full grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => editUserProfile(u)}
-                                  className="px-3 py-2 text-[11px] font-bold tracking-wider uppercase border border-outline-variant/25 rounded hover:border-gold-accent/40"
-                                >
-                                  Update profile
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                  className={`px-3 py-2 text-[11px] font-bold tracking-wider uppercase border rounded ${
-                                    u.isSuspended
-                                      ? 'border-green-300 text-green-700 hover:bg-green-50'
-                                      : 'border-red-300 text-red-700 hover:bg-red-50'
-                                  }`}
-                                >
-                                  {u.isSuspended ? 'Reactivate' : 'Suspend'}
-                                </button>
-                              </div>
-                            </div>
+                      <div className="space-y-10">
+                        {manageAccountTab === 'mentors' && (
+                        <section>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentors</h3>
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-bold">
+                              {mentorUsers.length} mentors
+                            </span>
                           </div>
-                        ))}
+                          {mentorUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentor accounts found.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {mentorUsers.map((u) => {
+                                const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
+                                return (
+                                  <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-md overflow-hidden border border-outline-variant/25 shrink-0">
+                                          <img
+                                            src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
+                                            alt={u.name || 'Profile'}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="font-semibold text-xl leading-5 text-on-surface line-clamp-1">{u.name}</p>
+                                          <p className="text-xs text-outline line-clamp-1 mt-0.5">{u.email}</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentor</span>
+                                        <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
+                                          mentorProfile?.isVerified
+                                            ? 'border-green-300 bg-green-50 text-green-700'
+                                            : 'border-red-200 bg-red-50 text-red-600'
+                                        }`}>
+                                          {mentorProfile?.isVerified ? 'Verified' : 'Pending Verify'}
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 lg:w-[360px]">
+                                        <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
+                                          <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
+                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                            u.isSuspended
+                                              ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+                                              : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                          }`}
+                                        >
+                                          {u.isSuspended ? 'Reactivate' : 'Suspend'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={!mentorProfile}
+                                          onClick={() => mentorProfile && toggleVerifyMentor(mentorProfile)}
+                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                            mentorProfile?.isVerified
+                                              ? 'border-outline-variant/25 bg-surface-container-lowest text-outline hover:text-on-surface'
+                                              : 'border-primary/40 bg-primary text-white hover:bg-primary/90'
+                                          } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                          {!mentorProfile ? 'No profile' : mentorProfile.isVerified ? 'Unverify' : 'Verify'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </section>
+                        )}
+
+                        {manageAccountTab === 'mentees' && (
+                        <section>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentees</h3>
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary font-bold">
+                              {menteeUsers.length} mentees
+                            </span>
+                          </div>
+                          {menteeUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentee accounts found.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {menteeUsers.map((u) => (
+                                <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
+                                  <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div className="w-10 h-10 rounded-md overflow-hidden border border-outline-variant/25 shrink-0">
+                                        <img
+                                          src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
+                                          alt={u.name || 'Profile'}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-xl leading-5 text-on-surface line-clamp-1">{u.name}</p>
+                                        <p className="text-xs text-outline line-clamp-1 mt-0.5">{u.email}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentee</span>
+                                      <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
+                                        u.isSuspended ? 'border-red-300 bg-red-50 text-red-700' : 'border-green-300 bg-green-50 text-green-700'
+                                      }`}>
+                                        {u.isSuspended ? 'Suspended' : 'Active'}
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 lg:w-[240px]">
+                                      <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
+                                        <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
+                                        className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          u.isSuspended
+                                            ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+                                            : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                        }`}
+                                      >
+                                        {u.isSuspended ? 'Reactivate' : 'Suspend'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </section>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1390,6 +1571,48 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
             {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
             <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
+                <Link
+                  to="/dashboard/manage-account"
+                  className="text-xs uppercase tracking-widest font-bold text-primary hover:underline"
+                >
+                  Manage verifications
+                </Link>
+              </div>
+              {newestUnverifiedMentors.length === 0 ? (
+                <p className="text-on-surface-variant text-sm">No pending mentors right now.</p>
+              ) : (
+                <div className="space-y-3">
+                  {newestUnverifiedMentors.map((m) => {
+                    const mentorUser = m?.user || {};
+                    const avatar = mentorUser?.profilePicture || mentorUser?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+                    return (
+                      <div key={m._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-surface-container-lowest/60">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-md overflow-hidden border border-outline-variant/25 shrink-0">
+                              <img src={avatar} alt={mentorUser?.name || 'Mentor'} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-on-surface line-clamp-1">{mentorUser?.name || 'Mentor'}</p>
+                              <p className="text-xs text-outline line-clamp-1">{mentorUser?.email || ''}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-red-200 bg-red-50 text-red-600 font-bold">
+                            Pending Verify
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            )}
+
+            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
               <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
               <p className="text-on-surface-variant text-sm mt-2 mb-6">
                 Use quick links to manage platform entities and moderation workflows.
@@ -1397,7 +1620,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                 <Link to="/stories" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Stories</Link>
                 <Link to="/events" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Events</Link>
-                <Link to="/mentors" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Verify Mentors</Link>
+                <Link to="/dashboard/manage-account" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Verify Mentor Status</Link>
                 <Link to="/dashboard/settings" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Platform Settings</Link>
               </div>
             </div>
@@ -1405,6 +1628,85 @@ function AdminDashboard({ user, myStories, myEvents }) {
           </div>
         </main>
       </div>
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-xl bg-white border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/15 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif-alt text-xl font-bold text-on-surface">Update Profile Details</h3>
+                <p className="text-xs text-outline mt-1">{editingUser?.email || ''}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setEditModalOpen(false); setEditingUser(null); }}
+                className="w-8 h-8 rounded-md border border-outline-variant/20 text-outline hover:text-on-surface hover:bg-surface-container-lowest flex items-center justify-center"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={submitEditUserProfile} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                  placeholder="Full name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Bio</label>
+                <textarea
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm((f) => ({ ...f, bio: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface min-h-[96px]"
+                  placeholder="Short bio"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Profile Picture URL</label>
+                  <input
+                    value={editForm.profilePicture}
+                    onChange={(e) => setEditForm((f) => ({ ...f, profilePicture: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Avatar URL</label>
+                  <input
+                    value={editForm.avatar}
+                    onChange={(e) => setEditForm((f) => ({ ...f, avatar: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEditModalOpen(false); setEditingUser(null); }}
+                  className="px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-sm font-semibold text-on-surface hover:border-gold-accent/40"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {editSaving ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

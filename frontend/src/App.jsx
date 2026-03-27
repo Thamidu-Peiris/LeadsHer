@@ -28,6 +28,7 @@ import MentorsPage      from './pages/MentorsPage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
 import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
+import AdminDashboardStoriesPage from './pages/AdminDashboardStoriesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
@@ -112,6 +113,9 @@ export default function App() {
             } />
             <Route path="/dashboard/manage-account" element={
               <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/manage-stories" element={
+              <ProtectedRoute roles={ADMIN_ONLY}><AdminDashboardStoriesPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/manage-mentors" element={
               <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>

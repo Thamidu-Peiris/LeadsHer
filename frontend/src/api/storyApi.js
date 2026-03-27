@@ -15,4 +15,5 @@ export const storyApi = {
   toggleLike: (id) => api.post(`/stories/${id}/like`),
   getComments: (id, params) => api.get(`/stories/${id}/comments`, { params }),
   addComment: (id, content) => api.post(`/stories/${id}/comments`, { content }),
+  deleteComment: (storyId, commentId) => api.delete(`/stories/${storyId}/comments/${commentId}`),
 };
