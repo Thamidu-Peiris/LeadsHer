@@ -11,4 +11,11 @@ export const authApi = {
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (token, newPassword) => api.post('/auth/reset-password', { token, newPassword }),
   verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+
+  // Admin
+  adminListUsers: (params) => api.get('/auth/admin/users', { params }),
+  adminUpdateUserProfile: (id, data) => api.put(`/auth/admin/users/${id}/profile`, data),
+  adminSetUserRole: (id, role) => api.put(`/auth/admin/users/${id}/role`, { role }),
+  adminSetSuspension: (id, suspended, reason = '') =>
+    api.put(`/auth/admin/users/${id}/suspension`, { suspended, reason }),
 };

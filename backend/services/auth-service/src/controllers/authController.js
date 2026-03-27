@@ -104,7 +104,8 @@ exports.updateProfile = async (req, res) => {
       experienceLevel: body.experienceLevel,
       linkedin: body.linkedin,
       location: body.location,
-      role: body.role,
+      // Role changes are admin-only and handled by dedicated admin endpoint.
+      role: undefined,
       privacy: typeof body.privacy === 'object' ? body.privacy : undefined,
     };
     const profile = await authService.updateProfileById(req.user.id, updates, profilePictureUrl);
@@ -156,5 +157,48 @@ exports.getUserById = async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message || 'Failed to get user.' });
+  }
+};
+
+// Admin: GET /api/auth/admin/users
+exports.adminListUsers = async (req, res) => {
+  try {
+    const result = await authService.listUsersForAdmin(req.query || {});
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to list users.' });
+  }
+};
+
+// Admin: PUT /api/auth/admin/users/:id/profile
+exports.adminUpdateUserProfile = async (req, res) => {
+  try {
+    const user = await authService.adminUpdateUserProfile(req.params.id, req.body || {});
+    res.json({ message: 'User profile updated.', user });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to update user profile.' });
+  }
+};
+
+// Admin: PUT /api/auth/admin/users/:id/role
+exports.adminSetUserRole = async (req, res) => {
+  try {
+    const role = req.body?.role;
+    if (!role) return res.status(400).json({ message: 'Role is required.' });
+    const user = await authService.adminSetUserRole(req.params.id, role);
+    res.json({ message: 'User role updated.', user });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to update user role.' });
+  }
+};
+
+// Admin: PUT /api/auth/admin/users/:id/suspension
+exports.adminSetSuspension = async (req, res) => {
+  try {
+    const suspended = Boolean(req.body?.suspended);
+    const user = await authService.adminSetSuspension(req.params.id, suspended, req.body?.reason);
+    res.json({ message: suspended ? 'User suspended.' : 'User reactivated.', user });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to update suspension.' });
   }
 };
