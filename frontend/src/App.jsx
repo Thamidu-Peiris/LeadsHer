@@ -27,6 +27,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
+import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
@@ -39,6 +40,7 @@ const ADMIN_ONLY   = ['admin'];
 function ResourcesRoute() {
   const { user } = useAuth();
   if (user?.role === 'mentee') return <MenteeDashboardResourcesPage />;
+  if (user?.role === 'admin')  return <AdminDashboardResourcesPage />;
   return <MentorDashboardResourcesPage />;
 }
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, optionalAuth } = require('../middleware/auth');
+const { protect, role, optionalAuth } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const {
   createResource,
@@ -15,10 +15,20 @@ const {
   getRecommendedResources,
   uploadResourceFile,
   getMyResources,
+  getAdminResources,
+  getAdminAnalytics,
+  approveResource,
+  rejectResource,
 } = require('../controllers/resourceController');
 
 // Public
 router.get('/', getAllResources);
+
+// Admin-only (must be before /:id routes)
+router.get('/admin/all', protect, role('admin'), getAdminResources);
+router.get('/admin/analytics', protect, role('admin'), getAdminAnalytics);
+router.patch('/:id/approve', protect, role('admin'), approveResource);
+router.patch('/:id/reject', protect, role('admin'), rejectResource);
 
 // Protected (must be before /:id routes)
 router.get('/bookmarks', protect, getUserBookmarks);
