@@ -364,8 +364,9 @@ const adminGetResources = async ({
   const skip = (page - 1) * limit;
 
   const query = {};
-  if (status === 'pending') query.isApproved = false;
+  if (status === 'pending') { query.isApproved = false; query.isRejected = { $ne: true }; }
   else if (status === 'approved') query.isApproved = true;
+  else if (status === 'rejected') query.isRejected = true;
   if (category) query.category = category;
   if (type) query.type = type;
   if (search) {
@@ -402,10 +403,11 @@ const adminGetResources = async ({
 };
 
 const adminGetAnalytics = async () => {
-  const [total, approved, pending, agg] = await Promise.all([
+  const [total, approved, pending, rejected, agg] = await Promise.all([
     Resource.countDocuments({}),
     Resource.countDocuments({ isApproved: true }),
-    Resource.countDocuments({ isApproved: false }),
+    Resource.countDocuments({ isApproved: false, isRejected: { $ne: true } }),
+    Resource.countDocuments({ isRejected: true }),
     Resource.aggregate([
       {
         $group: {
@@ -429,6 +431,7 @@ const adminGetAnalytics = async () => {
     total,
     approved,
     pending,
+    rejected,
     totalDownloads: agg[0]?.totalDownloads || 0,
     totalViews: agg[0]?.totalViews || 0,
     avgRating: agg[0]?.avgRating || 0,
@@ -440,7 +443,7 @@ const adminGetAnalytics = async () => {
 const approveResource = async (resourceId) => {
   const resource = await Resource.findByIdAndUpdate(
     resourceId,
-    { isApproved: true },
+    { isApproved: true, isRejected: false },
     { new: true }
   );
   if (!resource) throwError('Resource not found.', 404);
@@ -450,7 +453,7 @@ const approveResource = async (resourceId) => {
 const rejectResource = async (resourceId) => {
   const resource = await Resource.findByIdAndUpdate(
     resourceId,
-    { isApproved: false },
+    { isApproved: false, isRejected: true },
     { new: true }
   );
   if (!resource) throwError('Resource not found.', 404);

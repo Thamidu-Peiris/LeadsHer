@@ -52,6 +52,8 @@ function splitIntoChunks(text, maxLen = 130) {
 export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
   const [stories, setStories]     = useState([]);
+  const [featuredStories, setFeaturedStories] = useState([]);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -74,6 +76,36 @@ export default function StoriesPage() {
   }, []);
 
   useEffect(() => { fetchStories(filters); }, [filters]);
+
+  useEffect(() => {
+    storyApi.getFeatured()
+      .then((res) => setFeaturedStories(res.data?.stories || []))
+      .catch(() => setFeaturedStories([]));
+  }, []);
+
+  useEffect(() => {
+    if (featuredStories.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setFeaturedIndex((i) => (i + 1) % featuredStories.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [featuredStories]);
+
+  useEffect(() => {
+    if (!featuredStories.length) {
+      setFeaturedIndex(0);
+      return;
+    }
+    setFeaturedIndex((i) => (i >= featuredStories.length ? 0 : i));
+  }, [featuredStories.length]);
+
+  const activeFeatured = featuredStories[featuredIndex] || featuredStories[0];
+  const sideFeatured = featuredStories.length <= 1
+    ? []
+    : Array.from(
+      { length: Math.min(3, Math.max(0, featuredStories.length - 1)) },
+      (_, idx) => featuredStories[(featuredIndex + idx + 1) % featuredStories.length]
+    );
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -203,6 +235,82 @@ export default function StoriesPage() {
           </div>
           </div>
         </section>
+
+        {featuredStories.length > 0 && activeFeatured && (
+          <section className="mb-10">
+            <div className="relative overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.11] via-surface-container-low to-tertiary/[0.10] p-4 sm:p-5 lg:p-6 shadow-[0_14px_36px_rgba(15,23,42,0.08)]">
+              <div className="absolute -top-16 -left-10 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-16 -right-8 w-52 h-52 rounded-full bg-tertiary/20 blur-3xl pointer-events-none" />
+              <div className="relative flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-primary/90">Curated highlights</p>
+                  <h2 className="font-serif-alt text-2xl sm:text-3xl font-bold text-on-surface mt-1">Featured Stories</h2>
+                </div>
+                <span className="hidden sm:inline-flex px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary text-[10px] uppercase tracking-[0.18em] font-bold">
+                  Editor picks
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <article
+                  className="lg:col-span-7 group rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)]"
+                  key={activeFeatured._id}
+                  style={{ animation: 'storySlideInRight 520ms cubic-bezier(0.22, 1, 0.36, 1) both' }}
+                >
+                  <div className="relative aspect-[16/9] bg-surface-container-low">
+                    {activeFeatured.coverImage ? (
+                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/30 to-tertiary/25" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <span className="inline-flex px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                        Featured
+                      </span>
+                      <h3 className="mt-2 font-serif-alt text-2xl text-white leading-tight line-clamp-2">{activeFeatured.title}</h3>
+                      <p className="mt-1 text-sm text-white/85 line-clamp-1">{activeFeatured.author?.name || 'Mentor'}</p>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-on-surface-variant line-clamp-2">
+                      {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 180)}
+                    </p>
+                    <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors">
+                      Read featured
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                </article>
+
+                <div className="lg:col-span-5 space-y-3">
+                  {sideFeatured.map((s, idx) => (
+                    <Link
+                      key={s._id}
+                      to={`/stories/${s._id}`}
+                      className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm p-3 hover:border-primary/35 transition-all hover:translate-x-1"
+                      style={{ animation: `storySlideInRight ${420 + idx * 80}ms cubic-bezier(0.22, 1, 0.36, 1) both` }}
+                    >
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
+                        {s.coverImage ? (
+                          <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Featured</p>
+                        <p className="font-semibold text-sm text-on-surface line-clamp-1">{s.title}</p>
+                        <p className="text-xs text-outline line-clamp-1">{s.author?.name || 'Mentor'}</p>
+                      </div>
+                      <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors ml-auto">arrow_forward</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>

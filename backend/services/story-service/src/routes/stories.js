@@ -14,6 +14,7 @@ const {
   toggleLike,
   getStoryComments,
   addStoryComment,
+  deleteStoryComment,
   uploadStoryMedia,
 } = require('../controllers/storyController');
 
@@ -32,5 +33,6 @@ router.put('/:id', protect, updateStory);
 router.delete('/:id', protect, deleteStory);
 router.post('/:id/like', protect, toggleLike);
 router.post('/:id/comments', protect, addStoryComment);
+router.delete('/:id/comments/:commentId', protect, deleteStoryComment);
 
 module.exports = router;
