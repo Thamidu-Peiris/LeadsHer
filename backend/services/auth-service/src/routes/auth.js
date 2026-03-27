@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { role } = require('../middleware/auth');
 const { validateRegister, validatePassword, validateBio } = require('../middleware/validation');
 const { uploadProfilePicture } = require('../middleware/upload');
 
@@ -32,5 +33,11 @@ router.post('/logout', protect, authController.logout);
 
 // Internal endpoint for inter-service communication
 router.get('/internal/user/:id', authController.getUserById);
+
+// Admin routes
+router.get('/admin/users', protect, role('admin'), authController.adminListUsers);
+router.put('/admin/users/:id/profile', protect, role('admin'), authController.adminUpdateUserProfile);
+router.put('/admin/users/:id/role', protect, role('admin'), authController.adminSetUserRole);
+router.put('/admin/users/:id/suspension', protect, role('admin'), authController.adminSetSuspension);
 
 module.exports = router;
