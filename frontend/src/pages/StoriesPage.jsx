@@ -154,27 +154,10 @@ export default function StoriesPage() {
   return (
     <div className="pt-20 pb-12 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.08] via-surface-container-low to-tertiary/[0.08] dark:from-primary/20 dark:via-surface-container-lowest dark:to-tertiary/15 px-6 sm:px-10 py-10 mb-7">
-          <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-gold-accent/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-14 -left-10 w-52 h-52 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-          <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-            <div>
-              <p className="font-label text-[10px] tracking-[0.28em] uppercase text-outline mb-2">Editorial Stories</p>
-              <h1 className="font-serif-alt text-4xl sm:text-5xl font-bold text-on-surface leading-[1.04]">Web Stories</h1>
-              <p className="mt-3 text-sm sm:text-base text-on-surface-variant max-w-2xl">
-                Swipe through journeys of ambition, leadership, and growth — presented as immersive web stories.
-              </p>
-            </div>
-            {isAuthenticated && (
-              <Link to={newStoryHref} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined text-[18px]">edit_square</span>
-                Share Story
-              </Link>
-            )}
-          </div>
-        </section>
-
-        <section className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/20 shadow-sm p-4 sm:p-5 mb-8">
+        <section className="relative mt-3 overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.08] via-surface-container-low to-tertiary/[0.08] dark:from-primary/20 dark:via-surface-container-lowest dark:to-tertiary/15 shadow-sm p-4 sm:p-5 mb-8">
+          <div className="absolute -top-16 -right-12 w-48 h-48 rounded-full bg-gold-accent/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-14 -left-10 w-44 h-44 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+          <div className="relative">
           <form onSubmit={handleSearch} className="flex flex-col lg:flex-row gap-3 lg:items-center">
             <div className="relative flex-1">
               <span className="material-symbols-outlined text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
@@ -189,6 +172,12 @@ export default function StoriesPage() {
             <button type="submit" className="px-5 py-2.5 rounded-xl bg-on-surface text-inverse-on-surface text-xs font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-opacity">
               Search
             </button>
+            {isAuthenticated && (
+              <Link to={newStoryHref} className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-sm shadow-primary/10 hover:bg-primary/90 transition-colors">
+                <span className="material-symbols-outlined text-[16px]">edit_square</span>
+                Share
+              </Link>
+            )}
             <select
               value={filters.sort}
               onChange={(e) => setFilter('sort', e.target.value)}
@@ -212,6 +201,7 @@ export default function StoriesPage() {
                 {CATEGORY_LABELS[c]}
               </button>
             ))}
+          </div>
           </div>
         </section>
 
