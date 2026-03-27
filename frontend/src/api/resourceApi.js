@@ -16,6 +16,10 @@ export const resourceApi = {
     api.post('/resources/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  uploadThumbnail: (formData) =>
+    api.post('/resources/upload-thumbnail', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   // Admin
   adminGetAll: (params) => api.get('/resources/admin/all', { params }),
   adminGetAnalytics: () => api.get('/resources/admin/analytics'),

@@ -1,5 +1,5 @@
 const resourceService = require('../services/resourceService');
-const { uploadBuffer, getSignedUrl } = require('../utils/cloudinary');
+const { uploadBuffer, uploadImageBuffer, getSignedUrl } = require('../utils/cloudinary');
 
 // GET /api/resources/admin/all  (admin only)
 exports.adminGetAllResources = async (req, res) => {
@@ -213,5 +213,21 @@ exports.uploadResourceFile = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Upload failed.' });
+  }
+};
+
+// POST /api/resources/upload-thumbnail
+exports.uploadThumbnail = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ message: 'No image provided.' });
+    }
+    const result = await uploadImageBuffer(req.file.buffer, req.file.originalname);
+    res.status(201).json({
+      url: result.secure_url,
+      publicId: result.public_id,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Thumbnail upload failed.' });
   }
 };

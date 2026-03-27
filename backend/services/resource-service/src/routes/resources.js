@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, optionalAuth, role } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const { upload, imageUpload } = require('../middleware/upload');
 const {
   createResource,
   getAllResources,
@@ -14,6 +14,7 @@ const {
   rateResource,
   getRecommendedResources,
   uploadResourceFile,
+  uploadThumbnail,
   getMyResources,
   adminGetAllResources,
   adminGetAnalytics,
@@ -33,6 +34,7 @@ router.get('/bookmarks', protect, getUserBookmarks);
 router.get('/recommended', protect, getRecommendedResources);
 router.get('/my', protect, getMyResources);
 router.post('/upload', protect, upload.single('file'), uploadResourceFile);
+router.post('/upload-thumbnail', protect, imageUpload.single('thumbnail'), uploadThumbnail);
 
 // Public with optional auth
 router.get('/:id', optionalAuth, getResourceById);
