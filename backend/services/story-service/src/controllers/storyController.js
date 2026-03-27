@@ -1,4 +1,5 @@
 const fs = require('fs');
+const mongoose = require('mongoose');
 const storyService = require('../services/storyService');
 const { getCloudinary } = require('../config/cloudinary');
 
@@ -87,6 +88,9 @@ exports.getAllStories = async (req, res) => {
 // GET /api/stories/:id
 exports.getStoryById = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Story not found.' });
+    }
     const userId = req.user ? req.user._id : null;
     const userRole = req.user ? req.user.role : null;
     const story = await storyService.getStoryByIdAndIncrementViews(req.params.id, userId, userRole);

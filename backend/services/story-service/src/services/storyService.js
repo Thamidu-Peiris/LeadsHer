@@ -403,8 +403,8 @@ const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
 };
 
 const getFeaturedStories = async () => {
-  const stories = await Story.find({ status: 'published', isFeatured: true })
-    .sort({ publishedAt: -1, createdAt: -1 })
+  const stories = await Story.find({ status: 'published' })
+    .sort({ isFeatured: -1, publishedAt: -1, createdAt: -1 })
     .limit(5)
     .populate('author', 'name profilePicture avatar')
     .lean();
