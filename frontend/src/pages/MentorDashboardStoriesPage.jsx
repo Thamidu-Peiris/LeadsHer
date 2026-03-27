@@ -61,6 +61,7 @@ export default function MentorDashboardStoriesPage() {
   const [stories, setStories] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [publishingId, setPublishingId] = useState('');
+  const [topStoryIndex, setTopStoryIndex] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -162,9 +163,21 @@ export default function MentorDashboardStoriesPage() {
       avgReadingTime,
       topViewed: [...stories]
         .sort((a, b) => (b.views || b.viewCount || 0) - (a.views || a.viewCount || 0))
-        .slice(0, 5),
+        .slice(0, 3),
     };
   }, [stories]);
+
+  useEffect(() => {
+    setTopStoryIndex(0);
+  }, [stats.topViewed.length]);
+
+  useEffect(() => {
+    if (stats.topViewed.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setTopStoryIndex((idx) => (idx + 1) % stats.topViewed.length);
+    }, 2200);
+    return () => clearInterval(timer);
+  }, [stats.topViewed.length]);
 
   const displayedStories = useMemo(() => {
     if (statusFilter === 'all') return stories;
@@ -356,12 +369,18 @@ export default function MentorDashboardStoriesPage() {
                 <h2 className="font-serif-alt text-xl font-bold text-on-surface">Story Analytics</h2>
                 <p className="text-xs text-outline mt-1">Top performing stories by views</p>
                 <div className="mt-4 space-y-3">
-                  {stats.topViewed.map((s) => {
+                  {(() => {
+                    const s = stats.topViewed[topStoryIndex];
                     const value = s.views || s.viewCount || 0;
                     const max = stats.topViewed[0]?.views || stats.topViewed[0]?.viewCount || 1;
                     const width = Math.max(8, Math.round((value / max) * 100));
                     return (
-                      <div key={`metric-${s._id}`}>
+                      <div
+                        key={`metric-${s._id}-${topStoryIndex}`}
+                        style={{
+                          animation: 'storySlideInRight 440ms cubic-bezier(0.22, 1, 0.36, 1) both',
+                        }}
+                      >
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-on-surface line-clamp-1">{s.title}</span>
                           <span className="text-outline">{value} views · {s.likeCount || 0} likes</span>
@@ -369,9 +388,24 @@ export default function MentorDashboardStoriesPage() {
                         <div className="h-2 bg-surface-container-low rounded-full overflow-hidden">
                           <div className="h-2 bg-gold-accent rounded-full" style={{ width: `${width}%` }} />
                         </div>
+                        {stats.topViewed.length > 1 && (
+                          <div className="mt-3 flex items-center justify-end gap-1.5">
+                            {stats.topViewed.map((_, i) => (
+                              <button
+                                key={`dot-${i}`}
+                                type="button"
+                                onClick={() => setTopStoryIndex(i)}
+                                aria-label={`Show top story ${i + 1}`}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  i === topStoryIndex ? 'w-4 bg-gold-accent' : 'w-1.5 bg-outline-variant/50 hover:bg-outline'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               </section>
             )}
