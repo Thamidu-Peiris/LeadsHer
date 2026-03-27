@@ -194,7 +194,7 @@ export default function StoriesPage() {
                 onClick={() => setFilter('category', c)}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em] border transition-colors ${
                   filters.category === c
-                    ? 'bg-gold-accent/12 border-gold-accent/45 text-on-surface'
+                    ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
                     : 'bg-surface-container-lowest dark:bg-surface-container border-outline-variant/25 text-outline hover:border-outline-variant/45 hover:text-on-surface'
                 }`}
               >
