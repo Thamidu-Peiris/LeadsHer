@@ -377,9 +377,34 @@ const getStoriesByUser = async (targetUserId, { page = 1, limit = 10 } = {}) => 
   return { stories, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
+const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+  const skip = (page - 1) * limit;
+
+  const query = { author: userId };
+  const [stories, total] = await Promise.all([
+    Story.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('author', 'name profilePicture avatar')
+      .lean(),
+    Story.countDocuments(query),
+  ]);
+
+  const out = stories.map((s) => ({
+    ...s,
+    likeCount: s.likes ? s.likes.length : 0,
+    likes: undefined,
+  }));
+
+  return { stories: out, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+};
+
 const getFeaturedStories = async () => {
-  const stories = await Story.find({ status: 'published', isFeatured: true })
-    .sort({ publishedAt: -1, createdAt: -1 })
+  const stories = await Story.find({ status: 'published' })
+    .sort({ isFeatured: -1, publishedAt: -1, createdAt: -1 })
     .limit(5)
     .populate('author', 'name profilePicture avatar')
     .lean();
@@ -396,6 +421,7 @@ module.exports = {
   getCommentsForStory,
   addCommentToStory,
   getStoriesByUser,
+  getMyStories,
   getFeaturedStories,
   wordCount,
 };

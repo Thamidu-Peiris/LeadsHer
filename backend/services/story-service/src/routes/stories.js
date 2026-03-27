@@ -7,6 +7,7 @@ const {
   getAllStories,
   getFeaturedStories,
   getStoriesByUser,
+  getMyStories,
   getStoryById,
   updateStory,
   deleteStory,
@@ -19,6 +20,7 @@ const {
 // Public (featured and user stories must come before /:id)
 router.get('/featured', getFeaturedStories);
 router.get('/user/:userId', getStoriesByUser);
+router.get('/mine', protect, getMyStories);
 router.get('/', optionalAuth, getAllStories);
 router.get('/:id/comments', getStoryComments);
 router.get('/:id', optionalAuth, getStoryById);

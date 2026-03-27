@@ -16,9 +16,4 @@ export const resourceApi = {
     api.post('/resources/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  // Admin
-  adminGetAll: (params) => api.get('/resources/admin/all', { params }),
-  adminGetAnalytics: () => api.get('/resources/admin/analytics'),
-  approve: (id) => api.patch(`/resources/${id}/approve`),
-  reject: (id) => api.patch(`/resources/${id}/reject`),
 };
