@@ -979,6 +979,15 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const { logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [manageAccountTab, setManageAccountTab] = useState('mentors');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    bio: '',
+    profilePicture: '',
+    avatar: '',
+  });
   const [loadingAdmin, setLoadingAdmin] = useState(true);
   const [users, setUsers] = useState([]);
   const [mentorProfiles, setMentorProfiles] = useState([]);
@@ -1033,17 +1042,36 @@ function AdminDashboard({ user, myStories, myEvents }) {
     }
   };
 
-  const editUserProfile = async (u) => {
-    const name = window.prompt('Update name', u.name || '');
-    if (name === null) return;
-    const bio = window.prompt('Update bio', u.bio || '');
-    if (bio === null) return;
+  const editUserProfile = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      name: u?.name || '',
+      bio: u?.bio || '',
+      profilePicture: u?.profilePicture || '',
+      avatar: u?.avatar || '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const submitEditUserProfile = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSaving(true);
     try {
-      await authApi.adminUpdateUserProfile(u.id || u._id, { name, bio });
+      await authApi.adminUpdateUserProfile(editingUser.id || editingUser._id, {
+        name: editForm.name?.trim(),
+        bio: editForm.bio?.trim(),
+        profilePicture: editForm.profilePicture?.trim(),
+        avatar: editForm.avatar?.trim(),
+      });
       toast.success('User profile updated');
+      setEditModalOpen(false);
+      setEditingUser(null);
       await loadAdminData();
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to update profile');
+    } catch (e2) {
+      toast.error(e2.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -1600,6 +1628,85 @@ function AdminDashboard({ user, myStories, myEvents }) {
           </div>
         </main>
       </div>
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-xl bg-white border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/15 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif-alt text-xl font-bold text-on-surface">Update Profile Details</h3>
+                <p className="text-xs text-outline mt-1">{editingUser?.email || ''}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setEditModalOpen(false); setEditingUser(null); }}
+                className="w-8 h-8 rounded-md border border-outline-variant/20 text-outline hover:text-on-surface hover:bg-surface-container-lowest flex items-center justify-center"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={submitEditUserProfile} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                  placeholder="Full name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Bio</label>
+                <textarea
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm((f) => ({ ...f, bio: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface min-h-[96px]"
+                  placeholder="Short bio"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Profile Picture URL</label>
+                  <input
+                    value={editForm.profilePicture}
+                    onChange={(e) => setEditForm((f) => ({ ...f, profilePicture: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-outline font-bold mb-1.5">Avatar URL</label>
+                  <input
+                    value={editForm.avatar}
+                    onChange={(e) => setEditForm((f) => ({ ...f, avatar: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEditModalOpen(false); setEditingUser(null); }}
+                  className="px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-sm font-semibold text-on-surface hover:border-gold-accent/40"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {editSaving ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
