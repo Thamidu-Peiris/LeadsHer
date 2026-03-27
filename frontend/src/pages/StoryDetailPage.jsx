@@ -111,10 +111,11 @@ export default function StoryDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="prose prose-gray max-w-none text-gray-700 dark:text-on-surface leading-relaxed whitespace-pre-wrap text-base mb-10">
-        {story.content}
-      </div>
+      {/* Content — HTML from TinyMCE editor */}
+      <div
+        className="prose prose-gray dark:prose-invert max-w-none text-gray-700 dark:text-on-surface leading-relaxed text-base mb-10 story-body-html"
+        dangerouslySetInnerHTML={{ __html: story.content || '' }}
+      />
 
       {/* Tags */}
       {story.tags?.length > 0 && (

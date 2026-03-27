@@ -4,6 +4,17 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import Spinner from '../components/common/Spinner';
+import StoryRichTextEditor from '../components/stories/StoryRichTextEditor';
+
+function stripHtmlForWords(html) {
+  if (!html || typeof html !== 'string') return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 const CATEGORY_CHOICES = [
   { value: 'leadership', icon: 'diversity_3', label: 'Leadership' },
@@ -82,7 +93,7 @@ export default function MentorDashboardCreateStoryPage() {
     [form.tags]
   );
   const wordCount = useMemo(
-    () => form.content.trim().split(/\s+/).filter(Boolean).length,
+    () => stripHtmlForWords(form.content).split(/\s+/).filter(Boolean).length,
     [form.content]
   );
   const excerptWords = useMemo(
@@ -119,13 +130,13 @@ export default function MentorDashboardCreateStoryPage() {
   const saveStory = async (nextStatus) => {
     setError('');
     const title = form.title.trim();
-    const content = form.content.trim();
+    const contentPlain = stripHtmlForWords(form.content);
 
-    if (nextStatus === 'draft' && !title && !content) {
+    if (nextStatus === 'draft' && !title && !contentPlain) {
       setError('Add at least a title or some content to save draft.');
       return;
     }
-    if (nextStatus === 'published' && (!title || !content)) {
+    if (nextStatus === 'published' && (!title || !contentPlain)) {
       setError('Title and content are required to publish.');
       return;
     }
@@ -256,89 +267,112 @@ export default function MentorDashboardCreateStoryPage() {
           </nav>
         </aside>
 
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
-                Dashboard
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard/stories">
-                Stories
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">{isEditMode ? 'Edit' : 'New'}</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
+        <main className="ml-[260px] flex-1 flex flex-col min-h-screen min-w-0">
+          <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-white/95 dark:bg-surface-container-lowest/95 backdrop-blur-md">
+            <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
                   type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
+                  onClick={() => navigate(storiesListPath)}
+                  className="flex shrink-0 items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 text-outline hover:bg-surface-container-low hover:text-gold-accent transition-colors"
+                  aria-label="Back to stories"
                 >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
+                  <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 </button>
-
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
+                <div className="min-w-0">
+                  <h1 className="font-serif-alt text-base sm:text-lg font-bold text-on-surface truncate leading-tight">
+                    {isEditMode ? 'Edit story' : 'New story'}
+                  </h1>
+                  <p className="text-[10px] uppercase tracking-widest text-outline truncate">
+                    <Link to="/dashboard/stories" className="hover:text-gold-accent transition-colors">
+                      Stories
+                    </Link>
+                    <span className="mx-1.5 opacity-50">/</span>
+                    <span className="text-on-surface-variant">Studio</span>
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 ml-1 pl-3 border-l border-outline-variant/20 text-[11px] text-on-surface-variant">
+                  <span className="tabular-nums font-semibold text-on-surface">{wordCount}</span>
+                  <span>words</span>
+                  <span className="text-outline-variant/40">·</span>
+                  <span className="italic text-outline">{readingMins} min</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((v) => !v)}
+                    className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
+                    aria-haspopup="menu"
+                    aria-expanded={profileOpen ? 'true' : 'false'}
+                  >
+                    <img
+                      alt=""
+                      className="w-full h-full object-cover"
+                      src={user?.profilePicture || user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80'}
+                    />
+                  </button>
+                  {profileOpen && (
+                    <div role="menu" className="absolute right-0 mt-2 w-52 bg-white dark:bg-surface-container border border-outline-variant/20 shadow-lg rounded-xl z-50 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-outline-variant/10">
+                        <p className="text-sm font-semibold text-on-surface truncate">{user?.name || 'Mentor'}</p>
+                        <p className="text-xs text-outline truncate">{user?.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await logout();
+                            toast.success('You have signed out.');
+                          } finally {
+                            setProfileOpen(false);
+                            navigate('/');
+                          }
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-tertiary hover:bg-tertiary/5 flex items-center gap-2"
+                        role="menuitem"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">logout</span>
+                        Sign out
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => saveStory('draft')}
+                  className="px-3 py-2 text-xs font-semibold rounded-lg border border-outline-variant/25 text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                >
+                  Save draft
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => saveStory('published')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-primary to-tertiary text-white shadow-md shadow-primary/15 hover:opacity-95 disabled:opacity-50"
+                >
+                  {saving ? <Spinner size="sm" className="text-white" /> : 'Publish'}
+                  {!saving && <span className="material-symbols-outlined text-[16px]">send</span>}
+                </button>
               </div>
             </div>
-          </header>
+          </div>
 
-          {/* Luminary Editor */}
-          <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-            {/* Left: Editorial Canvas */}
-            <section className="w-[65%] h-full overflow-y-auto bg-white dark:bg-surface-container-lowest border-r border-outline-variant/15">
-              <div className="max-w-4xl mx-auto px-12 py-10">
-                {/* Upload Zone */}
-                <div className="mb-12">
-                  <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-3">
-                    Cover Image
+          <div className="flex flex-1 min-h-0">
+            <section className="flex-1 min-w-0 overflow-y-auto bg-white dark:bg-surface-container-lowest border-r border-outline-variant/10">
+              <div className="max-w-3xl mx-auto px-5 py-6 lg:px-8 lg:py-7">
+                <div className="mb-7">
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                    Cover
                     {coverDisplayUrl && (
                       <span className="ml-2 font-normal normal-case text-[11px] text-on-surface-variant">
-                        — Replace or remove below
+                        — replace anytime
                       </span>
                     )}
                   </label>
-                  <div className="group relative w-full h-[280px] border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-4 bg-surface-container-lowest hover:border-gold-accent/40 transition-all overflow-hidden">
+                  <div className="group relative w-full h-[168px] sm:h-[188px] border border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-surface-container-lowest/90 hover:border-gold-accent/35 transition-all overflow-hidden">
                     {coverDisplayUrl ? (
                       <>
                         <img
@@ -347,9 +381,9 @@ export default function MentorDashboardCreateStoryPage() {
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/25" />
-                        <div className="relative z-10 flex flex-wrap items-center justify-center gap-3">
-                          <label className="cursor-pointer bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-on-surface transition-colors shadow-sm">
-                            Replace image
+                        <div className="relative z-10 flex flex-wrap items-center justify-center gap-2">
+                          <label className="cursor-pointer bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-on-surface transition-colors shadow-sm">
+                            Replace
                             <input
                               type="file"
                               accept="image/*"
@@ -359,7 +393,7 @@ export default function MentorDashboardCreateStoryPage() {
                           </label>
                           <button
                             type="button"
-                            className="bg-white/90 hover:bg-white px-4 py-2 rounded-lg text-sm font-semibold text-tertiary transition-colors shadow-sm"
+                            className="bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-tertiary transition-colors shadow-sm"
                             onClick={() => {
                               if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
                               setCoverPreviewUrl('');
@@ -372,10 +406,10 @@ export default function MentorDashboardCreateStoryPage() {
                         </div>
                       </>
                     ) : (
-                      <label className="flex flex-col items-center justify-center gap-2 text-outline group-hover:text-primary transition-colors cursor-pointer">
-                        <span className="material-symbols-outlined text-4xl">add_photo_alternate</span>
-                        <p className="font-sans-modern font-medium">Upload Cover Image</p>
-                        <p className="text-xs opacity-60">JPG/PNG/WebP • Recommended 16:9</p>
+                      <label className="flex flex-col items-center justify-center gap-1 text-outline group-hover:text-gold-accent transition-colors cursor-pointer py-2">
+                        <span className="material-symbols-outlined text-3xl">add_photo_alternate</span>
+                        <p className="font-sans-modern text-sm font-medium">Upload cover</p>
+                        <p className="text-[10px] opacity-60">JPG / PNG · 16:9</p>
                         <input
                           type="file"
                           accept="image/*"
@@ -387,212 +421,145 @@ export default function MentorDashboardCreateStoryPage() {
                   </div>
                 </div>
 
-                {/* Editor Toolbar (visual) */}
-                <div className="sticky top-4 z-40 mb-8 p-1 bg-white dark:bg-surface-container border border-outline-variant/25 rounded-xl shadow-xl shadow-black/5 flex items-center gap-1 w-fit mx-auto">
-                  {[
-                    'format_bold', 'format_italic', 'format_quote',
-                    'DIV',
-                    'format_h1', 'format_h2',
-                    'DIV',
-                    'link', 'image', 'code',
-                    'DIV',
-                    'format_list_bulleted',
-                  ].map((x, i) => x === 'DIV' ? (
-                    <div key={`d-${i}`} className="w-[1px] h-6 bg-outline-variant/30 mx-1" />
-                  ) : (
-                    <button key={x} type="button" className="p-2 hover:bg-surface-container-low rounded text-outline">
-                      <span className="material-symbols-outlined">{x}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Title */}
-                <textarea
+                <input
+                  type="text"
                   value={form.title}
                   onChange={(e) => setField('title', e.target.value)}
-                  className="w-full bg-transparent border-none focus:ring-0 text-[42px] font-bold leading-tight placeholder:text-outline/40 resize-none mb-6 p-0"
-                  placeholder="Your story title..."
-                  rows={1}
+                  className="w-full bg-transparent border-none focus:ring-0 text-3xl sm:text-[2.1rem] font-bold font-serif-alt leading-tight placeholder:text-outline/35 mb-3 p-0"
+                  placeholder="Story title"
+                  maxLength={200}
                 />
 
-                {/* Excerpt */}
                 <textarea
                   value={form.excerpt}
                   onChange={(e) => setField('excerpt', e.target.value)}
-                  className="w-full bg-transparent border-none focus:ring-0 text-lg text-outline italic placeholder:text-outline/40 resize-none mb-8 p-0"
-                  placeholder="Write a brief editorial excerpt to hook your readers..."
-                  rows={3}
+                  className="w-full bg-transparent border-none focus:ring-0 text-sm text-on-surface-variant italic placeholder:text-outline/40 resize-none mb-5 p-0 leading-relaxed"
+                  placeholder="Short excerpt — hook your readers (optional)"
+                  rows={2}
+                  maxLength={300}
                 />
 
-                {/* Body */}
-                <textarea
-                  value={form.content}
-                  onChange={(e) => setField('content', e.target.value)}
-                  className="w-full min-h-[520px] bg-transparent border-none focus:ring-0 text-xl leading-relaxed text-on-surface placeholder:text-outline/40 resize-none p-0"
-                  placeholder="Start your narrative journey here..."
-                />
-                <div className="mt-4 p-4 border border-outline-variant/20 rounded-lg bg-surface-container-lowest">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold uppercase tracking-widest text-outline">Word Target</span>
-                    <span className={`font-semibold ${wordCount >= publishWordTarget ? 'text-green-600' : 'text-outline'}`}>
-                      {wordCount} / {publishWordTarget} words
+                <div className="mb-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="block text-[10px] font-bold text-outline uppercase tracking-widest">
+                      Story body
+                    </label>
+                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-outline-variant/20 bg-surface-container-low text-[10px]">
+                      <span className="uppercase tracking-[0.14em] font-bold text-outline">Word Target</span>
+                      <span className={`font-bold tabular-nums ${wordCount >= publishWordTarget ? 'text-green-600 dark:text-green-500' : 'text-on-surface'}`}>
+                        {wordCount}/{publishWordTarget}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 rounded-full bg-outline-variant/20 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${wordCount >= publishWordTarget ? 'bg-green-500' : 'bg-gold-accent'}`}
+                        style={{ width: `${publishWordProgress}%` }}
+                      />
+                    </div>
+                    <span className={`text-[10px] font-semibold tabular-nums ${wordCount >= publishWordTarget ? 'text-green-600 dark:text-green-500' : 'text-gold-accent'}`}>
+                      {publishWordProgress}%
                     </span>
                   </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-outline-variant/20 overflow-hidden">
-                    <div
-                      className={`h-2 rounded-full transition-all ${wordCount >= publishWordTarget ? 'bg-green-500' : 'bg-gold-accent'}`}
-                      style={{ width: `${publishWordProgress}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-[11px] text-outline">
-                    Keep typing until you reach 100 words to enable publishing.
-                  </p>
                 </div>
+
+                <StoryRichTextEditor
+                  value={form.content}
+                  onChange={(html) => setField('content', html)}
+                  disabled={saving}
+                />
               </div>
             </section>
 
-            {/* Right: Settings Panel */}
-            <aside className="w-[35%] h-full bg-surface-container-lowest p-6 overflow-y-auto no-scrollbar">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold tracking-tight text-on-surface">Story Details</h2>
-                <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  {status === 'published' ? 'PUBLISHED' : 'DRAFT MODE'}
+            <aside className="w-[min(100%,340px)] shrink-0 flex flex-col bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+              <div className="p-4 sm:p-5 space-y-5">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="font-serif-alt text-base font-bold text-on-surface leading-tight">Details</h2>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-gold-accent/35 text-gold-accent shrink-0">
+                    {status === 'published' ? 'Live' : 'Draft'}
+                  </span>
                 </div>
-              </div>
 
-              {error && (
-                <div className="mb-6 px-4 py-3 rounded-lg bg-error-container/50 border border-error/30 text-on-error-container text-sm">
-                  {error}
+                {error && (
+                  <div className="px-3 py-2.5 rounded-lg bg-error-container/50 border border-error/25 text-on-error-container text-xs leading-snug">
+                    {error}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                    Category
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {CATEGORY_CHOICES.map((c) => {
+                      const active = form.category === c.value;
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          onClick={() => setField('category', c.value)}
+                          className={`p-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all ${
+                            active
+                              ? 'border-gold-accent/50 bg-gold-accent/10 text-on-surface shadow-sm'
+                              : 'border-outline-variant/20 bg-white dark:bg-surface-container hover:border-outline-variant/40'
+                          }`}
+                        >
+                          <span className={`material-symbols-outlined text-[20px] ${active ? 'text-gold-accent' : 'opacity-45'}`}>
+                            {c.icon}
+                          </span>
+                          <span className={`text-[10px] font-semibold leading-tight text-center ${active ? '' : 'opacity-75'}`}>{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
 
-              {/* Categories */}
-              <div className="mb-6">
-                <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-3">
-                  Select Category
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORY_CHOICES.map((c) => {
-                    const active = form.category === c.value;
-                    return (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onClick={() => setField('category', c.value)}
-                        className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1.5 transition-all ${
-                          active
-                            ? 'border-primary bg-primary/10 text-on-surface'
-                            : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-primary/40'
-                        }`}
-                      >
-                        <span className={`material-symbols-outlined ${active ? 'text-primary' : 'opacity-50'}`}>
-                          {c.icon}
-                        </span>
-                        <span className={`text-xs font-semibold ${active ? '' : 'opacity-70'}`}>{c.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="mb-6">
-                <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-3">
-                  Keywords &amp; Tags
-                </label>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                    Tags
+                  </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
                   {tagsList.slice(0, 6).map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-xs font-medium rounded-lg">
+                    <span key={t} className="inline-flex px-2 py-0.5 bg-surface-container-low text-[10px] font-medium rounded-md text-on-surface-variant">
                       {t}
                     </span>
                   ))}
                   {tagsList.length === 0 && (
-                    <span className="text-xs text-outline">Add tags like: Leadership, Mentorship, Strategy…</span>
+                    <span className="text-[10px] text-outline leading-snug">e.g. Leadership, STEM…</span>
                   )}
                 </div>
                 <input
                   value={form.tags}
                   onChange={(e) => setField('tags', e.target.value)}
-                  className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm focus:ring-primary focus:border-primary outline-none transition-all"
-                  placeholder="Add tags (comma-separated)…"
+                  className="w-full bg-white dark:bg-surface-container border border-outline-variant/20 text-on-surface rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-gold-accent/40 focus:border-gold-accent/40 outline-none transition-all"
+                  placeholder="Comma-separated tags"
                 />
-              </div>
+                </div>
 
-              {/* Checklist */}
-              <div>
-                <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-3">
-                  Publishing Checklist
+                <div>
+                <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                  Checklist
                 </label>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {checklist.map((c) => (
-                    <li key={c.text} className={`flex items-start gap-3 text-sm ${c.ok ? '' : 'opacity-60'}`}>
-                      <span className={`material-symbols-outlined text-[20px] ${c.ok ? 'text-green-600' : 'text-outline'}`}>
-                        {c.ok ? 'check_circle' : 'circle'}
+                    <li key={c.text} className={`flex items-start gap-2 text-[11px] leading-snug ${c.ok ? '' : 'opacity-65'}`}>
+                      <span className={`material-symbols-outlined text-[16px] shrink-0 ${c.ok ? 'text-green-600' : 'text-outline'}`}>
+                        {c.ok ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className="text-on-surface-variant">{c.text}</span>
                     </li>
                   ))}
                 </ul>
+                </div>
+
+                {lastSavedAt && (
+                  <p className="text-[10px] text-outline pt-1 border-t border-outline-variant/10">
+                    Last saved {lastSavedAt}
+                  </p>
+                )}
               </div>
             </aside>
-          </div>
-
-          {/* Editor top actions bar (inside main) */}
-          <div className="fixed top-0 right-0 left-[260px] h-16 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/20 z-40 flex items-center justify-between px-6">
-            <div className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={() => navigate(storiesListPath)}
-                className="flex items-center gap-2 text-outline hover:text-primary transition-colors"
-              >
-                <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-                <span className="text-sm font-medium">Back to Dashboard</span>
-              </button>
-              <div className="h-4 w-[1px] bg-outline-variant/30" />
-              <div className="flex items-center gap-2 text-outline text-xs">
-                <span className="material-symbols-outlined text-[16px] text-green-600">cloud_done</span>
-                <span>{lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Draft not saved yet'}</span>
-              </div>
-              <div className="h-4 w-[1px] bg-outline-variant/30 hidden sm:block" />
-              <div className="hidden sm:flex items-center gap-4 text-xs text-outline">
-                <span>
-                  Estimated Reading Time{' '}
-                  <span className="font-bold text-primary italic">{readingMins} min read</span>
-                </span>
-                <span className="text-outline-variant/50">•</span>
-                <span>
-                  Word count <span className="font-bold text-on-surface">{wordCount}</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => saveStory('draft')}
-                className="px-4 py-2 text-sm font-medium text-outline hover:bg-surface-container-low rounded-lg transition-all disabled:opacity-60"
-              >
-                Save Draft
-              </button>
-              <button
-                type="button"
-                className="p-2 text-outline hover:bg-surface-container-low rounded-lg transition-all"
-                onClick={() => toast('Preview coming soon')}
-              >
-                <span className="material-symbols-outlined">visibility</span>
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => saveStory('published')}
-                className="bg-gradient-to-r from-primary to-tertiary px-6 py-2 text-white text-sm font-bold rounded-lg shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-60"
-              >
-                {saving ? <Spinner size="sm" className="text-white" /> : 'Publish Story'}
-                {!saving && <span className="material-symbols-outlined text-[18px]">send</span>}
-              </button>
-            </div>
           </div>
         </main>
       </div>
