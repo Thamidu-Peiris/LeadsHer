@@ -120,7 +120,9 @@ export default function MentorDashboardCreateStoryPage() {
         navigate(`/stories/${res.data._id}`);
       }
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to save story.');
+      const msg = e.response?.data?.message || 'Failed to save story.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

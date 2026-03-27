@@ -10,6 +10,11 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      // Story-service static uploads (same path as api-gateway → story-service)
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
 });
