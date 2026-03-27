@@ -1266,44 +1266,82 @@ function AdminDashboard({ user, myStories, myEvents }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {mentorMenteeUsers.map((u) => (
                           <div key={u.id || u._id} className="border border-outline-variant/20 rounded-xl p-4">
-                            <div className="flex flex-col items-center text-center">
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent/50">
-                                <img
-                                  src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
-                                  alt={u.name || 'Profile'}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <p className="mt-3 font-semibold text-on-surface line-clamp-1">{u.name}</p>
-                              <p className="text-xs text-outline line-clamp-1">{u.email}</p>
-                              <span className={`mt-2 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border ${
-                                u.role === 'mentor'
-                                  ? 'border-primary/30 bg-primary/10 text-primary'
-                                  : 'border-tertiary/30 bg-tertiary/10 text-tertiary'
-                              }`}>
-                                {u.role}
-                              </span>
-                              <div className="mt-3 w-full grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => editUserProfile(u)}
-                                  className="px-3 py-2 text-[11px] font-bold tracking-wider uppercase border border-outline-variant/25 rounded hover:border-gold-accent/40"
-                                >
-                                  Update profile
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                  className={`px-3 py-2 text-[11px] font-bold tracking-wider uppercase border rounded ${
-                                    u.isSuspended
-                                      ? 'border-green-300 text-green-700 hover:bg-green-50'
-                                      : 'border-red-300 text-red-700 hover:bg-red-50'
-                                  }`}
-                                >
-                                  {u.isSuspended ? 'Reactivate' : 'Suspend'}
-                                </button>
-                              </div>
-                            </div>
+                            {(() => {
+                              const isMentor = (u?.role || '').toLowerCase() === 'mentor';
+                              const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
+                              return (
+                                <>
+                                  <div className="flex flex-col items-center text-center">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent/50">
+                                      <img
+                                        src={u.profilePicture || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80'}
+                                        alt={u.name || 'Profile'}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <p className="mt-3 font-semibold text-on-surface line-clamp-1">{u.name}</p>
+                                    <p className="text-xs text-outline line-clamp-1">{u.email}</p>
+                                    <span className={`mt-2 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                      u.role === 'mentor'
+                                        ? 'border-primary/30 bg-primary/10 text-primary'
+                                        : 'border-tertiary/30 bg-tertiary/10 text-tertiary'
+                                    }`}>
+                                      {u.role}
+                                    </span>
+
+                                    {isMentor && (
+                                      <span className={`mt-2 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                        mentorProfile?.isVerified
+                                          ? 'border-green-300 bg-green-50 text-green-700'
+                                          : 'border-amber-300 bg-amber-50 text-amber-700'
+                                      }`}>
+                                        {mentorProfile?.isVerified ? 'Verified mentor' : 'Unverified mentor'}
+                                      </span>
+                                    )}
+
+                                    <div className="mt-3 w-full grid grid-cols-2 gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => editUserProfile(u)}
+                                        className="px-3 py-2 text-[11px] font-bold tracking-wider uppercase border border-outline-variant/25 rounded hover:border-gold-accent/40"
+                                      >
+                                        Update profile
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
+                                        className={`px-3 py-2 text-[11px] font-bold tracking-wider uppercase border rounded ${
+                                          u.isSuspended
+                                            ? 'border-green-300 text-green-700 hover:bg-green-50'
+                                            : 'border-red-300 text-red-700 hover:bg-red-50'
+                                        }`}
+                                      >
+                                        {u.isSuspended ? 'Reactivate' : 'Suspend'}
+                                      </button>
+                                    </div>
+
+                                    {isMentor && (
+                                      <button
+                                        type="button"
+                                        disabled={!mentorProfile}
+                                        onClick={() => mentorProfile && toggleVerifyMentor(mentorProfile)}
+                                        className={`mt-2 w-full px-3 py-2 text-[11px] font-bold tracking-wider uppercase border rounded ${
+                                          mentorProfile?.isVerified
+                                            ? 'border-amber-300 text-amber-700 hover:bg-amber-50'
+                                            : 'border-green-300 text-green-700 hover:bg-green-50'
+                                        } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      >
+                                        {!mentorProfile
+                                          ? 'Profile not found'
+                                          : mentorProfile.isVerified
+                                            ? 'Unverify mentor'
+                                            : 'Verify mentor'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -1397,7 +1435,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                 <Link to="/stories" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Stories</Link>
                 <Link to="/events" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Review Events</Link>
-                <Link to="/mentors" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Verify Mentors</Link>
+                <Link to="/dashboard/manage-account" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Verify Mentor Status</Link>
                 <Link to="/dashboard/settings" className="px-4 py-3 rounded-lg border border-outline-variant/25 hover:border-gold-accent/40 bg-white text-sm font-semibold text-on-surface">Platform Settings</Link>
               </div>
             </div>
