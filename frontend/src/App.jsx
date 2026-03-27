@@ -12,7 +12,6 @@ import LoginPage        from './pages/LoginPage';
 import RegisterPage     from './pages/RegisterPage';
 import StoriesPage      from './pages/StoriesPage';
 import StoryDetailPage  from './pages/StoryDetailPage';
-import CreateStoryPage  from './pages/CreateStoryPage';
 import EventsPage       from './pages/EventsPage';
 import EventDetailPage  from './pages/EventDetailPage';
 import CreateEventPage  from './pages/CreateEventPage';
@@ -137,9 +136,6 @@ export default function App() {
             } />
             <Route path="/dashboard/profile" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
-            } />
-            <Route path="/stories/new" element={
-              <ProtectedRoute roles={ANY_USER}><CreateStoryPage /></ProtectedRoute>
             } />
             <Route path="/stories/:id/edit" element={
               <ProtectedRoute roles={ANY_USER}><MentorDashboardCreateStoryPage /></ProtectedRoute>

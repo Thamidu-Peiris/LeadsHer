@@ -51,7 +51,6 @@ function splitIntoChunks(text, maxLen = 130) {
 
 export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
-  const newStoryHref = user?.role === 'mentor' ? '/dashboard/stories/new' : '/stories/new';
   const [stories, setStories]     = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
@@ -172,10 +171,10 @@ export default function StoriesPage() {
             <button type="submit" className="px-5 py-2.5 rounded-xl bg-on-surface text-inverse-on-surface text-xs font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-opacity">
               Search
             </button>
-            {isAuthenticated && (
-              <Link to={newStoryHref} className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-sm shadow-primary/10 hover:bg-primary/90 transition-colors">
+            {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
+              <Link to="/dashboard/stories/new" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-sm shadow-primary/10 hover:bg-primary/90 transition-colors">
                 <span className="material-symbols-outlined text-[16px]">edit_square</span>
-                Share
+                New
               </Link>
             )}
             <select
@@ -210,8 +209,8 @@ export default function StoriesPage() {
         ) : stories.length === 0 ? (
           <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-12 text-center">
             <p className="text-on-surface-variant text-lg mb-5">No stories found.</p>
-            {isAuthenticated && (
-              <Link to={newStoryHref} className="btn-primary">Be the first to share</Link>
+            {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
+              <Link to="/dashboard/stories/new" className="btn-primary">Create a story</Link>
             )}
           </div>
         ) : (

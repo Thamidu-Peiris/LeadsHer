@@ -1492,7 +1492,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            to="/stories/new"
+            to="/dashboard/stories/new"
             className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
           >
             + New Story
@@ -1528,13 +1528,13 @@ export default function DashboardPage() {
       <section className="mb-12">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-xl font-semibold text-gray-900">My Stories</h2>
-          <Link to="/stories/new" className="btn-secondary text-sm">+ Add</Link>
+          <Link to="/dashboard/stories/new" className="btn-secondary text-sm">+ Add</Link>
         </div>
 
         {myStories.length === 0 ? (
           <div className="card p-10 text-center">
             <p className="text-gray-400 mb-4">You haven't written any stories yet.</p>
-            <Link to="/stories/new" className="btn-primary">Share your first story</Link>
+            <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
