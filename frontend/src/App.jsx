@@ -27,6 +27,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
+import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
 
@@ -38,6 +39,7 @@ const ADMIN_ONLY   = ['admin'];
 /* Role-based resources page */
 function ResourcesRoute() {
   const { user } = useAuth();
+  if (user?.role === 'admin') return <AdminDashboardResourcesPage />;
   if (user?.role === 'mentee') return <MenteeDashboardResourcesPage />;
   return <MentorDashboardResourcesPage />;
 }

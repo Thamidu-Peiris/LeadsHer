@@ -348,6 +348,115 @@ const getMyResources = async (userId, { page = 1, limit = 20, sort = '-createdAt
   };
 };
 
+// --- Admin ---
+
+const adminGetResources = async ({
+  page = 1,
+  limit = 12,
+  sort = '-createdAt',
+  search,
+  category,
+  type,
+  status, // 'pending' | 'approved' | undefined (all)
+}) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  limit = Math.min(50, Math.max(1, parseInt(limit, 10) || 12));
+  const skip = (page - 1) * limit;
+
+  const query = {};
+  if (status === 'pending') query.isApproved = false;
+  else if (status === 'approved') query.isApproved = true;
+  if (category) query.category = category;
+  if (type) query.type = type;
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { author: { $regex: search, $options: 'i' } },
+      { tags: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  const [resources, total] = await Promise.all([
+    Resource.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate('uploadedBy', 'name email avatar')
+      .lean(),
+    Resource.countDocuments(query),
+  ]);
+
+  const result = resources.map((r) => ({
+    ...r,
+    bookmarkCount: r.bookmarkedBy ? r.bookmarkedBy.length : 0,
+    ratingCount: r.ratings ? r.ratings.length : 0,
+    bookmarkedBy: undefined,
+    ratings: undefined,
+  }));
+
+  return {
+    resources: result,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+const adminGetAnalytics = async () => {
+  const [total, approved, pending, agg] = await Promise.all([
+    Resource.countDocuments({}),
+    Resource.countDocuments({ isApproved: true }),
+    Resource.countDocuments({ isApproved: false }),
+    Resource.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalDownloads: { $sum: '$downloads' },
+          totalViews: { $sum: '$views' },
+          avgRating: { $avg: '$averageRating' },
+        },
+      },
+    ]),
+  ]);
+
+  const [byType, byCategory, topDownloads, topViewed] = await Promise.all([
+    Resource.aggregate([{ $group: { _id: '$type', count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+    Resource.aggregate([{ $group: { _id: '$category', count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+    Resource.find({}).sort('-downloads').limit(5).select('title type downloads').lean(),
+    Resource.find({}).sort('-views').limit(5).select('title type views').lean(),
+  ]);
+
+  const overview = {
+    total,
+    approved,
+    pending,
+    totalDownloads: agg[0]?.totalDownloads || 0,
+    totalViews: agg[0]?.totalViews || 0,
+    avgRating: agg[0]?.avgRating || 0,
+  };
+
+  return { overview, byType, byCategory, topDownloads, topViewed };
+};
+
+const approveResource = async (resourceId) => {
+  const resource = await Resource.findByIdAndUpdate(
+    resourceId,
+    { isApproved: true },
+    { new: true }
+  );
+  if (!resource) throwError('Resource not found.', 404);
+  return { message: 'Resource approved.', resource };
+};
+
+const rejectResource = async (resourceId) => {
+  const resource = await Resource.findByIdAndUpdate(
+    resourceId,
+    { isApproved: false },
+    { new: true }
+  );
+  if (!resource) throwError('Resource not found.', 404);
+  return { message: 'Resource rejected.', resource };
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -360,4 +469,8 @@ module.exports = {
   rateResource,
   getRecommendedResources,
   getMyResources,
+  adminGetResources,
+  adminGetAnalytics,
+  approveResource,
+  rejectResource,
 };
