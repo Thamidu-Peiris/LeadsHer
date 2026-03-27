@@ -44,6 +44,7 @@ export default function MentorDashboardCreateStoryPage() {
   });
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
   const [coverFile, setCoverFile] = useState(null);
+  const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState('draft');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +75,7 @@ export default function MentorDashboardCreateStoryPage() {
         setStatus(d.status === 'published' ? 'published' : 'draft');
         setCoverPreviewUrl('');
         setCoverFile(null);
+        setTagInput('');
       } catch (e) {
         if (!cancelled) {
           toast.error(e.response?.data?.message || 'Could not load story.');
@@ -115,6 +117,30 @@ export default function MentorDashboardCreateStoryPage() {
   const setField = (key, value) => {
     setError('');
     setForm((f) => ({ ...f, [key]: value }));
+  };
+
+  const syncTagsToForm = (nextTags) => {
+    setField('tags', nextTags.slice(0, 5).join(', '));
+  };
+
+  const addTag = (raw) => {
+    const cleaned = String(raw || '').trim().replace(/\s+/g, ' ');
+    if (!cleaned) return;
+    const exists = tagsList.some((t) => t.toLowerCase() === cleaned.toLowerCase());
+    if (exists) {
+      setTagInput('');
+      return;
+    }
+    if (tagsList.length >= 5) {
+      toast.error('You can add up to 5 tags.');
+      return;
+    }
+    syncTagsToForm([...tagsList, cleaned]);
+    setTagInput('');
+  };
+
+  const removeTag = (tag) => {
+    syncTagsToForm(tagsList.filter((t) => t !== tag));
   };
 
   const coverDisplayUrl = coverPreviewUrl || form.coverImage || '';
@@ -182,18 +208,18 @@ export default function MentorDashboardCreateStoryPage() {
           navigate(storiesListPath);
         } else {
           toast.success('Story published!');
-          navigate(`/stories/${editStoryId}`);
+          navigate(storiesListPath);
         }
       } else {
-        const res = await storyApi.create(payload);
+        await storyApi.create(payload);
         setStatus(nextStatus);
         setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         if (nextStatus === 'draft') {
           toast.success('Draft saved!');
-          navigate('/dashboard/stories');
+          navigate(storiesListPath);
         } else {
           toast.success('Story published!');
-          navigate(`/stories/${res.data._id}`);
+          navigate(storiesListPath);
         }
       }
     } catch (e) {
@@ -351,7 +377,7 @@ export default function MentorDashboardCreateStoryPage() {
                   type="button"
                   disabled={saving}
                   onClick={() => saveStory('published')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-primary to-tertiary text-white shadow-md shadow-primary/15 hover:opacity-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-primary text-white shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? <Spinner size="sm" className="text-white" /> : 'Publish'}
                   {!saving && <span className="material-symbols-outlined text-[16px]">send</span>}
@@ -472,11 +498,11 @@ export default function MentorDashboardCreateStoryPage() {
               </div>
             </section>
 
-            <aside className="w-[min(100%,340px)] shrink-0 flex flex-col bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
-              <div className="p-4 sm:p-5 space-y-5">
+            <aside className="w-[min(100%,380px)] shrink-0 flex flex-col bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+              <div className="p-5 sm:p-6 space-y-6">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-serif-alt text-base font-bold text-on-surface leading-tight">Details</h2>
-                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-gold-accent/35 text-gold-accent shrink-0">
+                  <h2 className="font-serif-alt text-xl font-bold text-on-surface leading-tight">Details</h2>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-gold-accent/35 text-gold-accent shrink-0">
                     {status === 'published' ? 'Live' : 'Draft'}
                   </span>
                 </div>
@@ -488,10 +514,10 @@ export default function MentorDashboardCreateStoryPage() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                  <label className="block text-[11px] font-bold text-outline uppercase tracking-widest mb-3">
                     Category
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {CATEGORY_CHOICES.map((c) => {
                       const active = form.category === c.value;
                       return (
@@ -499,16 +525,16 @@ export default function MentorDashboardCreateStoryPage() {
                           key={c.value}
                           type="button"
                           onClick={() => setField('category', c.value)}
-                          className={`p-2.5 rounded-lg border flex flex-col items-center gap-1 transition-all ${
+                          className={`h-[86px] rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                             active
-                              ? 'border-gold-accent/50 bg-gold-accent/10 text-on-surface shadow-sm'
-                              : 'border-outline-variant/20 bg-white dark:bg-surface-container hover:border-outline-variant/40'
+                              ? 'border-gold-accent/55 bg-gold-accent/10 text-on-surface shadow-sm'
+                              : 'border-outline-variant/20 bg-white dark:bg-surface-container hover:border-outline-variant/40 hover:bg-surface-container-lowest'
                           }`}
                         >
                           <span className={`material-symbols-outlined text-[20px] ${active ? 'text-gold-accent' : 'opacity-45'}`}>
                             {c.icon}
                           </span>
-                          <span className={`text-[10px] font-semibold leading-tight text-center ${active ? '' : 'opacity-75'}`}>{c.label}</span>
+                          <span className={`text-[11px] font-semibold leading-tight text-center ${active ? '' : 'opacity-80'}`}>{c.label}</span>
                         </button>
                       );
                     })}
@@ -516,35 +542,54 @@ export default function MentorDashboardCreateStoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                  <label className="block text-[11px] font-bold text-outline uppercase tracking-widest mb-3">
                     Tags
                   </label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {tagsList.slice(0, 6).map((t) => (
-                    <span key={t} className="inline-flex px-2 py-0.5 bg-surface-container-low text-[10px] font-medium rounded-md text-on-surface-variant">
-                      {t}
-                    </span>
-                  ))}
-                  {tagsList.length === 0 && (
-                    <span className="text-[10px] text-outline leading-snug">e.g. Leadership, STEM…</span>
-                  )}
+                <div className="rounded-xl border border-outline-variant/20 bg-white/90 dark:bg-surface-container p-3">
+                  <div className="flex flex-wrap gap-2 min-h-8 mb-2">
+                    {tagsList.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => removeTag(t)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-container-low text-xs font-medium text-on-surface-variant hover:bg-tertiary/10 transition-colors"
+                        title="Remove tag"
+                      >
+                        <span>{t}</span>
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    ))}
+                    {tagsList.length === 0 && (
+                      <span className="text-xs text-outline">Type a tag and press Enter</span>
+                    )}
+                  </div>
+                  <input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addTag(tagInput);
+                      } else if (e.key === 'Backspace' && !tagInput && tagsList.length) {
+                        removeTag(tagsList[tagsList.length - 1]);
+                      }
+                    }}
+                    onBlur={() => addTag(tagInput)}
+                    className="w-full bg-transparent border border-outline-variant/20 text-on-surface rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold-accent/40 focus:border-gold-accent/40 outline-none transition-all"
+                    placeholder="Add tag and press Enter"
+                  />
+                  <p className="mt-2 text-[10px] text-outline">Up to 5 tags</p>
                 </div>
-                <input
-                  value={form.tags}
-                  onChange={(e) => setField('tags', e.target.value)}
-                  className="w-full bg-white dark:bg-surface-container border border-outline-variant/20 text-on-surface rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-gold-accent/40 focus:border-gold-accent/40 outline-none transition-all"
-                  placeholder="Comma-separated tags"
-                />
                 </div>
 
                 <div>
-                <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
+                <label className="block text-[11px] font-bold text-outline uppercase tracking-widest mb-3">
                   Checklist
                 </label>
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {checklist.map((c) => (
-                    <li key={c.text} className={`flex items-start gap-2 text-[11px] leading-snug ${c.ok ? '' : 'opacity-65'}`}>
-                      <span className={`material-symbols-outlined text-[16px] shrink-0 ${c.ok ? 'text-green-600' : 'text-outline'}`}>
+                    <li key={c.text} className={`flex items-start gap-2.5 text-[12px] leading-snug ${c.ok ? '' : 'opacity-65'}`}>
+                      <span className={`material-symbols-outlined text-[18px] shrink-0 ${c.ok ? 'text-green-600' : 'text-outline'}`}>
                         {c.ok ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className="text-on-surface-variant">{c.text}</span>
