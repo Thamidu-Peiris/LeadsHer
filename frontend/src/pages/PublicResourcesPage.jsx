@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
 import Spinner from '../components/common/Spinner';
+import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
@@ -170,6 +171,7 @@ export default function PublicResourcesPage() {
   const [page, setPage]                         = useState(1);
 
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  const [previewResource, setPreviewResource] = useState(null);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
@@ -234,17 +236,7 @@ export default function PublicResourcesPage() {
     resourceApi.trackDownload(resource._id).catch(() => {});
     const rawUrl = resource.file?.url || resource.externalLink;
     if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
-    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
-    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
-      window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`, '_blank', 'noopener,noreferrer');
-    } else if (ext === 'zip') {
-      const a = document.createElement('a');
-      a.href = rawUrl; a.setAttribute('download', resource.title || 'download');
-      a.target = '_blank'; a.rel = 'noopener noreferrer';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else {
-      window.open(rawUrl, '_blank', 'noopener,noreferrer');
-    }
+    setPreviewResource(resource);
   };
 
   const handleSearch = (e) => {
@@ -440,6 +432,10 @@ export default function PublicResourcesPage() {
           </div>
         )}
       </div>
+
+      {previewResource && (
+        <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
+      )}
 
       {/* Guest CTA banner */}
       {!isAuthenticated && (
