@@ -29,4 +29,22 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 });
 
-module.exports = { upload };
+const IMAGE_EXTS  = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
+const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+const imageFilter = (req, file, cb) => {
+  const ext = (file.originalname || '').split('.').pop().toLowerCase();
+  if (IMAGE_EXTS.has(ext) || IMAGE_MIMES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Image type not allowed. Supported: JPG, PNG, GIF, WEBP'), false);
+  }
+};
+
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+module.exports = { upload, imageUpload };

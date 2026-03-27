@@ -81,7 +81,7 @@ const fmtCat  = (c) => (c || '').split('-').map((w) => w[0]?.toUpperCase() + w.s
 const EMPTY_FORM = {
   title: '', description: '', type: 'article', category: 'leadership-skills',
   tags: '', difficulty: 'beginner', externalLink: '', author: '',
-  isPremium: false, fileMode: 'link',
+  isPremium: false, fileMode: 'link', thumbnail: '',
 };
 
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
@@ -302,11 +302,13 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
 
 function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
-  const [saving, setSaving]       = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError]         = useState('');
-  const fileInputRef              = useRef(null);
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [saving, setSaving]               = useState(false);
+  const [uploading, setUploading]         = useState(false);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [error, setError]                 = useState('');
+  const fileInputRef                      = useRef(null);
+  const thumbInputRef                     = useRef(null);
+  const [uploadedFile, setUploadedFile]   = useState(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -327,6 +329,23 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
     }
   };
 
+  const handleThumbnailUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumb(true);
+    try {
+      const fd = new FormData();
+      fd.append('thumbnail', file);
+      const res = await resourceApi.uploadThumbnail(fd);
+      set('thumbnail', res.data.url);
+      toast.success('Cover image uploaded');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Image upload failed');
+    } finally {
+      setUploadingThumb(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setError('');
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
@@ -344,6 +363,7 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
       externalLink: form.fileMode === 'link' ? form.externalLink.trim() : '',
       author: form.author.trim(),
       isPremium: isMentor ? form.isPremium : false,
+      thumbnail: form.thumbnail || '',
       ...(form.fileMode === 'file' && uploadedFile ? { file: uploadedFile } : {}),
     };
 
@@ -409,6 +429,53 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
             <div className="sm:col-span-2">
               <label className={lbl}>Tags * (comma-separated, min 2)</label>
               <input className={inp} value={form.tags} onChange={(e) => set('tags', e.target.value)} placeholder="leadership, women, strategy" />
+            </div>
+
+            {/* Cover image / thumbnail */}
+            <div className="sm:col-span-2">
+              <label className={lbl}>Cover Image (optional)</label>
+              <div className="flex items-start gap-4">
+                {/* Preview */}
+                <div className="w-28 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 dark:border-outline-variant/40 bg-slate-100 dark:bg-surface-container-low flex items-center justify-center">
+                  {form.thumbnail ? (
+                    <img src={form.thumbnail} alt="Cover" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[28px] text-slate-300 dark:text-outline">image</span>
+                  )}
+                </div>
+                {/* Upload controls */}
+                <div className="flex flex-col gap-2 justify-center">
+                  <button
+                    type="button"
+                    disabled={uploadingThumb}
+                    onClick={() => thumbInputRef.current?.click()}
+                    className="px-4 py-2 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent rounded-lg transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {uploadingThumb ? (
+                      <><span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>Uploading…</>
+                    ) : (
+                      <><span className="material-symbols-outlined text-[14px]">cloud_upload</span>{form.thumbnail ? 'Change Image' : 'Upload Image'}</>
+                    )}
+                  </button>
+                  {form.thumbnail && (
+                    <button
+                      type="button"
+                      onClick={() => set('thumbnail', '')}
+                      className="px-4 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-400 hover:border-red-300 hover:text-red-500 rounded-lg transition-all"
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <p className="text-[10px] text-slate-400 dark:text-outline">JPG, PNG, WebP · Max 5 MB</p>
+                </div>
+              </div>
+              <input
+                ref={thumbInputRef}
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleThumbnailUpload}
+              />
             </div>
 
             {/* Content source */}
