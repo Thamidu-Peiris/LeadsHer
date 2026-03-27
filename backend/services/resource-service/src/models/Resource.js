@@ -63,6 +63,7 @@ const resourceSchema = new mongoose.Schema(
     averageRating: { type: Number, default: 0 },
     isPremium: { type: Boolean, default: false },
     isApproved: { type: Boolean, default: false },
+    isRejected: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
