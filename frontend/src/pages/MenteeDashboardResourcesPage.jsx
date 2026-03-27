@@ -323,7 +323,7 @@ const sidebarNav = [
   { to: '/dashboard',           icon: 'dashboard',     label: 'Dashboard'   },
   { to: '/dashboard/mentors',   icon: 'groups',        label: 'Mentorship'  },
   { to: '/events',              icon: 'event',         label: 'Events'      },
-  { to: '/stories',             icon: 'auto_stories',  label: 'Stories'     },
+  { to: '/dashboard/stories',   icon: 'auto_stories',  label: 'Stories'     },
   { to: '/dashboard/resources', icon: 'library_books', label: 'Resources'   },
   { to: '/dashboard/settings',  icon: 'settings',      label: 'Settings'    },
 ];

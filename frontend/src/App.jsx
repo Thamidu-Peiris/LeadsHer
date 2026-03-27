@@ -17,6 +17,7 @@ import EventDetailPage  from './pages/EventDetailPage';
 import CreateEventPage  from './pages/CreateEventPage';
 import DashboardPage    from './pages/DashboardPage';
 import MentorDashboardStoriesPage from './pages/MentorDashboardStoriesPage';
+import MenteeDashboardStoriesPage from './pages/MenteeDashboardStoriesPage';
 import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPage';
 import MentorDashboardMentorshipPage from './pages/MentorDashboardMentorshipPage';
 import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
@@ -41,6 +42,12 @@ function ResourcesRoute() {
   if (user?.role === 'admin') return <AdminDashboardResourcesPage />;
   if (user?.role === 'mentee') return <MenteeDashboardResourcesPage />;
   return <MentorDashboardResourcesPage />;
+}
+
+function DashboardStoriesRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'mentee') return <MenteeDashboardStoriesPage />;
+  return <MentorDashboardStoriesPage />;
 }
 
 
@@ -113,7 +120,7 @@ export default function App() {
               <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/stories" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardStoriesPage /></ProtectedRoute>
+              <ProtectedRoute roles={ANY_USER}><DashboardStoriesRoute /></ProtectedRoute>
             } />
             <Route path="/dashboard/stories/new" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
