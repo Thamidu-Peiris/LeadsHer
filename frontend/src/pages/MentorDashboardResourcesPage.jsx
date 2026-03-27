@@ -129,7 +129,17 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
               Premium
             </span>
           )}
-          {isOwner && !resource.isApproved && (
+          {isOwner && resource.isApproved && (
+            <span className="px-2 py-1 bg-emerald-500/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
+              Approved
+            </span>
+          )}
+          {isOwner && !resource.isApproved && resource.isRejected && (
+            <span className="px-2 py-1 bg-red-500/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
+              Rejected
+            </span>
+          )}
+          {isOwner && !resource.isApproved && !resource.isRejected && (
             <span className="px-2 py-1 bg-amber-500/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
               Pending
             </span>
@@ -1025,7 +1035,7 @@ export default function MentorDashboardResourcesPage() {
                     <ResourceCard
                       key={resource._id}
                       resource={resource}
-                      userId={user?._id}
+                      userId={user?.id || user?._id}
                       isMentor={isMentor}
                       bookmarkedIds={bookmarkedIds}
                       onBookmark={handleBookmark}

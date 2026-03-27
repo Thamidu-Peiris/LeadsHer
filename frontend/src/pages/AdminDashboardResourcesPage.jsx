@@ -159,8 +159,10 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
               Premium
             </span>
           )}
-          <span className={`px-2 py-1 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded ${resource.isApproved ? 'bg-emerald-600/80' : 'bg-amber-500/80'}`}>
-            {resource.isApproved ? 'Approved' : 'Pending'}
+          <span className={`px-2 py-1 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded ${
+            resource.isApproved ? 'bg-emerald-600/80' : resource.isRejected ? 'bg-red-600/80' : 'bg-amber-500/80'
+          }`}>
+            {resource.isApproved ? 'Approved' : resource.isRejected ? 'Rejected' : 'Pending'}
           </span>
         </div>
 
@@ -227,8 +229,8 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
           Access Resource
         </button>
 
-        {/* Approval actions (shown on pending tab) */}
-        {showApprovalActions && !resource.isApproved && (
+        {/* Pending tab: Approve + Reject */}
+        {showApprovalActions === 'pending' && !resource.isApproved && !resource.isRejected && (
           <div className="flex gap-2">
             <button
               onClick={() => onApprove(resource._id)}
@@ -245,6 +247,16 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
               Reject
             </button>
           </div>
+        )}
+        {/* Rejected tab: Re-approve */}
+        {showApprovalActions === 'rejected' && resource.isRejected && (
+          <button
+            onClick={() => onApprove(resource._id)}
+            className="w-full flex items-center justify-center gap-1 py-2 text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px]">undo</span>
+            Re-approve
+          </button>
         )}
 
         {/* Admin edit/delete (all resources) */}
@@ -578,11 +590,12 @@ function AnalyticsPanel({ analytics, loading }) {
   const { overview, byType, byCategory, topDownloads, topViewed } = analytics;
 
   const statCards = [
-    { label: 'Total Resources',   value: overview.total,         icon: 'library_books',  color: 'text-primary'     },
-    { label: 'Approved',          value: overview.approved,      icon: 'check_circle',   color: 'text-emerald-500' },
-    { label: 'Pending Approval',  value: overview.pending,       icon: 'pending',        color: 'text-amber-500'   },
-    { label: 'Total Downloads',   value: fmt(overview.totalDownloads), icon: 'download', color: 'text-gold-accent' },
-    { label: 'Total Views',       value: fmt(overview.totalViews),     icon: 'visibility', color: 'text-blue-500'  },
+    { label: 'Total Resources',   value: overview.total,              icon: 'library_books',  color: 'text-primary'     },
+    { label: 'Approved',          value: overview.approved,           icon: 'check_circle',   color: 'text-emerald-500' },
+    { label: 'Pending Approval',  value: overview.pending,            icon: 'pending',        color: 'text-amber-500'   },
+    { label: 'Rejected',          value: overview.rejected ?? 0,      icon: 'cancel',         color: 'text-red-500'     },
+    { label: 'Total Downloads',   value: fmt(overview.totalDownloads), icon: 'download',      color: 'text-gold-accent' },
+    { label: 'Total Views',       value: fmt(overview.totalViews),     icon: 'visibility',    color: 'text-blue-500'    },
     { label: 'Avg Rating',        value: overview.avgRating ? overview.avgRating.toFixed(1) : '—', icon: 'star', color: 'text-yellow-500' },
   ];
 
@@ -709,6 +722,7 @@ function AnalyticsPanel({ analytics, loading }) {
 const TABS = [
   { key: 'all',      label: 'All Resources',    icon: 'library_books' },
   { key: 'pending',  label: 'Pending Approval', icon: 'pending'       },
+  { key: 'rejected', label: 'Rejected',          icon: 'cancel'        },
   { key: 'analytics',label: 'Analytics',        icon: 'analytics'     },
 ];
 
@@ -723,7 +737,8 @@ export default function AdminDashboardResourcesPage() {
   const [resources, setResources]     = useState([]);
   const [pagination, setPagination]   = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]         = useState(true);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCount, setPendingCount]   = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
 
   /* ── Filter state ── */
   const [searchInput, setSearchInput]       = useState('');
@@ -759,7 +774,8 @@ export default function AdminDashboardResourcesPage() {
         ...(search ? { search } : {}),
         ...(filterCategory ? { category: filterCategory } : {}),
         ...(filterType ? { type: filterType } : {}),
-        ...(activeTab === 'pending' ? { status: 'pending' } : {}),
+        ...(activeTab === 'pending'  ? { status: 'pending'  } : {}),
+        ...(activeTab === 'rejected' ? { status: 'rejected' } : {}),
       };
       const res = await resourceApi.adminGetAll(params);
       setResources(res.data?.resources || []);
@@ -774,7 +790,7 @@ export default function AdminDashboardResourcesPage() {
 
   useEffect(() => { fetchResources(); }, [fetchResources]);
 
-  /* ── Fetch pending count for badge ── */
+  /* ── Fetch pending + rejected counts for badges ── */
   const fetchPendingCount = useCallback(async () => {
     try {
       const res = await resourceApi.adminGetAll({ status: 'pending', limit: 1, page: 1 });
@@ -782,7 +798,14 @@ export default function AdminDashboardResourcesPage() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { fetchPendingCount(); }, [fetchPendingCount]);
+  const fetchRejectedCount = useCallback(async () => {
+    try {
+      const res = await resourceApi.adminGetAll({ status: 'rejected', limit: 1, page: 1 });
+      setRejectedCount(res.data?.pagination?.total || 0);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { fetchPendingCount(); fetchRejectedCount(); }, [fetchPendingCount, fetchRejectedCount]);
 
   /* ── Fetch analytics when tab switches ── */
   useEffect(() => {
@@ -842,7 +865,8 @@ export default function AdminDashboardResourcesPage() {
     try {
       await resourceApi.approve(id);
       setResources((prev) => prev.filter((r) => r._id !== id));
-      setPendingCount((c) => Math.max(0, c - 1));
+      if (activeTab === 'pending')  setPendingCount((c)  => Math.max(0, c - 1));
+      if (activeTab === 'rejected') setRejectedCount((c) => Math.max(0, c - 1));
       toast.success('Resource approved and published');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to approve');
@@ -850,11 +874,11 @@ export default function AdminDashboardResourcesPage() {
   };
 
   const handleReject = async (id) => {
-    if (!window.confirm('Reject this resource? It will remain unpublished.')) return;
     try {
       await resourceApi.reject(id);
       setResources((prev) => prev.filter((r) => r._id !== id));
       setPendingCount((c) => Math.max(0, c - 1));
+      setRejectedCount((c) => c + 1);
       toast.success('Resource rejected');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to reject');
@@ -977,6 +1001,11 @@ export default function AdminDashboardResourcesPage() {
                       {pendingCount}
                     </span>
                   )}
+                  {tab.key === 'rejected' && rejectedCount > 0 && (
+                    <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                      {rejectedCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -1046,6 +1075,11 @@ export default function AdminDashboardResourcesPage() {
                         Awaiting Review
                       </span>
                     )}
+                    {activeTab === 'rejected' && (
+                      <span className="ml-2 px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wide">
+                        Rejected
+                      </span>
+                    )}
                   </p>
                 </div>
 
@@ -1055,14 +1089,16 @@ export default function AdminDashboardResourcesPage() {
                 ) : resources.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
                     <span className="material-symbols-outlined text-[64px] text-slate-200 dark:text-outline">
-                      {activeTab === 'pending' ? 'check_circle' : 'library_books'}
+                      {activeTab === 'pending' ? 'check_circle' : activeTab === 'rejected' ? 'cancel' : 'library_books'}
                     </span>
                     <p className="text-lg font-bold text-on-surface">
-                      {activeTab === 'pending' ? 'No pending resources' : 'No resources found'}
+                      {activeTab === 'pending' ? 'No pending resources' : activeTab === 'rejected' ? 'No rejected resources' : 'No resources found'}
                     </p>
                     <p className="text-sm text-slate-400 dark:text-outline">
                       {activeTab === 'pending'
                         ? 'All uploaded resources have been reviewed.'
+                        : activeTab === 'rejected'
+                        ? 'No resources have been rejected.'
                         : 'Try adjusting your filters or upload a new resource.'}
                     </p>
                   </div>
@@ -1080,7 +1116,7 @@ export default function AdminDashboardResourcesPage() {
                         onDelete={handleDelete}
                         onApprove={handleApprove}
                         onReject={handleReject}
-                        showApprovalActions={activeTab === 'pending'}
+                        showApprovalActions={activeTab === 'pending' ? 'pending' : activeTab === 'rejected' ? 'rejected' : null}
                         onPreview={setPreviewResource}
                       />
                     ))}
