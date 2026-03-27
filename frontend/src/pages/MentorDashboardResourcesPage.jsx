@@ -93,9 +93,33 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
 
   const handleAccess = () => {
     onDownload(resource._id);
-    const url = resource.file?.url || resource.externalLink;
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-    else toast('No link or file attached to this resource.', { icon: 'ℹ️' });
+    const rawUrl = resource.file?.url || resource.externalLink;
+    if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
+
+    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
+
+    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+      // Use Google Docs Viewer — works with any publicly accessible URL
+      // and doesn't depend on browser PDF plugin or Cloudinary Content-Type headers
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
+      window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+    } else if (ext === 'mp4' || ext === 'mp3') {
+      // Video/audio — Cloudinary video URLs stream correctly
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    } else if (ext === 'zip') {
+      // ZIP — force download
+      const a = document.createElement('a');
+      a.href = rawUrl;
+      a.setAttribute('download', resource.title || 'download');
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      // External links or unknown types
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (

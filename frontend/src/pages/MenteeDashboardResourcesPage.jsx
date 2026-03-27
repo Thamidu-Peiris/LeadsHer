@@ -59,9 +59,19 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate 
 
   const handleAccess = () => {
     onDownload(resource._id);
-    const url = resource.file?.url || resource.externalLink;
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-    else toast('No link or file attached to this resource.', { icon: 'ℹ️' });
+    const rawUrl = resource.file?.url || resource.externalLink;
+    if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
+    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
+    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+      window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`, '_blank', 'noopener,noreferrer');
+    } else if (ext === 'zip') {
+      const a = document.createElement('a');
+      a.href = rawUrl; a.setAttribute('download', resource.title || 'download');
+      a.target = '_blank'; a.rel = 'noopener noreferrer';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else {
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (

@@ -1,4 +1,5 @@
 const resourceService = require('../services/resourceService');
+const { uploadBuffer, getSignedUrl } = require('../utils/cloudinary');
 
 // GET /api/resources/my
 exports.getMyResources = async (req, res) => {
@@ -147,14 +148,20 @@ exports.rateResource = async (req, res) => {
 // POST /api/resources/upload
 exports.uploadResourceFile = async (req, res) => {
   try {
-    if (!req.file || !req.file.filename) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ message: 'No file provided.' });
     }
-    const url = '/uploads/resources/' + req.file.filename;
+    const result = await uploadBuffer(req.file.buffer, req.file.originalname);
+
+    // Generate a signed URL for trusted delivery
+    const signedUrl = getSignedUrl(result.public_id, result.resource_type);
+
     res.status(201).json({
-      url,
+      url: signedUrl,           // signed, trusted Cloudinary URL
+      publicId: result.public_id,
+      resourceType: result.resource_type,
       type: req.file.mimetype,
-      size: req.file.size,
+      size: result.bytes,
     });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Upload failed.' });

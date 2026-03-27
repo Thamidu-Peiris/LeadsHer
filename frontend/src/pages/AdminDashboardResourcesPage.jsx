@@ -126,9 +126,28 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
 
   const handleAccess = () => {
     onDownload(resource._id);
-    const url = resource.file?.url || resource.externalLink;
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-    else toast('No link or file attached to this resource.', { icon: 'ℹ️' });
+    const rawUrl = resource.file?.url || resource.externalLink;
+    if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
+
+    const ext = rawUrl.split('?')[0].split('.').pop().toLowerCase();
+
+    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
+      window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+    } else if (ext === 'mp4' || ext === 'mp3') {
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    } else if (ext === 'zip') {
+      const a = document.createElement('a');
+      a.href = rawUrl;
+      a.setAttribute('download', resource.title || 'download');
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      window.open(rawUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -464,7 +483,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[40px] text-slate-300 dark:text-outline">cloud_upload</span>
-                      <p className="text-sm text-slate-400 dark:text-on-surface-variant mt-2">PDF, DOC, MP4, MP3 supported (max 100MB)</p>
+                      <p className="text-sm text-slate-400 dark:text-on-surface-variant mt-2">PDF, DOC, MP4, MP3, ZIP supported (max 100MB)</p>
                       <button type="button" onClick={() => fileInputRef.current?.click()}
                         className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-all">
                         Choose File
