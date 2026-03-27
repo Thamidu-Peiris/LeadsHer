@@ -725,7 +725,7 @@ export default function MentorDashboardResourcesPage() {
           <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img alt="User avatar" className="w-full h-full object-cover"
+                <img alt="User avatar" className="w-full h-full object-cover rounded-full"
                   src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80" />
               </div>
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
@@ -742,7 +742,7 @@ export default function MentorDashboardResourcesPage() {
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {sidebarNav.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === '/dashboard/resources'}
+              <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
                     isActive
@@ -805,7 +805,7 @@ export default function MentorDashboardResourcesPage() {
               <div className="relative">
                 <button type="button" onClick={() => setProfileOpen((v) => !v)}
                   className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40">
-                  <img alt="Avatar" className="w-full h-full object-cover"
+                  <img alt="Avatar" className="w-full h-full object-cover rounded-full"
                     src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face&q=80" />
                 </button>
                 {profileOpen && (

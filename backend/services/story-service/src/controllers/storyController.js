@@ -33,17 +33,25 @@ exports.createStory = async (req, res) => {
   try {
     const body = req.body || {};
     const { title, content, excerpt, category, coverImage, tags, status } = body;
-    if (!title || !content) {
-      return res.status(400).json({ message: 'Title and content are required.' });
+    const desiredStatus = status === 'published' ? 'published' : 'draft';
+    const safeTitle = String(title || '').trim();
+    const safeContent = String(content || '').trim();
+
+    if (desiredStatus === 'published' && (!safeTitle || !safeContent)) {
+      return res.status(400).json({ message: 'Title and content are required to publish.' });
     }
+    if (desiredStatus === 'draft' && !safeTitle && !safeContent) {
+      return res.status(400).json({ message: 'Add at least a title or some content to save draft.' });
+    }
+
     const story = await storyService.createStoryRecord({
-      title,
-      content,
+      title: safeTitle || 'Untitled Draft',
+      content: safeContent || ' ',
       excerpt,
       category,
       coverImage,
       tags: Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
-      status,
+      status: desiredStatus,
       authorId: req.user._id,
     });
     res.status(201).json(story);
@@ -158,6 +166,19 @@ exports.getStoriesByUser = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message || 'Failed to get user stories.' });
+  }
+};
+
+// GET /api/stories/mine
+exports.getMyStories = async (req, res) => {
+  try {
+    const result = await storyService.getMyStories(req.user._id, {
+      page: req.query.page,
+      limit: req.query.limit,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to get my stories.' });
   }
 };
 
