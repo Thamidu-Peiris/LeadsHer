@@ -6,6 +6,47 @@ import { storyApi } from '../api/storyApi';
 import Spinner from '../components/common/Spinner';
 import { mentorApi } from '../api/mentorApi';
 
+const PLACEHOLDER_GRADS = [
+  'from-primary/25 to-secondary/15',
+  'from-tertiary/20 to-primary/15',
+  'from-secondary/20 to-tertiary/15',
+];
+
+function StoryCoverThumb({ story, index }) {
+  const [imgError, setImgError] = useState(false);
+  const url = (story.coverImage || '').trim();
+  const showImg = url && !imgError;
+
+  useEffect(() => {
+    setImgError(false);
+  }, [url]);
+
+  return (
+    <Link
+      to={`/stories/${story._id}`}
+      className="relative shrink-0 block w-[88px] h-[66px] sm:w-[104px] sm:h-[78px] rounded-lg overflow-hidden border border-outline-variant/12 bg-surface-container-low ring-1 ring-black/[0.03] shadow-sm group/thumb"
+      aria-label={`View ${story.title || 'story'}`}
+    >
+      {showImg ? (
+        <img
+          src={url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-[1.03]"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${PLACEHOLDER_GRADS[index % PLACEHOLDER_GRADS.length]} flex items-center justify-center`}
+        >
+          <span className="font-serif-alt text-2xl sm:text-xl font-bold text-white/35 italic select-none">
+            {(story.title || 'S').trim().charAt(0).toUpperCase() || '—'}
+          </span>
+        </div>
+      )}
+    </Link>
+  );
+}
+
 export default function MentorDashboardStoriesPage() {
   const { user, logout, canManageEvents } = useAuth();
   const navigate = useNavigate();
@@ -20,6 +61,9 @@ export default function MentorDashboardStoriesPage() {
   const [stories, setStories] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [publishingId, setPublishingId] = useState('');
+  const [topStoryIndex, setTopStoryIndex] = useState(0);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', title: '' });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -81,14 +125,27 @@ export default function MentorDashboardStoriesPage() {
     user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this story?')) return;
+  const openDeleteDialog = (id, title) => {
+    setDeleteDialog({ open: true, id, title: title || 'Untitled story' });
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setDeleteDialog({ open: false, id: '', title: '' });
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!deleteDialog.id) return;
+    setDeleting(true);
     try {
-      await storyApi.delete(id);
-      setStories((prev) => prev.filter((s) => s._id !== id));
+      await storyApi.delete(deleteDialog.id);
+      setStories((prev) => prev.filter((s) => s._id !== deleteDialog.id));
       toast.success('Story deleted');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to delete story');
+    } finally {
+      setDeleting(false);
+      setDeleteDialog({ open: false, id: '', title: '' });
     }
   };
 
@@ -121,9 +178,21 @@ export default function MentorDashboardStoriesPage() {
       avgReadingTime,
       topViewed: [...stories]
         .sort((a, b) => (b.views || b.viewCount || 0) - (a.views || a.viewCount || 0))
-        .slice(0, 5),
+        .slice(0, 3),
     };
   }, [stories]);
+
+  useEffect(() => {
+    setTopStoryIndex(0);
+  }, [stats.topViewed.length]);
+
+  useEffect(() => {
+    if (stats.topViewed.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setTopStoryIndex((idx) => (idx + 1) % stats.topViewed.length);
+    }, 2800);
+    return () => clearInterval(timer);
+  }, [stats.topViewed.length]);
 
   const displayedStories = useMemo(() => {
     if (statusFilter === 'all') return stories;
@@ -315,12 +384,19 @@ export default function MentorDashboardStoriesPage() {
                 <h2 className="font-serif-alt text-xl font-bold text-on-surface">Story Analytics</h2>
                 <p className="text-xs text-outline mt-1">Top performing stories by views</p>
                 <div className="mt-4 space-y-3">
-                  {stats.topViewed.map((s) => {
+                  {(() => {
+                    const s = stats.topViewed[topStoryIndex];
                     const value = s.views || s.viewCount || 0;
                     const max = stats.topViewed[0]?.views || stats.topViewed[0]?.viewCount || 1;
                     const width = Math.max(8, Math.round((value / max) * 100));
                     return (
-                      <div key={`metric-${s._id}`}>
+                      <div
+                        key={`metric-${s._id}-${topStoryIndex}`}
+                        style={{
+                          animation: 'storySlideInRight 620ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                          willChange: 'transform, opacity',
+                        }}
+                      >
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-on-surface line-clamp-1">{s.title}</span>
                           <span className="text-outline">{value} views · {s.likeCount || 0} likes</span>
@@ -328,9 +404,24 @@ export default function MentorDashboardStoriesPage() {
                         <div className="h-2 bg-surface-container-low rounded-full overflow-hidden">
                           <div className="h-2 bg-gold-accent rounded-full" style={{ width: `${width}%` }} />
                         </div>
+                        {stats.topViewed.length > 1 && (
+                          <div className="mt-3 flex items-center justify-end gap-1.5">
+                            {stats.topViewed.map((_, i) => (
+                              <button
+                                key={`dot-${i}`}
+                                type="button"
+                                onClick={() => setTopStoryIndex(i)}
+                                aria-label={`Show top story ${i + 1}`}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  i === topStoryIndex ? 'w-4 bg-gold-accent' : 'w-1.5 bg-outline-variant/50 hover:bg-outline'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               </section>
             )}
@@ -366,74 +457,94 @@ export default function MentorDashboardStoriesPage() {
                 <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
               </div>
             ) : (
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-outline-variant/10">
-                  {displayedStories.map((s) => (
-                    <div key={s._id} className="p-6">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded-full border ${
-                              s.status === 'published'
-                                ? 'bg-green-500/10 text-green-700 border-green-500/20'
-                                : 'bg-outline-variant/20 text-outline border-outline-variant/30'
-                            }`}>
-                              {s.status || 'draft'}
+              <ul className="space-y-2.5">
+                {displayedStories.map((s, idx) => (
+                  <li
+                    key={s._id}
+                    className="group relative rounded-xl border border-outline-variant/[0.12] dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_4px_14px_rgba(15,23,42,0.07)] hover:border-outline-variant/25 transition-[box-shadow,border-color] duration-200"
+                  >
+                    <div className="p-4 sm:p-4 sm:pr-5">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
+                        <div className="flex gap-3 sm:gap-4 min-w-0 flex-1 lg:items-start">
+                          <StoryCoverThumb story={s} index={idx} />
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center text-[9px] font-semibold uppercase tracking-[0.14em] px-2 py-0.5 rounded-full ${
+                                s.status === 'published'
+                                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300/90'
+                                  : 'bg-slate-100 text-slate-600 dark:bg-surface-container-high dark:text-on-surface-variant'
+                              }`}
+                            >
+                              {s.status === 'published' ? 'Published' : 'Draft'}
                             </span>
                           </div>
-                          <h3 className="font-serif-alt text-xl font-bold text-on-surface line-clamp-1">{s.title}</h3>
+                          <h3 className="font-serif-alt text-[17px] sm:text-lg font-bold text-on-surface leading-snug tracking-tight line-clamp-1 pr-1">
+                            {s.title}
+                          </h3>
                           {s.excerpt && (
-                            <p className="text-on-surface-variant text-sm mt-2 line-clamp-2">
+                            <p className="text-[13px] leading-relaxed text-on-surface-variant/90 line-clamp-1">
                               {s.excerpt}
                             </p>
                           )}
+                          </div>
                         </div>
-                        <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
-                          <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                        </Link>
-                      </div>
 
-                      <div className="mt-4 flex items-center justify-between text-xs text-outline">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px]">visibility</span> {s.views || 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px]">favorite</span> {s.likeCount || 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[16px]">schedule</span> {s.readingTime || 1}m
-                        </span>
-                      </div>
+                        <div className="flex flex-wrap items-center gap-x-6 sm:gap-x-7 gap-y-1.5 text-[13px] sm:text-[15px] font-medium text-on-surface-variant tabular-nums lg:border-l lg:border-outline-variant/10 lg:pl-6 lg:shrink-0">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[19px] sm:text-[21px] text-on-surface-variant/80" aria-hidden>visibility</span>
+                            {s.views ?? s.viewCount ?? 0}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[19px] sm:text-[21px] text-on-surface-variant/80" aria-hidden>favorite</span>
+                            {s.likeCount ?? 0}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[19px] sm:text-[21px] text-on-surface-variant/80" aria-hidden>schedule</span>
+                            {s.readingTime || 1}m
+                          </span>
+                        </div>
 
-                      <div className="mt-5 flex gap-2">
-                        <Link
-                          to={`/stories/${s._id}/edit`}
-                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(s._id)}
-                          className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-tertiary/30 text-tertiary hover:bg-tertiary/5 transition-colors bg-white dark:bg-surface-container"
-                        >
-                          Delete
-                        </button>
-                        {s.status === 'draft' && (
+                        <div className="flex flex-wrap items-center gap-2.5 lg:ml-auto lg:shrink-0 border-t border-outline-variant/[0.08] pt-3 lg:border-t-0 lg:pt-0">
+                          <Link
+                            to={`/stories/${s._id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-10 w-10 shrink-0 rounded-lg border border-outline-variant/20 text-outline bg-white/80 dark:bg-surface-container hover:text-gold-accent hover:border-gold-accent/35 hover:bg-gold-accent/[0.06] transition-colors"
+                            aria-label="Open story in new tab"
+                            title="View story"
+                          >
+                            <span className="material-symbols-outlined text-[22px] font-light" aria-hidden>open_in_new</span>
+                          </Link>
+                          <Link
+                            to={`/dashboard/stories/${s._id}/edit`}
+                            className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-outline-variant/35 bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:border-outline-variant/55 hover:bg-surface-container-high/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-accent/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
+                          >
+                            Edit
+                          </Link>
                           <button
                             type="button"
-                            disabled={publishingId === s._id}
-                            onClick={() => publishDraft(s._id)}
-                            className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-gold-accent/30 text-gold-accent hover:bg-gold-accent/10 transition-colors bg-white dark:bg-surface-container disabled:opacity-60"
+                            onClick={() => openDeleteDialog(s._id, s.title)}
+                            className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-red-500/20 bg-red-500/[0.1] text-red-700 hover:bg-red-500/[0.16] hover:border-red-500/30 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/25 dark:hover:bg-red-500/22 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
                           >
-                            {publishingId === s._id ? 'Publishing...' : 'Publish'}
+                            Delete
                           </button>
-                        )}
+                          {s.status === 'draft' && (
+                            <button
+                              type="button"
+                              disabled={publishingId === s._id}
+                              onClick={() => publishDraft(s._id)}
+                              className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-gold-accent/35 text-gold-accent hover:bg-gold-accent/10 transition-colors disabled:opacity-50"
+                            >
+                              {publishingId === s._id ? 'Publishing…' : 'Publish'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </li>
+                ))}
+              </ul>
             )}
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
@@ -444,6 +555,45 @@ export default function MentorDashboardStoriesPage() {
           </div>
         </main>
       </div>
+
+      {deleteDialog.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close delete dialog"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={closeDeleteDialog}
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-[0_24px_60px_rgba(15,23,42,0.28)] p-6">
+            <h3 className="font-serif-alt text-2xl font-bold text-on-surface">Delete story?</h3>
+            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+              This will permanently remove
+              {' '}
+              <span className="font-semibold text-on-surface">"{deleteDialog.title}"</span>.
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                disabled={deleting}
+                className="px-4 py-2.5 rounded-lg border border-outline-variant/30 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmed}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-60"
+              >
+                {deleting && <Spinner size="sm" className="text-white" />}
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

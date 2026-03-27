@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "node -e \"const fs=require('fs');const p='public/tinymce';if(fs.existsSync('node_modules/tinymce')){fs.rmSync(p,{recursive:true,force:true});fs.cpSync('node_modules/tinymce',p,{recursive:true});}\""
   },
   "dependencies": {
+    "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.7.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.24.1",
-    "react-hot-toast": "^2.4.1"
+    "tinymce": "^8.3.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
