@@ -1,6 +1,54 @@
 const resourceService = require('../services/resourceService');
 const { uploadBuffer, getSignedUrl } = require('../utils/cloudinary');
 
+// GET /api/resources/admin/all  (admin only)
+exports.adminGetAllResources = async (req, res) => {
+  try {
+    const result = await resourceService.adminGetResources({
+      page: req.query.page,
+      limit: req.query.limit,
+      sort: req.query.sort,
+      search: req.query.search,
+      category: req.query.category,
+      type: req.query.type,
+      status: req.query.status,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to get resources.' });
+  }
+};
+
+// GET /api/resources/admin/analytics  (admin only)
+exports.adminGetAnalytics = async (req, res) => {
+  try {
+    const data = await resourceService.adminGetAnalytics();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get analytics.' });
+  }
+};
+
+// PATCH /api/resources/:id/approve  (admin only)
+exports.approveResource = async (req, res) => {
+  try {
+    const result = await resourceService.approveResource(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to approve resource.' });
+  }
+};
+
+// PATCH /api/resources/:id/reject  (admin only)
+exports.rejectResource = async (req, res) => {
+  try {
+    const result = await resourceService.rejectResource(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to reject resource.' });
+  }
+};
+
 // GET /api/resources/my
 exports.getMyResources = async (req, res) => {
   try {
