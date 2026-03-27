@@ -160,6 +160,21 @@ exports.addStoryComment = async (req, res) => {
   }
 };
 
+// DELETE /api/stories/:id/comments/:commentId
+exports.deleteStoryComment = async (req, res) => {
+  try {
+    const result = await storyService.deleteCommentFromStory(
+      req.params.id,
+      req.params.commentId,
+      req.user._id,
+      req.user.role
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to delete comment.' });
+  }
+};
+
 // GET /api/stories/user/:userId
 exports.getStoriesByUser = async (req, res) => {
   try {

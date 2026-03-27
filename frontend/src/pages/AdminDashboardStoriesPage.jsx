@@ -42,6 +42,14 @@ export default function AdminDashboardStoriesPage() {
   const [deletingId, setDeletingId] = useState('');
   const [featuringId, setFeaturingId] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', title: '' });
+  const [commentsDialog, setCommentsDialog] = useState({
+    open: false,
+    storyId: '',
+    title: '',
+    comments: [],
+    loading: false,
+    deletingCommentId: '',
+  });
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -102,6 +110,52 @@ export default function AdminDashboardStoriesPage() {
       toast.error(e.response?.data?.message || 'Failed to update feature status');
     } finally {
       setFeaturingId('');
+    }
+  };
+
+  const openModerateComments = async (story) => {
+    setCommentsDialog({
+      open: true,
+      storyId: story._id,
+      title: story.title || 'Untitled story',
+      comments: [],
+      loading: true,
+      deletingCommentId: '',
+    });
+    try {
+      const res = await storyApi.getComments(story._id, { page: 1, limit: 50 });
+      setCommentsDialog((d) => ({
+        ...d,
+        comments: res.data?.comments || [],
+        loading: false,
+      }));
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to load comments');
+      setCommentsDialog((d) => ({ ...d, loading: false, comments: [] }));
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!commentsDialog.storyId) return;
+    setCommentsDialog((d) => ({ ...d, deletingCommentId: commentId }));
+    try {
+      await storyApi.deleteComment(commentsDialog.storyId, commentId);
+      setCommentsDialog((d) => ({
+        ...d,
+        comments: d.comments.filter((c) => c._id !== commentId),
+        deletingCommentId: '',
+      }));
+      setStories((prev) =>
+        prev.map((s) => (
+          s._id === commentsDialog.storyId
+            ? { ...s, commentCount: Math.max(0, (s.commentCount || 0) - 1) }
+            : s
+        ))
+      );
+      toast.success('Comment deleted');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to delete comment');
+      setCommentsDialog((d) => ({ ...d, deletingCommentId: '' }));
     }
   };
 
@@ -276,14 +330,24 @@ export default function AdminDashboardStoriesPage() {
                         <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-outline-variant/20 bg-surface-container-lowest text-outline font-bold">
                           {(s.views || 0)} views
                         </span>
+                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-outline-variant/20 bg-surface-container-lowest text-outline font-bold">
+                          {(s.commentCount || 0)} comments
+                        </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 lg:w-[340px]">
+                      <div className="grid grid-cols-4 gap-2 lg:w-[470px]">
                         <Link
                           to={`/dashboard/stories/${s._id}/edit`}
                           className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40 text-center"
                         >
                           Edit
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => openModerateComments(s)}
+                          className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40"
+                        >
+                          Comments
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleToggleFeature(s)}
@@ -345,6 +409,54 @@ export default function AdminDashboardStoriesPage() {
               >
                 {deletingId === deleteDialog.id ? 'Deleting...' : 'Yes, Delete'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {commentsDialog.open && (
+        <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl bg-white border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/15 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif-alt text-xl font-bold text-on-surface">Moderate Comments</h3>
+                <p className="text-xs text-outline mt-1 line-clamp-1">{commentsDialog.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCommentsDialog({ open: false, storyId: '', title: '', comments: [], loading: false, deletingCommentId: '' })}
+                className="w-8 h-8 rounded-md border border-outline-variant/20 text-outline hover:text-on-surface hover:bg-surface-container-lowest flex items-center justify-center"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
+              {commentsDialog.loading ? (
+                <div className="py-10 flex justify-center"><Spinner size="md" /></div>
+              ) : commentsDialog.comments.length === 0 ? (
+                <p className="text-sm text-on-surface-variant text-center py-8">No comments found for this story.</p>
+              ) : (
+                commentsDialog.comments.map((c) => (
+                  <div key={c._id} className="border border-outline-variant/15 rounded-lg p-3 bg-surface-container-lowest/60">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-on-surface line-clamp-1">{c.user?.name || 'User'}</p>
+                        <p className="text-xs text-outline mt-0.5">{new Date(c.createdAt || Date.now()).toLocaleString()}</p>
+                        <p className="text-sm text-on-surface-variant mt-2 whitespace-pre-wrap">{c.content}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(c._id)}
+                        disabled={commentsDialog.deletingCommentId === c._id}
+                        className="px-3 py-1.5 rounded-md border border-red-300 bg-red-50 text-xs font-bold uppercase tracking-wider text-red-700 hover:bg-red-100 disabled:opacity-60 shrink-0"
+                      >
+                        {commentsDialog.deletingCommentId === c._id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

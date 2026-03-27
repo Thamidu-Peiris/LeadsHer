@@ -179,9 +179,16 @@ const getStoriesPaginated = async ({
     ]);
     const total = countRes?.[0]?.total || 0;
     const populated = await Story.populate(stories, { path: 'author', select: 'name profilePicture avatar' });
+    const commentCounts = await Comment.aggregate([
+      { $match: { story: { $in: populated.map((s) => s._id) } } },
+      { $group: { _id: '$story', count: { $sum: 1 } } },
+    ]);
+    const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
     const out = populated.map((s) => ({
       ...s,
       likeCount: s.likeCount ?? (s.likes ? s.likes.length : 0),
+      commentCount: commentMap.get(String(s._id)) || 0,
       likes: undefined,
     }));
     return {
@@ -202,9 +209,16 @@ const getStoriesPaginated = async ({
     Story.countDocuments(query),
   ]);
 
+  const commentCounts = await Comment.aggregate([
+    { $match: { story: { $in: stories.map((s) => s._id) } } },
+    { $group: { _id: '$story', count: { $sum: 1 } } },
+  ]);
+  const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
   const out = stories.map((s) => ({
     ...s,
     likeCount: s.likes ? s.likes.length : 0,
+    commentCount: commentMap.get(String(s._id)) || 0,
     likes: undefined,
   }));
 
@@ -360,6 +374,36 @@ const addCommentToStory = async (storyId, userId, content) => {
   return comment.toObject();
 };
 
+const deleteCommentFromStory = async (storyId, commentId, userId, role) => {
+  const [story, comment] = await Promise.all([
+    Story.findById(storyId).select('author'),
+    Comment.findOne({ _id: commentId, story: storyId }).select('user story'),
+  ]);
+
+  if (!story) {
+    const err = new Error('Story not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (!comment) {
+    const err = new Error('Comment not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const isAdmin = role === 'admin';
+  const isCommentOwner = comment.user?.toString() === userId.toString();
+  const isStoryAuthor = story.author?.toString() === userId.toString();
+  if (!isAdmin && !isCommentOwner && !isStoryAuthor) {
+    const err = new Error('Not allowed to delete this comment.');
+    err.status = 403;
+    throw err;
+  }
+
+  await Comment.deleteOne({ _id: commentId });
+  return { success: true };
+};
+
 const getStoriesByUser = async (targetUserId, { page = 1, limit = 10 } = {}) => {
   page = Math.max(1, parseInt(page, 10) || 1);
   limit = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
@@ -420,6 +464,7 @@ module.exports = {
   toggleStoryLike,
   getCommentsForStory,
   addCommentToStory,
+  deleteCommentFromStory,
   getStoriesByUser,
   getMyStories,
   getFeaturedStories,
