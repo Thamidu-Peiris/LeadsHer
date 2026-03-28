@@ -20,6 +20,8 @@ const {
   adminGetAnalytics,
   approveResource,
   rejectResource,
+  searchBooks,
+  recommendBooks,
 } = require('../controllers/resourceController');
 
 // Public
@@ -35,6 +37,10 @@ router.get('/recommended', protect, getRecommendedResources);
 router.get('/my', protect, getMyResources);
 router.post('/upload', protect, upload.single('file'), uploadResourceFile);
 router.post('/upload-thumbnail', protect, imageUpload.single('thumbnail'), uploadThumbnail);
+
+// Google Books API (must be before /:id routes)
+router.get('/books/search', protect, searchBooks);
+router.get('/books/recommend', protect, recommendBooks);
 
 // Public with optional auth
 router.get('/:id', optionalAuth, getResourceById);
