@@ -119,8 +119,8 @@ exports.adminGetMentorshipRequests = async (req, res) => {
     const filter = {};
     if (req.query?.status) filter.status = req.query.status;
     const items = await MentorshipRequest.find(filter)
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-createdAt');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {
@@ -131,8 +131,8 @@ exports.adminGetMentorshipRequests = async (req, res) => {
 exports.adminGetActiveMentorships = async (req, res) => {
   try {
     const items = await Mentorship.find({ status: 'active' })
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-startDate');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {
@@ -150,7 +150,10 @@ exports.adminTerminateMentorship = async (req, res) => {
     item.status = 'terminated';
     item.endDate = Date.now();
     await item.save();
-    await item.populate([{ path: 'mentor', select: 'name email' }, { path: 'mentee', select: 'name email' }]);
+    await item.populate([
+      { path: 'mentor', select: 'name email profilePicture' },
+      { path: 'mentee', select: 'name email profilePicture' },
+    ]);
     res.status(200).json({ message: 'Mentorship terminated by admin', data: item });
   } catch (error) {
     res.status(error.status || 500).json({ message: 'Error terminating mentorship', error: error.message });
@@ -163,8 +166,8 @@ exports.adminGetFeedbackRatings = async (req, res) => {
       status: 'completed',
       $or: [{ 'feedback.mentorRating': { $exists: true } }, { 'feedback.menteeRating': { $exists: true } }],
     })
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-completedAt');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {
