@@ -25,6 +25,7 @@ import MenteeProfilePage from './pages/MenteeProfilePage';
 import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
+import MentorProfilePage from './pages/MentorProfilePage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
 import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
@@ -80,9 +81,9 @@ function MainLayout() {
   const hideChrome = hideChromeForRoleDashboard || hideChromeForStoryEditor;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen min-h-[100dvh] flex-col bg-surface text-on-surface">
       {!hideChrome && <Navbar />}
-      <div className="flex-1">
+      <div className="flex-1 bg-surface">
         <Outlet />
       </div>
       {!hideChrome && <Footer />}
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/events"      element={<EventsPage />} />
             <Route path="/events/:id"  element={<EventDetailPage />} />
             <Route path="/mentors"     element={<MentorsPage />} />
+            <Route path="/mentors/:id" element={<MentorProfilePage />} />
 
             <Route path="/dashboard" element={
               <ProtectedRoute roles={ANY_USER}><DashboardPage /></ProtectedRoute>
