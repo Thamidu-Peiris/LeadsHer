@@ -65,6 +65,7 @@ function AdminSidebar({ user, onLogout }) {
     { to: '/events',                      icon: 'event',             label: 'Manage Events'       },
     { to: '/dashboard/manage-mentors',    icon: 'groups',            label: 'Manage Mentors'      },
     { to: '/dashboard/resources',         icon: 'library_books',     label: 'Manage Resources'    },
+    { to: '/dashboard/forum',             icon: 'forum',             label: 'Manage Forum'        },
     { to: '/dashboard/generated-reports', icon: 'analytics',         label: 'Generated Reports'   },
     { to: '/dashboard/settings',          icon: 'settings',          label: 'Admin Settings'      },
   ];

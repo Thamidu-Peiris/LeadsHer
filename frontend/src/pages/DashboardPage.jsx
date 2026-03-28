@@ -264,7 +264,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
               { to: '/events', icon: 'event', label: 'Events' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/forum', icon: 'forum', label: 'Forum' },
+              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
@@ -729,6 +729,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
 
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
+              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
             ].map((item) => (
               <NavLink
@@ -1117,6 +1118,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               { to: '/events', icon: 'event', label: 'Manage Events' },
               { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentors' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
+              { to: '/dashboard/forum', icon: 'forum', label: 'Manage Forum' },
               { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
             ].map((item) => (
