@@ -1,6 +1,10 @@
 // Validation middleware for mentorship system
 
-const { validateSessionDateShape } = require('../utils/sessionDate');
+const {
+  validateSessionStartAtShape,
+  normalizeSessionStartInput,
+  MSG_SESSION_DATETIME_REQUIRED,
+} = require('../utils/sessionDate');
 
 exports.validateMentorProfile = (req, res, next) => {
   const { expertise, yearsOfExperience, industries, mentoringAreas, bio, availability } = req.body;
@@ -40,20 +44,28 @@ exports.validateMentorshipRequest = (req, res, next) => {
 };
 
 exports.validateSession = (req, res, next) => {
-  const { date, duration, notes, topics } = req.body;
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ message: 'Validation failed', errors: ['Request body is required'] });
+  }
+  const startRaw = normalizeSessionStartInput(req.body);
+  req.body.startAt = startRaw;
+
+  const { duration, notes, topics } = req.body;
   const errors = [];
-  if (!date) {
-    errors.push('Session date is required');
+  if (!startRaw) {
+    errors.push(MSG_SESSION_DATETIME_REQUIRED);
   } else {
-    const ymd = typeof date === 'string' ? date.trim().slice(0, 10) : '';
-    const check = validateSessionDateShape(ymd);
+    const check = validateSessionStartAtShape(startRaw);
     if (!check.ok) errors.push(check.error);
   }
-  if (!duration) {
+  const dur =
+    typeof duration === 'number' && Number.isFinite(duration)
+      ? Math.trunc(duration)
+      : parseInt(String(duration ?? '').trim(), 10);
+  if (duration === undefined || duration === null || String(duration).trim() === '') {
     errors.push('Session duration is required');
-  } else {
-    const dur = parseInt(duration);
-    if (isNaN(dur) || dur < 15) errors.push('Session duration must be at least 15 minutes');
+  } else if (Number.isNaN(dur) || dur < 15) {
+    errors.push('Session duration must be at least 15 minutes');
   }
   if (notes && typeof notes !== 'string') errors.push('Notes must be a string');
   if (notes && notes.length > 1000) errors.push('Notes cannot exceed 1000 characters');

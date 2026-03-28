@@ -25,9 +25,25 @@ exports.getMentorshipById = async (req, res) => {
 
 exports.logMentorshipSession = async (req, res) => {
   try {
-    const { date, duration, notes, topics } = req.body;
-    if (!date || !duration) return res.status(400).json({ message: 'Please provide date and duration for the session' });
-    const mentorship = await mentorshipService.logSession(req.params.id, req.user._id, { date, duration, notes, topics });
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const startAt = body.startAt ?? body.date;
+    const { duration, notes, topics } = body;
+    // validateSession middleware already enforces shape; keep a safe fallback for misconfigured routes
+    if (startAt == null || startAt === '' || duration === undefined || duration === null) {
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: ['Session date is required'],
+      });
+    }
+    const mentorship = await mentorshipService.logSession(req.params.id, req.user._id, {
+      startAt,
+      duration,
+      notes,
+      topics,
+      date: body.date,
+      calendarDate: body.calendarDate,
+      time: body.time,
+    });
     res.status(201).json({ message: 'Session logged successfully', data: mentorship });
   } catch (error) {
     console.error('Error logging session:', error);
@@ -119,8 +135,8 @@ exports.adminGetMentorshipRequests = async (req, res) => {
     const filter = {};
     if (req.query?.status) filter.status = req.query.status;
     const items = await MentorshipRequest.find(filter)
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-createdAt');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {
@@ -131,8 +147,8 @@ exports.adminGetMentorshipRequests = async (req, res) => {
 exports.adminGetActiveMentorships = async (req, res) => {
   try {
     const items = await Mentorship.find({ status: 'active' })
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-startDate');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {
@@ -150,7 +166,10 @@ exports.adminTerminateMentorship = async (req, res) => {
     item.status = 'terminated';
     item.endDate = Date.now();
     await item.save();
-    await item.populate([{ path: 'mentor', select: 'name email' }, { path: 'mentee', select: 'name email' }]);
+    await item.populate([
+      { path: 'mentor', select: 'name email profilePicture' },
+      { path: 'mentee', select: 'name email profilePicture' },
+    ]);
     res.status(200).json({ message: 'Mentorship terminated by admin', data: item });
   } catch (error) {
     res.status(error.status || 500).json({ message: 'Error terminating mentorship', error: error.message });
@@ -163,8 +182,8 @@ exports.adminGetFeedbackRatings = async (req, res) => {
       status: 'completed',
       $or: [{ 'feedback.mentorRating': { $exists: true } }, { 'feedback.menteeRating': { $exists: true } }],
     })
-      .populate('mentor', 'name email')
-      .populate('mentee', 'name email')
+      .populate('mentor', 'name email avatar profilePicture')
+      .populate('mentee', 'name email avatar profilePicture')
       .sort('-completedAt');
     res.status(200).json({ data: items, count: items.length });
   } catch (error) {

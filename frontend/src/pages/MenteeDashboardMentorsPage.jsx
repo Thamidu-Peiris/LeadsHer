@@ -5,6 +5,7 @@ import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
 import { mentorshipApi } from '../api/mentorshipApi';
+import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
 
 function safeList(res) {
   const data = res?.data;
@@ -486,7 +487,7 @@ export default function MenteeDashboardMentorsPage() {
                                       {(m.sessions || []).map((s, i) => (
                                         <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
                                           <div className="flex items-center justify-between">
-                                            <span className="font-semibold text-on-surface">{formatDate(s.date)}</span>
+                                            <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
                                             <span className="text-outline">{s.duration} min</span>
                                           </div>
                                           {s.topics?.length > 0 && <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>}

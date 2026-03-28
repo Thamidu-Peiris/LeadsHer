@@ -10,6 +10,7 @@
     "postinstall": "node -e \"const fs=require('fs');const p='public/tinymce';if(fs.existsSync('node_modules/tinymce')){fs.rmSync(p,{recursive:true,force:true});fs.cpSync('node_modules/tinymce',p,{recursive:true});}\""
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.4",
     "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.7.2",
     "react": "^18.3.1",

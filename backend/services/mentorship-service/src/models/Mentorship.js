@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 
 const sessionSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
+  date: { type: Date, required: [true, 'Session date is required'] },
+  /** Local calendar day when the session starts (YYYY-MM-DD). */
+  calendarDate: { type: String, trim: true },
+  /** Local wall-clock time when the session starts (HH:mm, 24h). */
+  time: { type: String, trim: true },
   duration: { type: Number, required: true, min: [15, 'Session duration must be at least 15 minutes'] },
   notes: { type: String, maxlength: [1000, 'Notes cannot exceed 1000 characters'] },
   topics: { type: [String], default: [] },

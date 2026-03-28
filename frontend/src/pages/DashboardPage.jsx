@@ -16,6 +16,14 @@ function buildMenteeBio(main, goals, interests) {
 import StoryCard from '../components/stories/StoryCard';
 import EventCard from '../components/events/EventCard';
 import Spinner from '../components/common/Spinner';
+import AdminMentorshipNexusPanel from '../components/admin/AdminMentorshipNexusPanel';
+import AdminMentorshipStatCards from '../components/admin/AdminMentorshipStatCards';
+import {
+  buildAuthIndexes,
+  enrichRequest,
+  enrichMentorship,
+  enrichFeedbackRow,
+} from '../utils/mentorshipAdminMerge';
 import toast from 'react-hot-toast';
 
 function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
@@ -996,23 +1004,38 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const [activeMentorships, setActiveMentorships] = useState([]);
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [reportData, setReportData] = useState(null);
-
   const loadAdminData = async () => {
     setLoadingAdmin(true);
     try {
       const [u, mp, rq, ac, fb, rp] = await Promise.allSettled([
-        authApi.adminListUsers({ limit: 50 }),
-        mentorApi.getAll({ limit: 50 }),
+        authApi.adminListUsers({ limit: 5000 }),
+        mentorApi.getAll({ limit: 500 }),
         mentorshipApi.adminGetRequests(),
         mentorshipApi.adminGetActive(),
         mentorshipApi.adminGetFeedback(),
         mentorshipApi.adminGetReports(),
       ]);
-      if (u.status === 'fulfilled') setUsers(u.value.data?.data || []);
+      let userList = [];
+      if (u.status === 'fulfilled') {
+        const body = u.value.data || {};
+        userList = body.data || body.users || [];
+        setUsers(userList);
+      }
+      const authIdx = buildAuthIndexes(userList);
+
       if (mp.status === 'fulfilled') setMentorProfiles(mp.value.data?.data || mp.value.data?.mentors || []);
-      if (rq.status === 'fulfilled') setRequests(rq.value.data?.data || []);
-      if (ac.status === 'fulfilled') setActiveMentorships(ac.value.data?.data || []);
-      if (fb.status === 'fulfilled') setFeedbackRows(fb.value.data?.data || []);
+      if (rq.status === 'fulfilled') {
+        const raw = rq.value.data?.data || [];
+        setRequests(raw.map((r) => enrichRequest(r, authIdx)));
+      }
+      if (ac.status === 'fulfilled') {
+        const raw = ac.value.data?.data || [];
+        setActiveMentorships(raw.map((m) => enrichMentorship(m, authIdx)));
+      }
+      if (fb.status === 'fulfilled') {
+        const raw = fb.value.data?.data || [];
+        setFeedbackRows(raw.map((f) => enrichFeedbackRow(f, authIdx)));
+      }
       if (rp.status === 'fulfilled') setReportData(rp.value.data?.data || null);
     } finally {
       setLoadingAdmin(false);
@@ -1108,7 +1131,10 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
   const isManageAccountRoute = location.pathname.startsWith('/dashboard/manage-account');
   const isManageMentorsRoute = location.pathname.startsWith('/dashboard/manage-mentors');
-  const isGeneratedReportsRoute = location.pathname.startsWith('/dashboard/generated-reports');
+  const isViewAllMentorshipRequests =
+    location.pathname === '/dashboard/manage-mentors/view-all-mentorship';
+  const isViewAllActiveMentorship =
+    location.pathname === '/dashboard/manage-mentors/view-all-active-mentorship';
   const mentorMenteeUsers = useMemo(
     () => users.filter((u) => ['mentor', 'mentee'].includes((u?.role || '').toLowerCase())),
     [users]
@@ -1131,6 +1157,38 @@ function AdminDashboard({ user, myStories, myEvents }) {
       })
       .slice(0, 5)
   ), [mentorProfiles]);
+
+  const mentorshipOverviewStats = useMemo(() => {
+    const ms = reportData?.stats?.mentorships;
+    const mr = reportData?.stats?.mentorshipRequests;
+    const totalRequests = mr?.total ?? requests.length;
+    const active = activeMentorships.length;
+    const mActive = ms?.active ?? active;
+    const mCompleted = ms?.completed ?? 0;
+    const mPaused = ms?.paused ?? 0;
+    const mTerminated = ms?.terminated ?? 0;
+    const mTotal =
+      ms?.total ?? Math.max(0, mActive + mCompleted + mPaused + mTerminated);
+    const completionRate = mTotal > 0 ? (mCompleted / mTotal) * 100 : 0;
+
+    const avgFromReport = reportData?.stats?.averageMentorRating;
+    const ratings = feedbackRows
+      .map((f) => f?.feedback?.mentorRating)
+      .filter((n) => n != null && !Number.isNaN(Number(n)));
+    const mentorRating =
+      typeof avgFromReport === 'number' && avgFromReport > 0
+        ? avgFromReport
+        : ratings.length > 0
+          ? ratings.reduce((a, b) => a + Number(b), 0) / ratings.length
+          : 0;
+
+    return {
+      totalRequests,
+      activeMentorships: active,
+      completionRate,
+      mentorRating,
+    };
+  }, [reportData, requests, activeMentorships, feedbackRows]);
 
   return (
     <div className="min-h-screen">
@@ -1166,7 +1224,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
               { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentorship' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
               { to: '/dashboard/forum', icon: 'forum', label: 'Manage Forum' },
-              { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
             ].map((item) => (
               <NavLink
@@ -1188,75 +1245,71 @@ function AdminDashboard({ user, myStories, myEvents }) {
           </nav>
         </aside>
 
-        <main className="ml-[280px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline mb-1">
-                <Link className="hover:text-gold-accent transition-colors" to="/">
+        <main className={`ml-[280px] flex-1 flex flex-col min-h-screen ${isManageMentorsRoute ? 'bg-surface' : ''}`}>
+          {isManageMentorsRoute ? (
+            <header className="relative w-full h-16 min-h-[64px] sticky top-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 border-b border-outline-variant/20">
+              <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline shrink-0 min-w-0 font-sans-modern">
+                <Link className="hover:text-primary transition-colors" to="/">
                   Home
                 </Link>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
+                <Link className="hover:text-primary transition-colors" to="/dashboard">
                   Dashboard
                 </Link>
-                {isManageAccountRoute && (
+                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                {isViewAllMentorshipRequests ? (
                   <>
+                    <Link
+                      className="hover:text-primary transition-colors"
+                      to="/dashboard/manage-mentors"
+                    >
+                      Mentorship
+                    </Link>
                     <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">Manage Account</span>
+                    <span className="text-on-surface">All Requests</span>
                   </>
-                )}
-                {isManageMentorsRoute && (
+                ) : isViewAllActiveMentorship ? (
                   <>
+                    <Link
+                      className="hover:text-primary transition-colors"
+                      to="/dashboard/manage-mentors"
+                    >
+                      Mentorship
+                    </Link>
                     <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">Manage Mentors</span>
+                    <span className="text-on-surface">All Active</span>
                   </>
-                )}
-                {isGeneratedReportsRoute && (
-                  <>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">Generated Reports</span>
-                  </>
+                ) : (
+                  <span className="text-on-surface">Mentorship</span>
                 )}
               </div>
-              {isManageAccountRoute ? (
-                <>
-                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
-                  <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
-                </>
-              ) : isManageMentorsRoute ? (
-                <>
-                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentors</h1>
-                  <p className="text-xs text-outline uppercase tracking-widest">Mentorship administration and moderation</p>
-                </>
-              ) : isGeneratedReportsRoute ? (
-                <>
-                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h1>
-                  <p className="text-xs text-outline uppercase tracking-widest">Platform report from mentorship admin endpoints</p>
-                </>
-              ) : (
-                <>
-                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Welcome, {firstName}</h1>
-                  <p className="text-xs text-outline uppercase tracking-widest">Role: Admin · {user?.email}</p>
-                </>
-              )}
-            </div>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen((v) => !v)}
-                className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
-              >
-                <img
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                  src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
-                />
-              </button>
+              <div className="flex items-center gap-2 sm:gap-4 ml-auto shrink-0">
+                <div className="flex items-center gap-3 pl-1 sm:pl-2">
+                  <div className="text-right hidden lg:block">
+                    <p className="text-xs font-bold text-on-surface font-sans-modern">{user?.name || 'Admin'}</p>
+                    <p className="text-[10px] text-on-surface-variant font-sans-modern">Global Admin</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((v) => !v)}
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-gold-accent/30"
+                  >
+                    <img
+                      alt=""
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-gold-accent/20"
+                      src={
+                        user?.profilePicture ||
+                        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80'
+                      }
+                    />
+                  </button>
+                </div>
+              </div>
               {profileOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                <div className="absolute right-8 top-14 w-56 bg-white border border-outline-variant/20 editorial-shadow z-[60] rounded-xl overflow-hidden">
                   <div className="px-5 py-4 border-b border-outline-variant/15">
-                    <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
-                    <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
+                    <p className="text-sm font-semibold text-on-surface line-clamp-1 font-sans-modern">{user?.name || 'Admin'}</p>
+                    <p className="text-xs text-outline line-clamp-1 font-sans-modern">{user?.email}</p>
                   </div>
                   <button
                     type="button"
@@ -1269,18 +1322,93 @@ function AdminDashboard({ user, myStories, myEvents }) {
                         navigate('/');
                       }
                     }}
-                    className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2 font-sans-modern"
                   >
                     <span className="material-symbols-outlined text-[18px]">logout</span>
                     Sign out
                   </button>
                 </div>
               )}
-            </div>
-          </header>
+            </header>
+          ) : (
+            <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+              <div>
+                <div
+                  className={`flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline ${
+                    isManageMentorsRoute ? '' : 'mb-1'
+                  }`}
+                >
+                  <Link className="hover:text-gold-accent transition-colors" to="/">
+                    Home
+                  </Link>
+                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                  <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
+                    Dashboard
+                  </Link>
+                  {isManageAccountRoute && (
+                    <>
+                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                      <span className="text-on-surface">Manage Account</span>
+                    </>
+                  )}
+                </div>
+                {isManageAccountRoute ? (
+                  <>
+                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
+                    <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Welcome, {firstName}</h1>
+                    <p className="text-xs text-outline uppercase tracking-widest">Role: Admin · {user?.email}</p>
+                  </>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
+                >
+                  <img
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
+                  />
+                </button>
+                {profileOpen && (
+                  <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                    <div className="px-5 py-4 border-b border-outline-variant/15">
+                      <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
+                      <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await logout();
+                          toast.success('You have signed out.');
+                        } finally {
+                          setProfileOpen(false);
+                          navigate('/');
+                        }
+                      }}
+                      className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </header>
+          )}
 
-          <div className="p-8 space-y-6 max-w-[1280px] mx-auto w-full">
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+          <div
+            className="p-8 space-y-6 w-full flex-1 max-w-[1280px] mx-auto"
+          >
+
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {[
                 { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
@@ -1303,6 +1431,16 @@ function AdminDashboard({ user, myStories, myEvents }) {
               <div className="py-12 flex justify-center"><Spinner size="lg" /></div>
             ) : (
               <>
+                {isManageMentorsRoute &&
+                  !isViewAllMentorshipRequests &&
+                  !isViewAllActiveMentorship && (
+                  <AdminMentorshipStatCards
+                    totalRequests={mentorshipOverviewStats.totalRequests}
+                    activeMentorships={mentorshipOverviewStats.activeMentorships}
+                    completionRate={mentorshipOverviewStats.completionRate}
+                    mentorRating={mentorshipOverviewStats.mentorRating}
+                  />
+                )}
                 {isManageAccountRoute ? (
                   <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
@@ -1493,77 +1631,22 @@ function AdminDashboard({ user, myStories, myEvents }) {
                     )}
                   </div>
                 ) : isManageMentorsRoute ? (
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Admin</h2>
-                  <p className="text-on-surface-variant text-sm mt-2 mb-6">
-                    View all requests/active mentorships, terminate any mentorship, and inspect feedback/ratings.
-                  </p>
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">All mentorship requests</h3>
-                      <div className="space-y-2">
-                        {requests.slice(0, 12).map((r) => (
-                          <div key={r._id} className="border border-outline-variant/20 rounded p-3 text-sm">
-                            <p className="font-semibold">{r?.mentee?.name || 'Mentee'} → {r?.mentor?.name || 'Mentor'}</p>
-                            <p className="text-xs text-outline">{r.status} · {new Date(r.createdAt).toLocaleDateString()}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">All active mentorships</h3>
-                      <div className="space-y-2">
-                        {activeMentorships.slice(0, 12).map((m) => (
-                          <div key={m._id} className="border border-outline-variant/20 rounded p-3 text-sm">
-                            <p className="font-semibold">{m?.mentor?.name || 'Mentor'} ↔ {m?.mentee?.name || 'Mentee'}</p>
-                            <p className="text-xs text-outline mb-2">Started: {new Date(m.startDate).toLocaleDateString()}</p>
-                            <button type="button" onClick={() => terminateMentorship(m._id)} className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50">
-                              Terminate
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-outline mb-3">Feedback & ratings</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {feedbackRows.slice(0, 12).map((f) => (
-                        <div key={f._id} className="border border-outline-variant/20 rounded p-3 text-sm">
-                          <p className="font-semibold">{f?.mentor?.name || 'Mentor'} · {f?.mentee?.name || 'Mentee'}</p>
-                          <p className="text-xs text-outline">
-                            Mentor rating: {f?.feedback?.mentorRating || '-'} · Mentee rating: {f?.feedback?.menteeRating || '-'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                ) : isGeneratedReportsRoute ? (
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h2>
-                  <p className="text-on-surface-variant text-sm mt-2 mb-6">Platform report from mentorship admin endpoints.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Mentorships</p>
-                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorships?.total ?? 0}</p>
-                      <p className="text-sm">Active: {reportData?.stats?.mentorships?.active ?? 0}</p>
-                      <p className="text-sm">Completed: {reportData?.stats?.mentorships?.completed ?? 0}</p>
-                    </div>
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Requests</p>
-                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorshipRequests?.total ?? 0}</p>
-                      <p className="text-sm">Pending: {reportData?.stats?.mentorshipRequests?.pending ?? 0}</p>
-                      <p className="text-sm">Accepted: {reportData?.stats?.mentorshipRequests?.accepted ?? 0}</p>
-                    </div>
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Feedback</p>
-                      <p className="text-sm mt-2">Avg mentor rating: {reportData?.stats?.averageMentorRating ?? 0}</p>
-                      <p className="text-sm">Total sessions: {reportData?.stats?.totalSessions ?? 0}</p>
-                    </div>
-                  </div>
-                </div>
+                  <AdminMentorshipNexusPanel
+                    user={user}
+                    authUsers={users}
+                    mentorProfiles={mentorProfiles}
+                    requests={requests}
+                    activeMentorships={activeMentorships}
+                    feedbackRows={feedbackRows}
+                    onTerminate={terminateMentorship}
+                    variant={
+                      isViewAllMentorshipRequests
+                        ? 'all-requests'
+                        : isViewAllActiveMentorship
+                          ? 'all-active'
+                          : 'overview'
+                    }
+                  />
                 ) : (
                 <>
                 </>
@@ -1571,7 +1654,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               </>
             )}
 
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
@@ -1613,7 +1696,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             </div>
             )}
 
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
               <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
               <p className="text-on-surface-variant text-sm mt-2 mb-6">
