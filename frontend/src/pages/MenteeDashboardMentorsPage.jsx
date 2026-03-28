@@ -1,11 +1,39 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
+import Pagination from '../components/common/Pagination';
 import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
+
+function mentorsFromResponse(body) {
+  if (!body) return [];
+  if (Array.isArray(body.data)) return body.data;
+  if (Array.isArray(body.mentors)) return body.mentors;
+  if (Array.isArray(body.data?.mentors)) return body.data.mentors;
+  return [];
+}
+
+const DIRECTORY_PAGE_LIMIT = 6;
+
+const DIRECTORY_SORT_OPTIONS = [
+  { value: '-rating', label: 'Best match' },
+  { value: '-createdAt', label: 'Newest' },
+  { value: 'createdAt', label: 'Oldest' },
+];
+
+function StarRow({ rating, className = 'text-[15px]' }) {
+  const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return (
+    <span className={`leading-none tracking-tight ${className}`} aria-hidden>
+      <span className="text-rose-500">{'★'.repeat(r)}</span>
+      <span className="text-rose-100">{'★'.repeat(5 - r)}</span>
+    </span>
+  );
+}
 
 function safeList(res) {
   const data = res?.data;
@@ -51,7 +79,12 @@ export default function MenteeDashboardMentorsPage() {
 
 
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [mentorsLoading, setMentorsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [directoryPage, setDirectoryPage] = useState(1);
+  const [directoryPagination, setDirectoryPagination] = useState({ totalPages: 1, total: 0 });
+  const [sortBy, setSortBy] = useState('-rating');
   const [mentors, setMentors] = useState([]);
 
   const [requests, setRequests] = useState([]);
@@ -74,17 +107,33 @@ export default function MenteeDashboardMentorsPage() {
 
   const [expandedId, setExpandedId] = useState(null);
 
-  const counts = useMemo(() => ({
-    directory: mentors.length,
-    requests: requests.length,
-    active: active.length,
-    history: history.length,
-  }), [mentors.length, requests.length, active.length, history.length]);
+  const directoryTotal = directoryPagination.total;
 
-  const loadMentors = async () => {
-    const res = await mentorApi.getAll({ limit: 24, search: search || undefined });
-    setMentors(safeList(res));
-  };
+  const counts = useMemo(
+    () => ({
+      directory: directoryTotal,
+      requests: requests.length,
+      active: active.length,
+      history: history.length,
+    }),
+    [directoryTotal, requests.length, active.length, history.length]
+  );
+
+  const loadMentors = useCallback(async () => {
+    const res = await mentorApi.getAll({
+      page: directoryPage,
+      limit: DIRECTORY_PAGE_LIMIT,
+      sort: sortBy,
+      search: appliedSearch || undefined,
+    });
+    const data = res.data;
+    setMentors(mentorsFromResponse(data));
+    const pag = data.pagination || {};
+    setDirectoryPagination({
+      totalPages: pag.pages ?? pag.totalPages ?? 1,
+      total: typeof pag.total === 'number' ? pag.total : 0,
+    });
+  }, [directoryPage, appliedSearch, sortBy]);
 
   const loadMyMentorship = async () => {
     const [r, a, h] = await Promise.allSettled([
@@ -98,31 +147,79 @@ export default function MenteeDashboardMentorsPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    Promise.allSettled([loadMentors(), loadMyMentorship()])
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        await loadMyMentorship();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (tab !== 'directory') return;
+    let cancelled = false;
+    (async () => {
+      setMentorsLoading(true);
+      try {
+        await loadMentors();
+      } finally {
+        if (!cancelled) setMentorsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, loadMentors]);
+
+  const handleDirectorySearch = () => {
+    setAppliedSearch(searchInput.trim());
+    setDirectoryPage(1);
+  };
 
   const actuallySendRequest = async () => {
     const goals = requestForm.goals.split(',').map((g) => g.trim()).filter(Boolean);
+    if (goals.length === 0) {
+      toast.error('Add at least one goal');
+      return;
+    }
+    if (!requestForm.preferredStartDate) {
+      toast.error('Choose a preferred start date');
+      return;
+    }
     setSubmitting(true);
     try {
       const mentorUserId = requestingMentor?.user?._id || requestingMentor?.user || requestingMentor?._id;
       await mentorApi.sendRequest(mentorUserId, {
         goals,
         preferredStartDate: requestForm.preferredStartDate,
-        message: requestForm.message,
+        message: requestForm.message.trim() || 'I would love to connect!',
       });
       toast.success('Mentorship request sent!');
       setRequestingMentor(null);
       await loadMyMentorship();
       setTab('requests');
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to send request');
+      toast.error(getApiErrorMessage(e, 'Failed to send request'));
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleDirectorySortChange = (e) => {
+    setSortBy(e.target.value);
+    setDirectoryPage(1);
+  };
+
+  const dirRangeFrom =
+    directoryTotal === 0 ? 0 : (directoryPage - 1) * DIRECTORY_PAGE_LIMIT + 1;
+  const dirRangeTo =
+    directoryTotal === 0 ? 0 : Math.min(directoryPage * DIRECTORY_PAGE_LIMIT, directoryTotal);
 
   const cancelRequest = async (id) => {
     try {
@@ -130,7 +227,7 @@ export default function MenteeDashboardMentorsPage() {
       toast.success('Request cancelled');
       await loadMyMentorship();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to cancel');
+      toast.error(getApiErrorMessage(e, 'Failed to cancel'));
     }
   };
 
@@ -145,7 +242,7 @@ export default function MenteeDashboardMentorsPage() {
       setGoalsInput('');
       await loadMyMentorship();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to update goals');
+      toast.error(getApiErrorMessage(e, 'Failed to update goals'));
     }
   };
 
@@ -158,7 +255,7 @@ export default function MenteeDashboardMentorsPage() {
       setFeedbackForm({ rating: 5, comment: '' });
       await loadMyMentorship();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to submit feedback');
+      toast.error(getApiErrorMessage(e, 'Failed to submit feedback'));
     }
   };
 
@@ -317,61 +414,212 @@ export default function MenteeDashboardMentorsPage() {
             ) : (
               <>
                 {tab === 'directory' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                    <div className="flex gap-2 mb-6">
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search mentors…"
-                        className="flex-1 bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setLoading(true);
-                          try { await loadMentors(); } finally { setLoading(false); }
-                        }}
-                        className="bg-gold-accent text-white px-5 rounded-lg text-sm font-bold"
-                      >
-                        Search
-                      </button>
+                  <div className="bg-white dark:bg-surface-container-lowest border border-neutral-200/90 editorial-shadow rounded-xl overflow-hidden">
+                    <div className="border-b border-neutral-200/80 bg-gradient-to-br from-white via-white to-rose-50/40 px-4 py-5 sm:px-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div className="relative min-w-0 flex-1">
+                          <span
+                            className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400"
+                            aria-hidden
+                          >
+                            <span className="material-symbols-outlined text-[22px] leading-none">search</span>
+                          </span>
+                          <input
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleDirectorySearch()}
+                            placeholder="Search by name, expertise, or industry…"
+                            className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 shadow-sm outline-none transition-shadow placeholder:text-neutral-400 focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleDirectorySearch}
+                          className="shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors hover:bg-neutral-800"
+                        >
+                          Search
+                        </button>
+                      </div>
                     </div>
 
-                    {mentors.length === 0 ? (
-                      <p className="text-on-surface-variant">No mentors found.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {mentors.map((m) => (
-                          <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6 flex flex-col">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center font-bold text-primary">
-                                {(m?.user?.name || m?.name || 'M')?.[0]?.toUpperCase() || 'M'}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-on-surface line-clamp-1">{m?.user?.name || m?.name || 'Mentor'}</p>
-                                <p className="text-xs text-outline line-clamp-1">{m?.user?.email || m?.email || 'Mentor'}</p>
-                              </div>
-                            </div>
-                            {m.bio && <p className="text-sm text-on-surface-variant line-clamp-3 mb-4">{m.bio}</p>}
-                            <div className="mt-auto flex gap-2">
-                              <Link to={`/mentors/${m._id}`} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors">
-                                View
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRequestingMentor(m);
-                                  setRequestForm((f) => ({ ...f, preferredStartDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) }));
-                                }}
-                                className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase hover:opacity-90"
-                              >
-                                Request
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                    <div className="px-4 py-3.5 sm:flex sm:items-center sm:justify-between sm:px-4 border-b border-neutral-200 bg-white">
+                      <p className="text-[11px] font-medium uppercase leading-snug tracking-[0.14em] text-neutral-500">
+                        Showing{' '}
+                        <span className="font-semibold text-neutral-900 tabular-nums dark:text-on-surface">{dirRangeFrom}</span>
+                        –
+                        <span className="font-semibold text-neutral-900 tabular-nums dark:text-on-surface">{dirRangeTo}</span>
+                        {' of '}
+                        <span className="font-semibold text-neutral-900 tabular-nums dark:text-on-surface">{directoryTotal}</span>
+                        {' mentors'}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-0 sm:gap-3">
+                        <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">Sort by:</span>
+                        <div className="relative min-w-[140px]">
+                          <select
+                            value={sortBy}
+                            onChange={handleDirectorySortChange}
+                            className="w-full cursor-pointer appearance-none rounded-md border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-neutral-900 outline-none transition-colors hover:border-neutral-300 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-200 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                            aria-label="Sort mentors"
+                          >
+                            {DIRECTORY_SORT_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600">
+                            <span className="material-symbols-outlined text-[20px] leading-none">expand_more</span>
+                          </span>
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="p-4 sm:p-6">
+                      {mentorsLoading ? (
+                        <div className="flex justify-center py-20">
+                          <Spinner size="lg" />
+                        </div>
+                      ) : mentors.length === 0 ? (
+                        <p className="text-center text-neutral-500 py-16 dark:text-on-surface-variant">No mentors found.</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {mentors.map((m) => {
+                              const displayName = m.user?.name || 'Mentor';
+                              const avatarSrc = m.user?.profilePicture || m.user?.avatar;
+                              const initial = displayName[0]?.toUpperCase() || 'M';
+                              const industries = m.industries || [];
+                              const areas = m.mentoringAreas || [];
+                              const roleLine =
+                                areas[0] && industries[0]
+                                  ? `${areas[0]} at ${industries[0]}`
+                                  : areas[0] || industries[0] || 'Mentor';
+                              const industryLine =
+                                industries.slice(0, 3).join(' • ') || areas.slice(0, 2).join(' • ') || '';
+                              const tagPair = (m.expertise || []).slice(0, 2);
+                              const ratingVal = Number(m.rating) || 0;
+                              const displayRating = ratingVal > 0 ? ratingVal.toFixed(1) : '—';
+                              const sessions = m.totalMentorships ?? 0;
+                              const sessionLabel = sessions === 1 ? '1 session' : `${sessions} sessions`;
+
+                              return (
+                                <article
+                                  key={m._id}
+                                  className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 shadow-sm transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-md dark:border-outline-variant/20 dark:bg-surface-container-lowest"
+                                >
+                                  <div className="flex gap-2.5">
+                                    {avatarSrc ? (
+                                      <img
+                                        src={avatarSrc}
+                                        alt=""
+                                        className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80"
+                                      />
+                                    ) : (
+                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[13px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80">
+                                        {initial}
+                                      </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex min-w-0 items-center gap-1">
+                                        <h2 className="font-serif-alt text-[17px] font-semibold leading-tight text-neutral-900 line-clamp-1 dark:text-on-surface">
+                                          {displayName}
+                                        </h2>
+                                        {m.isVerified ? (
+                                          <span
+                                            className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-sky-500 text-white"
+                                            title="Verified mentor"
+                                            aria-label="Verified mentor"
+                                          >
+                                            <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
+                                              check
+                                            </span>
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <p className="mt-0.5 text-xs leading-snug text-neutral-500 line-clamp-2 dark:text-outline">
+                                        {roleLine}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {tagPair.length > 0 && (
+                                    <div className="mt-1.5 flex flex-wrap gap-1">
+                                      {tagPair.map((ex) => (
+                                        <span
+                                          key={ex}
+                                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-700 bg-neutral-100 dark:bg-surface-container dark:text-on-surface-variant"
+                                        >
+                                          {ex}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {industryLine ? (
+                                    <p className="mt-1.5 text-[11px] leading-snug text-neutral-500 line-clamp-1 dark:text-outline">
+                                      {industryLine}
+                                    </p>
+                                  ) : null}
+
+                                  <div className="mt-1.5 flex items-baseline gap-2 text-[13px] text-neutral-600 tabular-nums sm:text-sm dark:text-on-surface-variant">
+                                    <StarRow rating={ratingVal} />
+                                    {displayRating !== '—' ? (
+                                      <span>
+                                        <span className="font-medium text-neutral-800 dark:text-on-surface">{displayRating}</span>
+                                        <span className="text-neutral-400"> · {sessionLabel}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-neutral-400">No rating yet</span>
+                                    )}
+                                  </div>
+
+                                  {m.bio ? (
+                                    <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-snug text-neutral-600 dark:text-on-surface-variant">
+                                      {m.bio}
+                                    </p>
+                                  ) : (
+                                    <div className="flex-1 min-h-0" aria-hidden />
+                                  )}
+
+                                  <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-rose-100/80 pt-2 dark:border-outline-variant/20">
+                                    <button
+                                      type="button"
+                                      title="Request mentorship"
+                                      onClick={() => {
+                                        setRequestingMentor(m);
+                                        setRequestForm({
+                                          goals: 'Career growth, Leadership',
+                                          preferredStartDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                                          message: 'I would love to learn from your experience.',
+                                        });
+                                      }}
+                                      className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:hover:bg-rose-900/50"
+                                    >
+                                      Request
+                                    </button>
+                                    <Link
+                                      to={`/mentors/${m._id}`}
+                                      title="View full profile"
+                                      className="flex items-center justify-center rounded-md border border-rose-300 bg-white py-2 text-[10px] font-semibold uppercase tracking-wide text-rose-900 transition-colors hover:border-rose-400 hover:bg-rose-50 dark:border-rose-400/40 dark:bg-surface-container dark:text-rose-100 dark:hover:bg-rose-950/30"
+                                    >
+                                      Profile
+                                    </Link>
+                                  </div>
+                                </article>
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-center pt-6">
+                            <Pagination
+                              page={directoryPage}
+                              totalPages={directoryPagination.totalPages}
+                              onPageChange={(p) => setDirectoryPage(p)}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 

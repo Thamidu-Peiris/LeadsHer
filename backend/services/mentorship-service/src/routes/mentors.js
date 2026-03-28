@@ -8,6 +8,7 @@ const mentorMatchingController = require('../controllers/mentorMatchingControlle
 // Public routes
 router.get('/', mentorController.getAllMentors);
 router.get('/recommendations', protect, mentorMatchingController.getMentorRecommendations);
+router.get('/:id/reviews', mentorController.getMentorReviews);
 router.get('/:id', mentorController.getMentorById);
 router.get('/:id/stats', mentorController.getMentorStats);
 router.get('/:id/similar', mentorMatchingController.getSimilarMentorsById);

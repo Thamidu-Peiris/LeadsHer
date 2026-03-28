@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { mentorApi } from '../../api/mentorApi';
 import toast from 'react-hot-toast';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 const FALLBACK_MENTORS = [
   { _id: '1', name: 'Dr. Seraphina Hall',  specialty: 'Organizational Psychology', tags: ['Conflict Res', 'Team Culture'],   initials: 'SH' },
@@ -43,7 +44,7 @@ export default function MentorSpotlight() {
       await mentorApi.sendRequest(mentorId, { message: 'I would love to connect!' });
       toast.success('Mentorship request sent!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send request');
+      toast.error(getApiErrorMessage(err, 'Failed to send request'));
     }
   };
 
