@@ -25,4 +25,7 @@ export const resourceApi = {
   adminGetAnalytics: () => api.get('/resources/admin/analytics'),
   approve: (id) => api.patch(`/resources/${id}/approve`),
   reject: (id) => api.patch(`/resources/${id}/reject`),
+  // Google Books
+  searchBooks: (params) => api.get('/resources/books/search', { params }),
+  getBookRecommendations: (params) => api.get('/resources/books/recommend', { params }),
 };

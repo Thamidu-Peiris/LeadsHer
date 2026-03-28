@@ -231,3 +231,83 @@ exports.uploadThumbnail = async (req, res) => {
     res.status(500).json({ message: err.message || 'Thumbnail upload failed.' });
   }
 };
+
+// GET /api/resources/books/search?q=query&maxResults=8
+exports.searchBooks = async (req, res) => {
+  try {
+    const { q, maxResults = 8 } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(400).json({ message: 'Search query is required.' });
+    }
+    const apiKey = process.env.BOOKS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ message: 'Google Books API key not configured.' });
+    }
+    const limit = Math.min(20, parseInt(maxResults, 10) || 8);
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q.trim())}&maxResults=${limit}&langRestrict=en&key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(502).json({ message: 'Google Books API request failed.' });
+    }
+    const data = await response.json();
+    const books = (data.items || []).map((item) => ({
+      id: item.id,
+      title: item.volumeInfo?.title || '',
+      authors: item.volumeInfo?.authors || [],
+      description: item.volumeInfo?.description || '',
+      thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
+      publishedDate: item.volumeInfo?.publishedDate || '',
+      publisher: item.volumeInfo?.publisher || '',
+      categories: item.volumeInfo?.categories || [],
+      pageCount: item.volumeInfo?.pageCount || 0,
+      previewLink: item.volumeInfo?.previewLink || '',
+      infoLink: item.volumeInfo?.infoLink || '',
+    }));
+    res.json({ books, total: data.totalItems || 0 });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to search books.' });
+  }
+};
+
+// GET /api/resources/books/recommend?category=leadership-skills&maxResults=6
+exports.recommendBooks = async (req, res) => {
+  try {
+    const { category = 'leadership', maxResults = 6 } = req.query;
+    const categoryQueryMap = {
+      'leadership-skills': 'women leadership business empowerment',
+      'communication': 'professional communication skills women',
+      'negotiation': 'negotiation business strategies women',
+      'time-management': 'time management productivity professional women',
+      'career-planning': 'women career development professional growth',
+      'work-life-balance': 'work life balance women career',
+      'networking': 'professional networking business relationships',
+    };
+    const query = categoryQueryMap[category] || `${category} professional women`;
+    const apiKey = process.env.BOOKS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ message: 'Google Books API key not configured.' });
+    }
+    const limit = Math.min(12, parseInt(maxResults, 10) || 6);
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${limit}&orderBy=relevance&langRestrict=en&key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(502).json({ message: 'Google Books API request failed.' });
+    }
+    const data = await response.json();
+    const books = (data.items || []).map((item) => ({
+      id: item.id,
+      title: item.volumeInfo?.title || '',
+      authors: item.volumeInfo?.authors || [],
+      description: item.volumeInfo?.description || '',
+      thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
+      publishedDate: item.volumeInfo?.publishedDate || '',
+      publisher: item.volumeInfo?.publisher || '',
+      categories: item.volumeInfo?.categories || [],
+      previewLink: item.volumeInfo?.previewLink || '',
+      infoLink: item.volumeInfo?.infoLink || '',
+    }));
+    res.json({ books });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to get book recommendations.' });
+  }
+};

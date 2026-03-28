@@ -308,6 +308,45 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove, sidebarWidth }) {
   );
 }
 
+/* ─── Book Card (Google Books result) ───────────────────────────────────── */
+
+function BookCard({ book, onSelect }) {
+  return (
+    <div className="flex gap-2.5 p-2.5 bg-slate-50 dark:bg-surface-container rounded-lg border border-transparent hover:border-violet-300 dark:hover:border-violet-700 transition-all">
+      <div className="w-12 h-16 flex-shrink-0 rounded overflow-hidden bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+        {book.thumbnail ? (
+          <img
+            src={book.thumbnail.replace('http://', 'https://')}
+            alt={book.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="material-symbols-outlined text-violet-400 text-[22px]">menu_book</span>
+        )}
+      </div>
+      <div className="flex flex-col flex-1 min-w-0 justify-between">
+        <div>
+          <h4 className="text-[11px] font-bold text-on-surface leading-tight line-clamp-2">{book.title}</h4>
+          {book.authors?.length > 0 && (
+            <p className="text-[10px] text-slate-400 dark:text-outline mt-0.5 truncate">{book.authors.join(', ')}</p>
+          )}
+          {book.publishedDate && (
+            <p className="text-[10px] text-slate-300 dark:text-outline/60 mt-0.5">{book.publishedDate.slice(0, 4)}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect(book)}
+          className="mt-1.5 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 flex items-center gap-0.5 transition-colors"
+        >
+          <span className="material-symbols-outlined text-[12px]">add_circle</span>
+          Use this Book
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Upload / Edit Modal ────────────────────────────────────────────────── */
 
 function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
@@ -319,6 +358,14 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
   const fileInputRef                      = useRef(null);
   const thumbInputRef                     = useRef(null);
   const [uploadedFile, setUploadedFile]   = useState(null);
+
+  /* Google Books state */
+  const [booksTab, setBooksTab]         = useState('search');
+  const [bookQuery, setBookQuery]       = useState('');
+  const [bookResults, setBookResults]   = useState([]);
+  const [bookLoading, setBookLoading]   = useState(false);
+  const [recBooks, setRecBooks]         = useState([]);
+  const [recLoading, setRecLoading]     = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -354,6 +401,51 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
     } finally {
       setUploadingThumb(false);
     }
+  };
+
+  const handleBookSearch = async () => {
+    if (!bookQuery.trim()) return;
+    setBookLoading(true);
+    try {
+      const res = await resourceApi.searchBooks({ q: bookQuery.trim(), maxResults: 8 });
+      setBookResults(res.data?.books || []);
+      if ((res.data?.books || []).length === 0) toast('No books found. Try a different search.', { icon: 'ℹ️' });
+    } catch {
+      toast.error('Book search failed');
+    } finally {
+      setBookLoading(false);
+    }
+  };
+
+  const handleLoadRecommended = async () => {
+    setRecLoading(true);
+    try {
+      const res = await resourceApi.getBookRecommendations({ category: form.category, maxResults: 6 });
+      setRecBooks(res.data?.books || []);
+    } catch {
+      toast.error('Failed to load recommendations');
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  const handleSelectBook = (book) => {
+    if (book.title) set('title', book.title);
+    if (book.description) set('description', book.description.slice(0, 600));
+    if (book.authors?.length) set('author', book.authors[0]);
+    if (book.thumbnail) set('thumbnail', book.thumbnail.replace('http://', 'https://'));
+    const link = book.infoLink || book.previewLink;
+    if (link) {
+      set('externalLink', link.replace('http://', 'https://'));
+      set('fileMode', 'link');
+    }
+    if (book.categories?.length) {
+      const existing = form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
+      const fromBook = book.categories[0].split(/[/&,]/).map((t) => t.toLowerCase().trim()).filter(Boolean).slice(0, 3);
+      const merged = [...new Set([...existing, ...fromBook])];
+      if (merged.length >= 2) set('tags', merged.join(', '));
+    }
+    toast.success('Book details applied to the form');
   };
 
   const handleSubmit = async () => {
@@ -426,6 +518,112 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
                 {CATEGORIES.filter((c) => c.value).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
+
+            {/* ── Google Books Panel (Ebook type only) ── */}
+            {form.type === 'ebook' && (
+              <div className="sm:col-span-2 border border-violet-200 dark:border-violet-800/40 rounded-xl overflow-hidden">
+                {/* Header + tabs */}
+                <div className="bg-violet-50 dark:bg-violet-900/20 px-4 py-3 flex items-center justify-between border-b border-violet-200 dark:border-violet-800/40">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-violet-600 dark:text-violet-400 text-[18px]">auto_stories</span>
+                    <span className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-widest">Google Books</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {[
+                      { key: 'search', label: 'Search' },
+                      { key: 'recommend', label: 'Recommended' },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setBooksTab(key);
+                          if (key === 'recommend' && recBooks.length === 0) handleLoadRecommended();
+                        }}
+                        className={`px-3 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-all ${
+                          booksTab === key
+                            ? 'bg-violet-600 text-white'
+                            : 'text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/40'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  {booksTab === 'search' ? (
+                    <>
+                      {/* Search input */}
+                      <div className="flex gap-2 mb-3">
+                        <input
+                          className={`${inp} flex-1`}
+                          value={bookQuery}
+                          onChange={(e) => setBookQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleBookSearch()}
+                          placeholder="Search by title, author, or topic…"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleBookSearch}
+                          disabled={bookLoading || !bookQuery.trim()}
+                          className="px-4 py-2 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                        >
+                          {bookLoading ? (
+                            <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[16px]">search</span>
+                          )}
+                          Search
+                        </button>
+                      </div>
+                      {/* Results */}
+                      {bookResults.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                          {bookResults.map((book) => (
+                            <BookCard key={book.id} book={book} onSelect={handleSelectBook} />
+                          ))}
+                        </div>
+                      )}
+                      {bookResults.length === 0 && !bookLoading && (
+                        <p className="text-xs text-slate-400 dark:text-outline text-center py-3">
+                          Search for books to auto-fill the form with book details.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {recLoading && (
+                        <div className="flex justify-center py-4"><Spinner /></div>
+                      )}
+                      {!recLoading && recBooks.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                          {recBooks.map((book) => (
+                            <BookCard key={book.id} book={book} onSelect={handleSelectBook} />
+                          ))}
+                        </div>
+                      )}
+                      {!recLoading && recBooks.length === 0 && (
+                        <div className="text-center py-4">
+                          <p className="text-xs text-slate-400 dark:text-outline mb-2">
+                            Discover learning materials for the selected category.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleLoadRecommended}
+                            className="px-4 py-2 text-xs font-bold border border-violet-200 dark:border-violet-800/40 text-violet-600 dark:text-violet-400 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                          >
+                            Load Recommendations
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className={lbl}>Difficulty</label>
               <select className={inp} value={form.difficulty} onChange={(e) => set('difficulty', e.target.value)}>
