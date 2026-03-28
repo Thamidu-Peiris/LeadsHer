@@ -20,6 +20,10 @@ upstream event_service {
     server $EVENT_SERVICE_HOST:$EVENT_SERVICE_PORT;
 }
 
+upstream forum_service {
+    server $FORUM_SERVICE_HOST:$FORUM_SERVICE_PORT;
+}
+
 server {
     listen $PORT;
     server_name localhost;
@@ -120,6 +124,22 @@ server {
     # Event service
     location /api/events {
         proxy_pass http://event_service/api/events;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Forum service
+    location = /api/forum {
+        proxy_pass http://forum_service/api/forum;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /api/forum/ {
+        proxy_pass http://forum_service/api/forum/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
