@@ -145,3 +145,57 @@ exports.reportPost = async (req, res) => {
     res.status(err.status || 500).json({ message: err.message || 'Failed to report post.' });
   }
 };
+
+// PUT /api/forum/replies/:id/accept
+exports.markAcceptedAnswer = async (req, res) => {
+  try {
+    const reply = await forumService.markAcceptedAnswer(req.params.id, req.user._id, req.user.role);
+    res.json(reply);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to mark accepted answer.' });
+  }
+};
+
+// PUT /api/forum/topics/:id/pin
+exports.togglePin = async (req, res) => {
+  try {
+    const topic = await forumService.togglePin(req.params.id, req.user.role);
+    res.json(topic);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to toggle pin.' });
+  }
+};
+
+// PUT /api/forum/topics/:id/close
+exports.toggleClose = async (req, res) => {
+  try {
+    const topic = await forumService.toggleClose(req.params.id, req.user._id, req.user.role);
+    res.json(topic);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to toggle close.' });
+  }
+};
+
+// GET /api/forum/reports
+exports.getReports = async (req, res) => {
+  try {
+    const result = await forumService.getReports({
+      page: req.query.page,
+      limit: req.query.limit,
+      status: req.query.status,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to get reports.' });
+  }
+};
+
+// PUT /api/forum/reports/:id
+exports.resolveReport = async (req, res) => {
+  try {
+    const report = await forumService.resolveReport(req.params.id, req.user._id, req.body.action);
+    res.json(report);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to resolve report.' });
+  }
+};

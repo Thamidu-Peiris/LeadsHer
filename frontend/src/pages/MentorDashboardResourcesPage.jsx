@@ -781,7 +781,7 @@ export default function MentorDashboardResourcesPage() {
     { to: '/dashboard/mentorship', icon: 'groups',        label: 'Mentorship' },
     { to: '/events',               icon: 'event',         label: 'Events'     },
     { to: '/dashboard/resources',   icon: 'library_books', label: 'Resources'  },
-    { to: '/forum',                icon: 'forum',         label: 'Forum'      },
+    { to: '/dashboard/forum',      icon: 'forum',         label: 'Forum'      },
     { to: '/dashboard/settings',   icon: 'settings',      label: 'Settings'   },
   ];
 

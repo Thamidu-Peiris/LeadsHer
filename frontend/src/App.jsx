@@ -31,11 +31,25 @@ import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
 import AdminDashboardStoriesPage from './pages/AdminDashboardStoriesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
 import NotFoundPage     from './pages/NotFoundPage';
+import ForumPage        from './pages/ForumPage';
+import ForumTopicDetailPage from './pages/ForumTopicDetailPage';
+import ForumCreateTopicPage from './pages/ForumCreateTopicPage';
+import MenteeDashboardForumPage  from './pages/MenteeDashboardForumPage';
+import MentorDashboardForumPage  from './pages/MentorDashboardForumPage';
+import AdminDashboardForumPage   from './pages/AdminDashboardForumPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
 const MENTEE_ONLY  = ['mentee'];
 const ADMIN_ONLY   = ['admin'];
+
+/* Role-based dashboard forum page */
+function DashboardForumRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'admin')  return <AdminDashboardForumPage />;
+  if (user?.role === 'mentor') return <MentorDashboardForumPage />;
+  return <MenteeDashboardForumPage />;
+}
 
 /* Role-based resources page */
 function ResourcesRoute() {
@@ -140,6 +154,17 @@ export default function App() {
             } />
             <Route path="/dashboard/mentors" element={
               <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+            } />
+            <Route path="/forum"      element={<ForumPage />} />
+            <Route path="/forum/new"  element={
+              <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
+            } />
+            <Route path="/forum/:id"  element={<ForumTopicDetailPage />} />
+            <Route path="/forum/:id/edit" element={
+              <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/forum" element={
+              <ProtectedRoute roles={ANY_USER}><DashboardForumRoute /></ProtectedRoute>
             } />
             <Route path="/resources" element={<PublicResourcesPage />} />
             <Route path="/dashboard/resources" element={

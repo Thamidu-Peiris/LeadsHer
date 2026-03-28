@@ -347,6 +347,116 @@ const getMyTopics = async (userId, { page = 1, limit = 10 } = {}) => {
   };
 };
 
+const markAcceptedAnswer = async (replyId, userId, userRole) => {
+  const reply = await ForumReply.findById(replyId).populate('topic');
+  if (!reply) {
+    const err = new Error('Reply not found.');
+    err.status = 404;
+    throw err;
+  }
+  const topic = reply.topic;
+  if (!topic) {
+    const err = new Error('Topic not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+    const err = new Error('Only the topic author can mark an accepted answer.');
+    err.status = 403;
+    throw err;
+  }
+  const wasAccepted = reply.isAcceptedAnswer;
+  await ForumReply.updateMany({ topic: topic._id }, { isAcceptedAnswer: false });
+  if (!wasAccepted) {
+    reply.isAcceptedAnswer = true;
+    await reply.save();
+  }
+  await reply.populate('author', 'name avatar');
+  return reply;
+};
+
+const togglePin = async (topicId, userRole) => {
+  if (userRole !== 'Admin') {
+    const err = new Error('Only admins can pin/unpin topics.');
+    err.status = 403;
+    throw err;
+  }
+  const topic = await ForumTopic.findById(topicId);
+  if (!topic) {
+    const err = new Error('Topic not found.');
+    err.status = 404;
+    throw err;
+  }
+  topic.isPinned = !topic.isPinned;
+  await topic.save();
+  await topic.populate('author', 'name avatar');
+  return topic;
+};
+
+const toggleClose = async (topicId, userId, userRole) => {
+  const topic = await ForumTopic.findById(topicId);
+  if (!topic) {
+    const err = new Error('Topic not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+    const err = new Error('Not authorized to close/reopen this topic.');
+    err.status = 403;
+    throw err;
+  }
+  topic.isClosed = !topic.isClosed;
+  await topic.save();
+  await topic.populate('author', 'name avatar');
+  return topic;
+};
+
+const getReports = async ({ page = 1, limit = 20, status } = {}) => {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  limit = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+  const skip = (page - 1) * limit;
+
+  const query = {};
+  if (status) query.status = status;
+
+  const [reports, total] = await Promise.all([
+    Report.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('reporter', 'name email avatar')
+      .populate('reviewedBy', 'name email')
+      .lean(),
+    Report.countDocuments(query),
+  ]);
+
+  return {
+    reports,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+const resolveReport = async (reportId, userId, action) => {
+  if (!['reviewed', 'dismissed'].includes(action)) {
+    const err = new Error('Action must be reviewed or dismissed.');
+    err.status = 400;
+    throw err;
+  }
+  const report = await Report.findById(reportId);
+  if (!report) {
+    const err = new Error('Report not found.');
+    err.status = 404;
+    throw err;
+  }
+  report.status = action;
+  report.reviewedBy = userId;
+  report.reviewedAt = new Date();
+  await report.save();
+  await report.populate('reporter', 'name email avatar');
+  await report.populate('reviewedBy', 'name email');
+  return report;
+};
+
 module.exports = {
   createTopic,
   getTopicsPaginated,
@@ -359,4 +469,9 @@ module.exports = {
   votePost,
   reportPost,
   getMyTopics,
+  markAcceptedAnswer,
+  togglePin,
+  toggleClose,
+  getReports,
+  resolveReport,
 };
