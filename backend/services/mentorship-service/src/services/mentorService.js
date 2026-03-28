@@ -26,31 +26,135 @@ const createOrUpdateProfile = async (userId, data) => {
   return mentorProfile;
 };
 
-const getAllMentors = async ({ expertise, industry, minExperience, maxExperience, availableOnly, page = 1, limit = 10, sort = '-rating' }) => {
+/** Mongoose sort string e.g. "-rating" → { rating: -1 } for aggregation */
+function sortSpecFromQuery(sortStr) {
+  const s = String(sortStr || '-rating').trim();
+  const desc = s.startsWith('-');
+  const key = desc ? s.slice(1) : s;
+  return { [key]: desc ? -1 : 1 };
+}
+
+const getAllMentors = async ({
+  expertise,
+  industry,
+  mentoringAreas,
+  minExperience,
+  maxExperience,
+  availableOnly,
+  minRating,
+  page = 1,
+  limit = 10,
+  sort = '-rating',
+  search,
+}) => {
   const filter = {};
-  if (expertise) filter.expertise = { $in: expertise.split(',').map(e => e.trim()) };
-  if (industry) filter.industries = { $in: industry.split(',').map(i => i.trim()) };
+  if (expertise) filter.expertise = { $in: expertise.split(',').map((e) => e.trim()) };
+  if (industry) filter.industries = { $in: industry.split(',').map((i) => i.trim()) };
+  if (mentoringAreas) {
+    filter.mentoringAreas = { $in: mentoringAreas.split(',').map((a) => a.trim()) };
+  }
   if (minExperience || maxExperience) {
     filter.yearsOfExperience = {};
     if (minExperience) filter.yearsOfExperience.$gte = parseInt(minExperience);
     if (maxExperience) filter.yearsOfExperience.$lte = parseInt(maxExperience);
+  }
+  if (minRating !== undefined && minRating !== '' && !Number.isNaN(parseFloat(minRating))) {
+    filter.rating = { $gte: parseFloat(minRating) };
   }
   if (availableOnly === 'true') {
     filter.isAvailable = true;
     filter.isVerified = true;
     filter.$expr = { $lt: ['$availability.currentMentees', '$availability.maxMentees'] };
   }
+  const searchTrim = search && String(search).trim();
   const skip = (parseInt(page) - 1) * parseInt(limit);
-  const mentors = await MentorProfile.find(filter).populate('user', 'name email avatar profilePicture').sort(sort).skip(skip).limit(parseInt(limit));
+  const lim = parseInt(limit);
+
+  if (searchTrim) {
+    const esc = searchTrim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = { $regex: esc, $options: 'i' };
+    const userOrDocMatch = {
+      $or: [
+        { '_mentorUser.name': rx },
+        { '_mentorUser.email': rx },
+        { bio: rx },
+        { expertise: rx },
+        { industries: rx },
+        { mentoringAreas: rx },
+      ],
+    };
+
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: '_mentorUser',
+        },
+      },
+      { $unwind: { path: '$_mentorUser', preserveNullAndEmptyArrays: true } },
+      { $match: userOrDocMatch },
+      { $sort: sortSpecFromQuery(sort) },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: lim }],
+          meta: [{ $count: 'total' }],
+        },
+      },
+    ];
+
+    const agg = await MentorProfile.aggregate(pipeline);
+    const facet = agg[0] || { data: [], meta: [] };
+    const rows = facet.data || [];
+    const total = facet.meta?.[0]?.total ?? 0;
+
+    const data = rows.map((doc) => {
+      const u = doc._mentorUser;
+      const { _mentorUser, ...rest } = doc;
+      return {
+        ...rest,
+        user: u
+          ? {
+              _id: u._id,
+              name: u.name,
+              email: u.email,
+              avatar: u.avatar,
+              profilePicture: u.profilePicture,
+            }
+          : undefined,
+      };
+    });
+
+    return {
+      data,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: lim,
+        pages: Math.ceil(total / lim),
+      },
+    };
+  }
+
+  const mentors = await MentorProfile.find(filter)
+    .populate('user', 'name email avatar profilePicture')
+    .sort(sort)
+    .skip(skip)
+    .limit(lim);
   const total = await MentorProfile.countDocuments(filter);
   return {
     data: mentors,
-    pagination: { total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / parseInt(limit)) },
+    pagination: { total, page: parseInt(page), limit: lim, pages: Math.ceil(total / lim) },
   };
 };
 
 const getMentorById = async (id) => {
-  const mentorProfile = await MentorProfile.findById(id).populate('user', 'name email avatar profilePicture bio');
+  const mentorProfile = await MentorProfile.findById(id).populate(
+    'user',
+    'name email avatar profilePicture bio location'
+  );
   if (!mentorProfile) {
     const err = new Error('Mentor profile not found');
     err.status = 404;
@@ -129,6 +233,75 @@ const deleteMyProfile = async (userId) => {
   return { deleted: true, id: mentorProfile._id };
 };
 
+/**
+ * Public mentee→mentor reviews from completed mentorships (feedback.menteeRating / menteeComment).
+ */
+const getMentorReviews = async (mentorProfileId) => {
+  const mentorProfile = await MentorProfile.findById(mentorProfileId);
+  if (!mentorProfile) {
+    const err = new Error('Mentor profile not found');
+    err.status = 404;
+    throw err;
+  }
+  const mentorUserId = mentorProfile.user;
+  const list = await Mentorship.find({
+    mentor: mentorUserId,
+    status: 'completed',
+    'feedback.menteeRating': { $exists: true, $ne: null },
+  })
+    .sort({ completedAt: -1, updatedAt: -1 })
+    .limit(24)
+    .populate('mentee', 'name avatar profilePicture')
+    .lean();
+
+  /** Ensure mentee name + photo fields (populate + batch fallback for any stale refs). */
+  const menteeIdStrings = [
+    ...new Set(
+      list
+        .map((d) => {
+          const me = d.mentee;
+          if (!me) return null;
+          if (typeof me === 'object' && me._id) return String(me._id);
+          return String(me);
+        })
+        .filter(Boolean)
+    ),
+  ];
+  if (menteeIdStrings.length > 0) {
+    const users = await User.find({ _id: { $in: menteeIdStrings } })
+      .select('name avatar profilePicture')
+      .lean();
+    const byId = new Map(users.map((u) => [String(u._id), u]));
+    for (const doc of list) {
+      const key = doc.mentee?._id != null ? String(doc.mentee._id) : String(doc.mentee || '');
+      if (key && byId.has(key)) doc.mentee = byId.get(key);
+    }
+  }
+
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const m of list) {
+    const r = Math.round(Number(m.feedback.menteeRating));
+    if (r >= 1 && r <= 5) counts[r] += 1;
+  }
+  const totalWithRating = list.length;
+  const distribution = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    count: counts[star],
+    pct:
+      totalWithRating > 0 ? Math.round((counts[star] / totalWithRating) * 1000) / 10 : 0,
+  }));
+
+  const reviews = list.map((m) => ({
+    _id: m._id,
+    rating: m.feedback.menteeRating,
+    comment: m.feedback.menteeComment || '',
+    mentee: m.mentee,
+    completedAt: m.completedAt || m.updatedAt,
+  }));
+
+  return { reviews, distribution, total: totalWithRating };
+};
+
 module.exports = {
   createOrUpdateProfile,
   getAllMentors,
@@ -138,4 +311,5 @@ module.exports = {
   toggleAvailability,
   getMentorStats,
   deleteMyProfile,
+  getMentorReviews,
 };
