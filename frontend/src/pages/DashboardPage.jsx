@@ -1135,7 +1135,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
     location.pathname === '/dashboard/manage-mentors/view-all-mentorship';
   const isViewAllActiveMentorship =
     location.pathname === '/dashboard/manage-mentors/view-all-active-mentorship';
-  const isGeneratedReportsRoute = location.pathname.startsWith('/dashboard/generated-reports');
   const mentorMenteeUsers = useMemo(
     () => users.filter((u) => ['mentor', 'mentee'].includes((u?.role || '').toLowerCase())),
     [users]
@@ -1225,7 +1224,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
               { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentorship' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
               { to: '/dashboard/forum', icon: 'forum', label: 'Manage Forum' },
-              { to: '/dashboard/generated-reports', icon: 'analytics', label: 'Generated Reports' },
               { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
             ].map((item) => (
               <NavLink
@@ -1353,22 +1351,11 @@ function AdminDashboard({ user, myStories, myEvents }) {
                       <span className="text-on-surface">Manage Account</span>
                     </>
                   )}
-                  {isGeneratedReportsRoute && (
-                    <>
-                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                      <span className="text-on-surface">Generated Reports</span>
-                    </>
-                  )}
                 </div>
                 {isManageAccountRoute ? (
                   <>
                     <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
                     <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
-                  </>
-                ) : isGeneratedReportsRoute ? (
-                  <>
-                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h1>
-                    <p className="text-xs text-outline uppercase tracking-widest">Platform report from mentorship admin endpoints</p>
                   </>
                 ) : (
                   <>
@@ -1421,7 +1408,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             className="p-8 space-y-6 w-full flex-1 max-w-[1280px] mx-auto"
           >
 
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {[
                 { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
@@ -1660,30 +1647,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
                           : 'overview'
                     }
                   />
-                ) : isGeneratedReportsRoute ? (
-                <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                  <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Generated Reports</h2>
-                  <p className="text-on-surface-variant text-sm mt-2 mb-6">Platform report from mentorship admin endpoints.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Mentorships</p>
-                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorships?.total ?? 0}</p>
-                      <p className="text-sm">Active: {reportData?.stats?.mentorships?.active ?? 0}</p>
-                      <p className="text-sm">Completed: {reportData?.stats?.mentorships?.completed ?? 0}</p>
-                    </div>
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Requests</p>
-                      <p className="text-sm mt-2">Total: {reportData?.stats?.mentorshipRequests?.total ?? 0}</p>
-                      <p className="text-sm">Pending: {reportData?.stats?.mentorshipRequests?.pending ?? 0}</p>
-                      <p className="text-sm">Accepted: {reportData?.stats?.mentorshipRequests?.accepted ?? 0}</p>
-                    </div>
-                    <div className="border border-outline-variant/20 rounded-lg p-4">
-                      <p className="text-xs uppercase tracking-widest text-outline">Feedback</p>
-                      <p className="text-sm mt-2">Avg mentor rating: {reportData?.stats?.averageMentorRating ?? 0}</p>
-                      <p className="text-sm">Total sessions: {reportData?.stats?.totalSessions ?? 0}</p>
-                    </div>
-                  </div>
-                </div>
                 ) : (
                 <>
                 </>
@@ -1691,7 +1654,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
               </>
             )}
 
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
@@ -1733,7 +1696,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             </div>
             )}
 
-            {!isManageAccountRoute && !isManageMentorsRoute && !isGeneratedReportsRoute && (
+            {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
               <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
               <p className="text-on-surface-variant text-sm mt-2 mb-6">

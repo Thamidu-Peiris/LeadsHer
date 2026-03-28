@@ -5,6 +5,12 @@ import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { mentorApi } from '../api/mentorApi';
+import MentorSchedulePanel from '../components/mentorship/MentorSchedulePanel';
+import {
+  insertPrimaryCalendarEvent,
+  readGoogleCalendarAccessTokenFromStorage,
+} from '../utils/googleCalendarClient';
+import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
 
 function safeList(res) {
   const data = res?.data;
@@ -20,14 +26,43 @@ function formatDate(d) {
   }
 }
 
-/** YYYY-MM-DD in local timezone (for `<input type="date">` and API). */
-function localYmd(d) {
+/** Local YYYY-MM-DD + HH:mm from a Date (same wall clock as datetime-local). */
+function localCalendarAndTime(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(x.getTime())) return { calendarDate: '', time: '' };
+  const y = x.getFullYear();
+  const mo = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  const h = String(x.getHours()).padStart(2, '0');
+  const min = String(x.getMinutes()).padStart(2, '0');
+  return { calendarDate: `${y}-${mo}-${day}`, time: `${h}:${min}` };
+}
+
+/** Value for `<input type="datetime-local" />` in local timezone. */
+function toDatetimeLocalValue(d) {
   const x = d instanceof Date ? d : new Date(d);
   if (isNaN(x.getTime())) return '';
   const y = x.getFullYear();
   const mo = String(x.getMonth() + 1).padStart(2, '0');
   const day = String(x.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${day}`;
+  const h = String(x.getHours()).padStart(2, '0');
+  const min = String(x.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day}T${h}:${min}`;
+}
+
+/** Wall-clock start of day (local) for “mentorship started on this day” — aligns with server UTC calendar-day rule. */
+function mentorshipDayStartLocalMs(mentorship) {
+  const raw = mentorship?.startDate ?? mentorship?.createdAt;
+  if (!raw) return 0;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return 0;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** Earliest allowed start: same calendar day as mentorship (or later), and at least ~1 min from now. */
+function minSessionStartMs(mentorship) {
+  const dayStart = mentorshipDayStartLocalMs(mentorship);
+  return Math.max(dayStart, Date.now() + 60_000);
 }
 
 export default function MentorDashboardMentorshipPage() {
@@ -37,7 +72,7 @@ export default function MentorDashboardMentorshipPage() {
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [mentorProfile, setMentorProfile] = useState(null);
-  const [tab, setTab] = useState('requests'); // requests | active | history
+  const [tab, setTab] = useState('requests'); // requests | active | history | schedule
 
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([]);
@@ -48,7 +83,7 @@ export default function MentorDashboardMentorshipPage() {
   const [responseMessage, setResponseMessage] = useState('');
 
   const [sessionFor, setSessionFor] = useState(null);
-  const [sessionForm, setSessionForm] = useState({ date: '', duration: 30, notes: '', topics: '' });
+  const [sessionForm, setSessionForm] = useState({ startAt: '', duration: 30, notes: '', topics: '' });
 
   const [goalsFor, setGoalsFor] = useState(null);
   const [goalsInput, setGoalsInput] = useState('');
@@ -58,11 +93,20 @@ export default function MentorDashboardMentorshipPage() {
   const [feedbackFor, setFeedbackFor] = useState(null);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
 
+  const scheduleSessionCount = useMemo(() => {
+    let n = 0;
+    [...active, ...history].forEach((m) => {
+      n += Array.isArray(m?.sessions) ? m.sessions.length : 0;
+    });
+    return n;
+  }, [active, history]);
+
   const counts = useMemo(() => ({
     requests: requests.length,
     active: active.length,
     history: history.length,
-  }), [requests.length, active.length, history.length]);
+    schedule: scheduleSessionCount,
+  }), [requests.length, active.length, history.length, scheduleSessionCount]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -155,26 +199,61 @@ export default function MentorDashboardMentorshipPage() {
 
   const submitSession = async () => {
     if (!sessionFor?._id) return;
+    const start = new Date(sessionForm.startAt);
+    if (Number.isNaN(start.getTime())) {
+      toast.error('Pick a valid date and time');
+      return;
+    }
+    const dur = Math.max(15, parseInt(String(sessionForm.duration), 10) || 30);
+    const wall = localCalendarAndTime(start);
     try {
       const payload = {
-        date: sessionForm.date,
-        duration: Number(sessionForm.duration),
+        startAt: start.toISOString(),
+        calendarDate: wall.calendarDate,
+        time: wall.time,
+        duration: dur,
         notes: sessionForm.notes || undefined,
         topics: sessionForm.topics
           ? sessionForm.topics.split(',').map((t) => t.trim()).filter(Boolean)
           : undefined,
       };
       await mentorshipApi.logSession(sessionFor._id, payload);
-      toast.success('Session logged');
+
+      let successMsg = 'Session scheduled';
+      const token = readGoogleCalendarAccessTokenFromStorage();
+      if (token) {
+        try {
+          const end = new Date(start.getTime() + dur * 60000);
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const topicLine = sessionForm.topics?.trim()
+            ? `Topics: ${sessionForm.topics}`
+            : '';
+          await insertPrimaryCalendarEvent(token, {
+            summary: `Mentorship — ${sessionFor?.mentee?.name || 'Mentee'}`,
+            description: [topicLine, sessionForm.notes?.trim()].filter(Boolean).join('\n\n'),
+            start,
+            end,
+            timeZone: tz,
+          });
+          successMsg = 'Session scheduled and added to Google Calendar';
+        } catch (calErr) {
+          console.error(calErr);
+          successMsg = 'Session scheduled (Google Calendar sync failed — try reconnecting)';
+        }
+      }
+
+      toast.success(successMsg);
       setSessionFor(null);
-      setSessionForm({ date: '', duration: 30, notes: '', topics: '' });
+      setSessionForm({ startAt: '', duration: 30, notes: '', topics: '' });
       await loadAll();
     } catch (e) {
+      const data = e.response?.data;
+      const errs = data?.errors;
       const msg =
-        e.response?.data?.errors?.[0] ||
-        e.response?.data?.error ||
-        e.response?.data?.message ||
-        'Failed to log session';
+        (Array.isArray(errs) && errs.length ? errs.join(' ') : null) ||
+        data?.error ||
+        data?.message ||
+        'Failed to schedule session';
       toast.error(msg);
     }
   };
@@ -202,13 +281,17 @@ export default function MentorDashboardMentorshipPage() {
     { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
   ];
 
-  const sessionModalMin = sessionFor?.startDate ? localYmd(new Date(sessionFor.startDate)) : '';
-  const sessionModalMax = localYmd(new Date());
+  const SESSION_FUTURE_GRACE_MS = 300_000; // keep in sync with mentorship-service sessionDate FUTURE_GRACE_MS
+  const sessionMinMs = sessionFor ? minSessionStartMs(sessionFor) : 0;
+  const sessionModalMinLocal = sessionFor ? toDatetimeLocalValue(new Date(sessionMinMs)) : '';
+  const sessionStart = sessionForm.startAt ? new Date(sessionForm.startAt) : null;
   const sessionDateInvalid =
     !!sessionFor &&
-    (!sessionForm.date ||
-      (sessionModalMin && sessionForm.date < sessionModalMin) ||
-      (sessionModalMax && sessionForm.date > sessionModalMax));
+    (!sessionForm.startAt ||
+      !sessionStart ||
+      Number.isNaN(sessionStart.getTime()) ||
+      sessionStart.getTime() < Date.now() - SESSION_FUTURE_GRACE_MS ||
+      sessionStart.getTime() < sessionMinMs);
 
   return (
     <div className="min-h-screen">
@@ -332,6 +415,7 @@ export default function MentorDashboardMentorshipPage() {
                   { key: 'requests', label: 'Requests', count: counts.requests },
                   { key: 'active', label: 'Active', count: counts.active },
                   { key: 'history', label: 'History', count: counts.history },
+                  { key: 'schedule', label: 'Schedule', count: counts.schedule },
                 ].map((t) => (
                   <button
                     key={t.key}
@@ -431,7 +515,7 @@ export default function MentorDashboardMentorshipPage() {
                 {tab === 'active' && (
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentees</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">Log sessions, update goals, mark complete, and submit feedback.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">Schedule sessions, update goals, mark complete, and submit feedback.</p>
 
                     {active.length === 0 ? (
                       <p className="text-on-surface-variant">No active mentorships.</p>
@@ -485,7 +569,7 @@ export default function MentorDashboardMentorshipPage() {
                                       {(m.sessions || []).map((s, i) => (
                                         <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
                                           <div className="flex items-center justify-between">
-                                            <span className="font-semibold text-on-surface">{formatDate(s.date)}</span>
+                                            <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
                                             <span className="text-outline">{s.duration} min</span>
                                           </div>
                                           {s.topics?.length > 0 && (
@@ -504,14 +588,18 @@ export default function MentorDashboardMentorshipPage() {
                                   type="button"
                                   onClick={() => {
                                     setSessionFor(m);
-                                    const todayStr = localYmd(new Date());
-                                    const startStr = m?.startDate ? localYmd(new Date(m.startDate)) : todayStr;
-                                    const defaultStr = startStr && startStr <= todayStr ? todayStr : startStr;
-                                    setSessionForm({ date: defaultStr || todayStr, duration: 30, notes: '', topics: '' });
+                                    const minMs = minSessionStartMs(m);
+                                    const defaultStart = new Date(minMs + 15 * 60 * 1000);
+                                    setSessionForm({
+                                      startAt: toDatetimeLocalValue(defaultStart),
+                                      duration: 30,
+                                      notes: '',
+                                      topics: '',
+                                    });
                                   }}
                                   className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
                                 >
-                                  Log session
+                                  Schedule session
                                 </button>
                                 <button
                                   type="button"
@@ -589,6 +677,10 @@ export default function MentorDashboardMentorshipPage() {
                     )}
                   </div>
                 )}
+
+                {tab === 'schedule' && (
+                  <MentorSchedulePanel active={active} history={history} />
+                )}
               </>
             )}
 
@@ -630,37 +722,34 @@ export default function MentorDashboardMentorshipPage() {
                 <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Log Session</h3>
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Schedule session</h3>
                       <p className="text-xs text-outline">Mentee: {sessionFor?.mentee?.name || 'Mentee'}</p>
                     </div>
                     <button type="button" onClick={() => setSessionFor(null)} className="text-outline hover:text-on-surface">
                       <span className="material-symbols-outlined">close</span>
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Date</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">
+                        Start date &amp; time
+                      </label>
                       <input
-                        type="date"
-                        min={sessionModalMin || undefined}
-                        max={sessionModalMax}
-                        value={sessionForm.date}
-                        onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))}
+                        type="datetime-local"
+                        min={sessionModalMinLocal || undefined}
+                        value={sessionForm.startAt}
+                        onChange={(e) => setSessionForm((f) => ({ ...f, startAt: e.target.value }))}
                         className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
                       />
                       {sessionFor?.startDate && (
                         <p className="mt-2 text-[11px] text-outline">
-                          Must be on/after start date: <span className="font-semibold text-on-surface">{formatDate(sessionFor.startDate)}</span>
+                          Mentorship started:{' '}
+                          <span className="font-semibold text-on-surface">{formatDate(sessionFor.startDate)}</span>
                         </p>
                       )}
                       <p className="mt-1 text-[11px] text-outline">
-                        Use <span className="font-semibold text-on-surface">today or a past date</span> only — the API does not allow future session dates.
+                        Choose a <span className="font-semibold text-on-surface">future</span> time. If Google Calendar is connected on the Schedule tab, the event is added there too.
                       </p>
-                      {sessionFor?.startDate && new Date(sessionFor.startDate) > new Date() && (
-                        <p className="mt-1 text-[11px] text-tertiary">
-                          You can’t log sessions yet because this mentorship starts in the future.
-                        </p>
-                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Duration (min)</label>
@@ -704,7 +793,7 @@ export default function MentorDashboardMentorshipPage() {
                       }
                       className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Save session
+                      Schedule session
                     </button>
                   </div>
                 </div>

@@ -25,9 +25,25 @@ exports.getMentorshipById = async (req, res) => {
 
 exports.logMentorshipSession = async (req, res) => {
   try {
-    const { date, duration, notes, topics } = req.body;
-    if (!date || !duration) return res.status(400).json({ message: 'Please provide date and duration for the session' });
-    const mentorship = await mentorshipService.logSession(req.params.id, req.user._id, { date, duration, notes, topics });
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const startAt = body.startAt ?? body.date;
+    const { duration, notes, topics } = body;
+    // validateSession middleware already enforces shape; keep a safe fallback for misconfigured routes
+    if (startAt == null || startAt === '' || duration === undefined || duration === null) {
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: ['Session date is required'],
+      });
+    }
+    const mentorship = await mentorshipService.logSession(req.params.id, req.user._id, {
+      startAt,
+      duration,
+      notes,
+      topics,
+      date: body.date,
+      calendarDate: body.calendarDate,
+      time: body.time,
+    });
     res.status(201).json({ message: 'Session logged successfully', data: mentorship });
   } catch (error) {
     console.error('Error logging session:', error);

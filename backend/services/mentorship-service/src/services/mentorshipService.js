@@ -1,6 +1,23 @@
 const Mentorship = require('../models/Mentorship');
 const MentorProfile = require('../models/MentorProfile');
-const { validateSessionCalendarDate } = require('../utils/sessionDate');
+const { validateSessionStartAt, normalizeSessionStartInput } = require('../utils/sessionDate');
+
+/** Prefer client local YYYY-MM-DD + HH:mm; otherwise derive UTC date/time from the stored instant. */
+function sessionWallParts(sessionInstant, calendarDate, time) {
+  const cd = calendarDate != null ? String(calendarDate).trim() : '';
+  const tm = time != null ? String(time).trim() : '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cd) && /^\d{2}:\d{2}$/.test(tm)) {
+    return { calendarDate: cd, time: tm };
+  }
+  const x = sessionInstant instanceof Date ? sessionInstant : new Date(sessionInstant);
+  if (Number.isNaN(x.getTime())) return { calendarDate: '', time: '' };
+  const y = x.getUTCFullYear();
+  const mo = String(x.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(x.getUTCDate()).padStart(2, '0');
+  const h = String(x.getUTCHours()).padStart(2, '0');
+  const min = String(x.getUTCMinutes()).padStart(2, '0');
+  return { calendarDate: `${y}-${mo}-${day}`, time: `${h}:${min}` };
+}
 
 const getActiveMentorships = async (userId, userRole, queryRole) => {
   let filter = { status: 'active' };
@@ -31,7 +48,7 @@ const getMentorshipById = async (mentorshipId, userId) => {
 };
 
 const logSession = async (mentorshipId, userId, sessionData) => {
-  const { date, duration, notes, topics } = sessionData;
+  const { startAt, duration, notes, topics } = sessionData;
   const mentorship = await Mentorship.findById(mentorshipId);
   if (!mentorship) {
     const err = new Error('Mentorship not found');
@@ -48,15 +65,24 @@ const logSession = async (mentorshipId, userId, sessionData) => {
     err.status = 400;
     throw err;
   }
-  const ymd = typeof date === 'string' ? date.trim().slice(0, 10) : '';
-  const validated = validateSessionCalendarDate(ymd, mentorship.startDate);
+  const startAtStr = normalizeSessionStartInput(sessionData) || '';
+  const mentorshipLowerBound = mentorship.startDate || mentorship.createdAt;
+  const validated = validateSessionStartAt(startAtStr, mentorshipLowerBound);
   if (!validated.ok) {
     const err = new Error(validated.error);
     err.status = 400;
     throw err;
   }
   const sessionDate = validated.sessionDate;
-  mentorship.sessions.push({ date: sessionDate, duration: parseInt(duration), notes: notes || '', topics: topics || [] });
+  const wall = sessionWallParts(sessionDate, sessionData.calendarDate, sessionData.time);
+  mentorship.sessions.push({
+    date: sessionDate,
+    calendarDate: wall.calendarDate,
+    time: wall.time,
+    duration: parseInt(duration, 10),
+    notes: notes || '',
+    topics: topics || [],
+  });
   await mentorship.save();
   await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
   return mentorship;
