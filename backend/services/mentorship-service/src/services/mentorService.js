@@ -22,7 +22,7 @@ const createOrUpdateProfile = async (userId, data) => {
       availability: availability || {}, bio, achievements: achievements || [],
     });
   }
-  await mentorProfile.populate('user', 'name email avatar');
+  await mentorProfile.populate('user', 'name email avatar profilePicture');
   return mentorProfile;
 };
 
@@ -41,7 +41,7 @@ const getAllMentors = async ({ expertise, industry, minExperience, maxExperience
     filter.$expr = { $lt: ['$availability.currentMentees', '$availability.maxMentees'] };
   }
   const skip = (parseInt(page) - 1) * parseInt(limit);
-  const mentors = await MentorProfile.find(filter).populate('user', 'name email avatar').sort(sort).skip(skip).limit(parseInt(limit));
+  const mentors = await MentorProfile.find(filter).populate('user', 'name email avatar profilePicture').sort(sort).skip(skip).limit(parseInt(limit));
   const total = await MentorProfile.countDocuments(filter);
   return {
     data: mentors,
@@ -50,7 +50,7 @@ const getAllMentors = async ({ expertise, industry, minExperience, maxExperience
 };
 
 const getMentorById = async (id) => {
-  const mentorProfile = await MentorProfile.findById(id).populate('user', 'name email avatar bio');
+  const mentorProfile = await MentorProfile.findById(id).populate('user', 'name email avatar profilePicture bio');
   if (!mentorProfile) {
     const err = new Error('Mentor profile not found');
     err.status = 404;
@@ -60,7 +60,7 @@ const getMentorById = async (id) => {
 };
 
 const getMentorByUserId = async (userId) => {
-  const mentorProfile = await MentorProfile.findOne({ user: userId }).populate('user', 'name email avatar bio');
+  const mentorProfile = await MentorProfile.findOne({ user: userId }).populate('user', 'name email avatar profilePicture bio');
   if (!mentorProfile) {
     const err = new Error('Mentor profile not found');
     err.status = 404;
@@ -70,7 +70,7 @@ const getMentorByUserId = async (userId) => {
 };
 
 const getMyProfile = async (userId) => {
-  const mentorProfile = await MentorProfile.findOne({ user: userId }).populate('user', 'name email avatar bio');
+  const mentorProfile = await MentorProfile.findOne({ user: userId }).populate('user', 'name email avatar profilePicture bio');
   if (!mentorProfile) {
     const err = new Error('Mentor profile not found');
     err.status = 404;

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
       default: 'mentee',
     },
     avatar: { type: String, default: '' },
+    /** Mirrors auth-service when both share DB or sync */
+    profilePicture: { type: String, default: '' },
     bio: { type: String, default: '' },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },

@@ -1,63 +1,87 @@
 /**
- * Session "date" from the client is YYYY-MM-DD (local calendar day).
- * Avoid `new Date("YYYY-MM-DD")` (UTC midnight) which breaks timezone checks.
+ * Session scheduling uses a full start instant (ISO 8601 from the client).
  */
 
-function parseLocalDateOnly(iso) {
-  if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso.trim())) return null;
-  const [y, m, d] = iso.trim().split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
-  return dt;
-}
+/** Allow past skew vs client clock + network latency so valid sessions are not rejected as “in the past”. */
+const FUTURE_GRACE_MS = 300_000;
 
-function startOfLocalDay(d) {
-  const x = d instanceof Date ? d : new Date(d);
-  if (isNaN(x.getTime())) return null;
-  return new Date(x.getFullYear(), x.getMonth(), x.getDate());
-}
+/** Returned when `startAt` / `date` is missing or unusable (session POST validation). */
+const MSG_SESSION_DATETIME_REQUIRED = 'Session date is required';
 
-function todayLocal() {
-  const t = new Date();
-  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+function isEmptyish(v) {
+  return v == null || (typeof v === 'string' && !String(v).trim());
 }
 
 /**
- * @returns {{ ok: true, sessionDate: Date } | { ok: false, error: string }}
+ * Merge `startAt`, `date`, and numeric timestamps into one ISO string for validation.
+ * @param {{ startAt?: unknown; date?: unknown }} input
+ * @returns {string} ISO-friendly string or '' if missing
  */
-function validateSessionCalendarDate(isoDate, mentorshipStartDate) {
-  const sessionDay = parseLocalDateOnly(isoDate);
-  if (!sessionDay) {
-    return { ok: false, error: 'Invalid session date (use YYYY-MM-DD)' };
+function normalizeSessionStartInput(input) {
+  if (!input || typeof input !== 'object') return '';
+  let v = input.startAt;
+  if (isEmptyish(v) && input.date != null && String(input.date).trim() !== '') {
+    v = input.date;
   }
-  const start = startOfLocalDay(mentorshipStartDate);
-  if (!start) {
-    return { ok: false, error: 'Invalid mentorship start date' };
+  if (isEmptyish(v)) return '';
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return new Date(v).toISOString();
   }
-  if (sessionDay.getTime() < start.getTime()) {
-    return { ok: false, error: 'Session date cannot be before mentorship start date' };
+  const s = String(v).trim();
+  if (s === 'undefined' || s === 'null') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return `${s}T12:00:00.000Z`;
   }
-  const today = todayLocal();
-  if (sessionDay.getTime() > today.getTime()) {
-    return { ok: false, error: 'Session date cannot be in the future (log past or today’s sessions only)' };
-  }
-  return { ok: true, sessionDate: sessionDay };
+  return s;
 }
 
-/** Middleware: only checks YYYY-MM-DD is valid and not after today (local). */
-function validateSessionDateShape(iso) {
-  const sessionDay = parseLocalDateOnly(iso);
-  if (!sessionDay) {
-    return { ok: false, error: 'Invalid session date' };
+/**
+ * Middleware: parseable ISO datetime, effectively in the future (with grace).
+ * @returns {{ ok: true } | { ok: false, error: string }}
+ */
+function validateSessionStartAtShape(isoString) {
+  if (typeof isoString !== 'string' || !isoString.trim()) {
+    return { ok: false, error: MSG_SESSION_DATETIME_REQUIRED };
   }
-  if (sessionDay.getTime() > todayLocal().getTime()) {
-    return { ok: false, error: 'Session date cannot be in the future' };
+  const d = new Date(isoString.trim());
+  if (Number.isNaN(d.getTime())) {
+    return { ok: false, error: 'Invalid session start time' };
+  }
+  if (d.getTime() < Date.now() - FUTURE_GRACE_MS) {
+    return { ok: false, error: 'Session must be scheduled in the future' };
   }
   return { ok: true };
 }
 
+function utcCalendarDayMs(d) {
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return null;
+  return Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate());
+}
+
+/**
+ * Service: future (with grace) + session not on a calendar day (UTC) before the mentorship started.
+ * @returns {{ ok: true, sessionDate: Date } | { ok: false, error: string }}
+ */
+function validateSessionStartAt(isoString, mentorshipStartDate) {
+  const shape = validateSessionStartAtShape(isoString);
+  if (!shape.ok) return shape;
+
+  const sessionStart = new Date(isoString.trim());
+  const start = mentorshipStartDate ? new Date(mentorshipStartDate) : null;
+  if (start && !Number.isNaN(start.getTime())) {
+    const sessionDay = utcCalendarDayMs(sessionStart);
+    const mentorshipDay = utcCalendarDayMs(start);
+    if (sessionDay != null && mentorshipDay != null && sessionDay < mentorshipDay) {
+      return { ok: false, error: 'Session cannot be before the mentorship start date' };
+    }
+  }
+  return { ok: true, sessionDate: sessionStart };
+}
+
 module.exports = {
-  parseLocalDateOnly,
-  validateSessionCalendarDate,
-  validateSessionDateShape,
+  validateSessionStartAtShape,
+  validateSessionStartAt,
+  normalizeSessionStartInput,
+  MSG_SESSION_DATETIME_REQUIRED,
 };

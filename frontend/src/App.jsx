@@ -131,10 +131,13 @@ export default function App() {
             <Route path="/dashboard/manage-stories" element={
               <ProtectedRoute roles={ADMIN_ONLY}><AdminDashboardStoriesPage /></ProtectedRoute>
             } />
-            <Route path="/dashboard/manage-mentors" element={
+            <Route path="/dashboard/manage-mentors/view-all-active-mentorship" element={
               <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
             } />
-            <Route path="/dashboard/generated-reports" element={
+            <Route path="/dashboard/manage-mentors/view-all-mentorship" element={
+              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/manage-mentors" element={
               <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
             } />
             <Route path="/dashboard/stories" element={
