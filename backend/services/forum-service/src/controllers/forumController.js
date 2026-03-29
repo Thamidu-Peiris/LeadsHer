@@ -86,6 +86,7 @@ exports.createReply = async (req, res) => {
       topicId: req.params.id,
       content: req.body.content,
       authorId: req.user._id,
+      parentReplyId: req.body.parentReplyId || null,
     });
     res.status(201).json(reply);
   } catch (err) {

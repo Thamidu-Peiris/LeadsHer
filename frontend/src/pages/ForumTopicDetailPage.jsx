@@ -144,12 +144,24 @@ function VoteButtons({ upvoteCount, downvoteCount, userVote, onVote, isAuthentic
 
 function ReplyCard({
   reply, user, topicAuthorId, onVote, onReport, onEdit, onDelete,
-  onMarkAccepted, canMarkAccepted,
+  onMarkAccepted, canMarkAccepted, canReply, onReplyToReply,
 }) {
-  const [editing, setEditing]   = useState(false);
-  const [content, setContent]   = useState(reply.content);
-  const [saving, setSaving]     = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing]         = useState(false);
+  const [content, setContent]         = useState(reply.content);
+  const [saving, setSaving]           = useState(false);
+  const [deleting, setDeleting]       = useState(false);
+  const [replyOpen, setReplyOpen]     = useState(false);
+  const [replyText, setReplyText]     = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
+  const handleInlineReply = async () => {
+    if (!replyText.trim()) return;
+    setReplySubmitting(true);
+    await onReplyToReply(reply._id, replyText.trim());
+    setReplySubmitting(false);
+    setReplyText('');
+    setReplyOpen(false);
+  };
 
   const isOwn    = user && (user.id === reply.author?._id || user._id === reply.author?._id);
   const isAdmin  = user?.role === 'admin';
@@ -280,6 +292,51 @@ function ReplyCard({
               size="small"
             />
           </div>
+
+          {/* Inline reply to this reply */}
+          {canReply && (
+            <div className="mt-3">
+              {!replyOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setReplyOpen(true)}
+                  className="text-xs text-outline hover:text-gold-accent transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[14px]">reply</span>
+                  Reply
+                </button>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Write your reply…"
+                    autoFocus
+                    className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleInlineReply}
+                      disabled={replySubmitting || !replyText.trim()}
+                      className="px-3 py-1.5 text-xs font-bold bg-gold-accent hover:bg-gold-accent/90 text-white rounded-lg disabled:opacity-60 transition-colors"
+                    >
+                      {replySubmitting ? 'Posting…' : 'Post Reply'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setReplyOpen(false); setReplyText(''); }}
+                      className="px-3 py-1.5 text-xs text-outline hover:text-on-surface border border-outline-variant/30 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -380,6 +437,20 @@ export default function ForumTopicDetailPage() {
       toast.error(e.response?.data?.message || 'Failed to post reply.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /* Reply to a reply */
+  const handleReplyToReply = async (parentReplyId, content) => {
+    if (!user) { toast.error('Please log in to reply.'); return; }
+    if (topic?.isClosed) { toast.error('This topic is closed for replies.'); return; }
+    try {
+      const res = await forumApi.createReply(id, content, parentReplyId);
+      setReplies((prev) => [...prev, res.data]);
+      setTopic((t) => ({ ...t, replyCount: (t.replyCount || 0) + 1 }));
+      toast.success('Reply posted!');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to post reply.');
     }
   };
 
@@ -644,20 +715,44 @@ export default function ForumTopicDetailPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {replies.map((reply) => (
-                <ReplyCard
-                  key={reply._id}
-                  reply={reply}
-                  user={user}
-                  topicAuthorId={topic.author?._id}
-                  onVote={handleVote}
-                  onReport={(postId, postType) => setReportTarget({ id: postId, type: postType })}
-                  onEdit={handleEditReply}
-                  onDelete={handleDeleteReply}
-                  onMarkAccepted={handleMarkAccepted}
-                  canMarkAccepted={canMarkAccepted && !topic.isClosed}
-                />
-              ))}
+              {(() => {
+                // Build reply tree (group children under their parent)
+                const map = {};
+                replies.forEach((r) => { map[r._id] = { ...r, children: [] }; });
+                const roots = [];
+                replies.forEach((r) => {
+                  const parentId = r.parentReply ? r.parentReply.toString() : null;
+                  if (parentId && map[parentId]) {
+                    map[parentId].children.push(map[r._id]);
+                  } else {
+                    roots.push(map[r._id]);
+                  }
+                });
+                const sharedProps = {
+                  user,
+                  topicAuthorId: topic.author?._id,
+                  onVote: handleVote,
+                  onReport: (postId, postType) => setReportTarget({ id: postId, type: postType }),
+                  onEdit: handleEditReply,
+                  onDelete: handleDeleteReply,
+                  onMarkAccepted: handleMarkAccepted,
+                  canMarkAccepted: canMarkAccepted && !topic.isClosed,
+                  canReply: !!user && !topic.isClosed,
+                  onReplyToReply: handleReplyToReply,
+                };
+                return roots.map((reply) => (
+                  <div key={reply._id}>
+                    <ReplyCard reply={reply} {...sharedProps} />
+                    {reply.children?.length > 0 && (
+                      <div className="ml-8 pl-5 mt-3 space-y-3 border-l-2 border-slate-200 dark:border-outline-variant/20">
+                        {reply.children.map((child) => (
+                          <ReplyCard key={child._id} reply={child} {...sharedProps} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ));
+              })()}
             </div>
           )}
 

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
 import Spinner from '../components/common/Spinner';
-
+// Utility functions
 const fmtDate = (d) => {
   try {
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
