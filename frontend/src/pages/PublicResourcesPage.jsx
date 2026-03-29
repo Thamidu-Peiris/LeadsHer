@@ -49,9 +49,74 @@ const DIFF_BADGE = {
 const fmt     = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0));
 const fmtDate = (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }); } catch { return ''; } };
 
+/* ─── Rate Modal ─────────────────────────────────────────────────────────── */
+
+function RateModal({ resource, onClose, onSave }) {
+  const [rating, setRating]   = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [review, setReview]   = useState('');
+  const [saving, setSaving]   = useState(false);
+
+  const handleSubmit = async () => {
+    if (!rating) { toast.error('Please select a rating'); return; }
+    setSaving(true);
+    try { await onSave(resource._id, { rating, review }); onClose(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to submit rating'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white dark:bg-surface-container rounded-2xl shadow-2xl">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between">
+          <h2 className="font-serif-alt text-lg font-bold text-on-surface">Rate this Resource</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm font-semibold text-on-surface line-clamp-1">{resource.title}</p>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} type="button"
+                onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
+                onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline'}`}>
+                  {star <= (hovered || rating) ? 'star' : 'star_border'}
+                </span>
+              </button>
+            ))}
+            <span className="ml-2 text-sm text-slate-500 dark:text-on-surface-variant font-medium">
+              {rating ? ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating] : 'Select rating'}
+            </span>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5">Review (optional)</label>
+            <textarea
+              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              value={review} onChange={(e) => setReview(e.target.value)}
+              placeholder="Share your thoughts..." maxLength={500}
+            />
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-outline-variant/20 flex justify-end gap-3">
+          <button onClick={onClose}
+            className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-slate-300 transition-colors">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={saving || !rating}
+            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
+            {saving ? 'Submitting…' : 'Submit Rating'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
-function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, onAccess }) {
+function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, onAccess, onRate }) {
   const cfg        = TYPE_CFG[resource.type] || TYPE_CFG.article;
   const diffBadge  = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
   const isBookmarked = bookmarkedIds.has(resource._id);
@@ -137,6 +202,13 @@ function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, on
               )}
             </span>
           </div>
+          <button
+            onClick={() => onRate(resource)}
+            className="text-[11px] text-slate-400 dark:text-outline hover:text-gold-accent transition-colors flex items-center gap-0.5"
+          >
+            <span className="material-symbols-outlined text-[13px]">star_border</span>
+            Rate
+          </button>
         </div>
 
         {/* Access button */}
@@ -172,6 +244,7 @@ export default function PublicResourcesPage() {
 
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const [previewResource, setPreviewResource] = useState(null);
+  const [rateTarget, setRateTarget] = useState(null);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
@@ -237,6 +310,25 @@ export default function PublicResourcesPage() {
     const rawUrl = resource.file?.url || resource.externalLink;
     if (!rawUrl) { toast('No link or file attached to this resource.', { icon: 'ℹ️' }); return; }
     setPreviewResource(resource);
+  };
+
+  const handleRate = (resource) => {
+    if (!isAuthenticated) {
+      toast('Sign in to rate resources', { icon: '🔒' });
+      navigate('/login');
+      return;
+    }
+    setRateTarget(resource);
+  };
+
+  const submitRating = async (id, data) => {
+    const res = await resourceApi.rate(id, data);
+    setResources((prev) =>
+      prev.map((r) =>
+        r._id === id ? { ...r, averageRating: res.data.averageRating, ratingCount: res.data.ratingCount } : r
+      )
+    );
+    toast.success('Rating submitted');
   };
 
   const handleSearch = (e) => {
@@ -404,6 +496,7 @@ export default function PublicResourcesPage() {
                 bookmarkedIds={bookmarkedIds}
                 onBookmark={handleBookmark}
                 onAccess={handleAccess}
+                onRate={handleRate}
               />
             ))}
           </div>
@@ -435,6 +528,10 @@ export default function PublicResourcesPage() {
 
       {previewResource && (
         <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
+      )}
+
+      {rateTarget && (
+        <RateModal resource={rateTarget} onClose={() => setRateTarget(null)} onSave={submitRating} />
       )}
 
       {/* Guest CTA banner */}
