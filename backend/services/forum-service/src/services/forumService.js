@@ -190,7 +190,7 @@ const deleteTopic = async (topicId, userId, userRole) => {
   return { message: 'Topic deleted successfully.' };
 };
 
-const createReply = async ({ topicId, content, authorId }) => {
+const createReply = async ({ topicId, content, authorId, parentReplyId }) => {
   const topic = await ForumTopic.findById(topicId);
   if (!topic) {
     const err = new Error('Topic not found.');
@@ -203,10 +203,20 @@ const createReply = async ({ topicId, content, authorId }) => {
     throw err;
   }
 
+  if (parentReplyId) {
+    const parentReply = await ForumReply.findById(parentReplyId);
+    if (!parentReply || parentReply.topic.toString() !== topicId.toString()) {
+      const err = new Error('Parent reply not found in this topic.');
+      err.status = 404;
+      throw err;
+    }
+  }
+
   const reply = await ForumReply.create({
     topic: topicId,
     content,
     author: authorId,
+    ...(parentReplyId && { parentReply: parentReplyId }),
   });
 
   topic.replyCount += 1;

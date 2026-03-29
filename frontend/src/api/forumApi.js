@@ -14,7 +14,8 @@ export const forumApi = {
   closeTopic: (id) => api.put(`/forum/topics/${id}/close`),
 
   // Replies
-  createReply: (topicId, content) => api.post(`/forum/topics/${topicId}/replies`, { content }),
+  createReply: (topicId, content, parentReplyId) =>
+    api.post(`/forum/topics/${topicId}/replies`, { content, ...(parentReplyId && { parentReplyId }) }),
   updateReply: (id, content) => api.put(`/forum/replies/${id}`, { content }),
   deleteReply: (id) => api.delete(`/forum/replies/${id}`),
   markAcceptedAnswer: (replyId) => api.put(`/forum/replies/${replyId}/accept`),
