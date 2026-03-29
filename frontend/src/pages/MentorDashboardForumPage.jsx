@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
@@ -35,6 +35,7 @@ const SIDEBAR_NAV = [
 
 export default function MentorDashboardForumPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
 
   const [topics, setTopics]       = useState([]);
@@ -43,6 +44,7 @@ export default function MentorDashboardForumPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal]         = useState(0);
   const [togglingId, setTogglingId] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const avatarSrc =
     user?.profilePicture || user?.avatar ||
@@ -159,6 +161,50 @@ export default function MentorDashboardForumPage() {
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 New Discussion
               </Link>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                  aria-haspopup="menu"
+                  aria-expanded={profileOpen ? 'true' : 'false'}
+                >
+                  <img
+                    alt="Avatar"
+                    className="w-full h-full object-cover rounded-full"
+                    src={avatarSrc}
+                  />
+                </button>
+                {profileOpen && (
+                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
+                    <div className="px-5 py-4 border-b border-outline-variant/15">
+                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
+                        {user?.name || 'Mentor'}
+                      </p>
+                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await logout();
+                          toast.success('You have signed out.');
+                        } finally {
+                          setProfileOpen(false);
+                          navigate('/');
+                        }
+                      }}
+                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
