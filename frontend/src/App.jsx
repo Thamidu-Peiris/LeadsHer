@@ -7,15 +7,15 @@ import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
-import HomePage         from './pages/HomePage';
-import LoginPage        from './pages/LoginPage';
-import RegisterPage     from './pages/RegisterPage';
-import StoriesPage      from './pages/StoriesPage';
-import StoryDetailPage  from './pages/StoryDetailPage';
-import EventsPage       from './pages/EventsPage';
-import EventDetailPage  from './pages/EventDetailPage';
-import CreateEventPage  from './pages/CreateEventPage';
-import DashboardPage    from './pages/DashboardPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import StoriesPage from './pages/StoriesPage';
+import StoryDetailPage from './pages/StoryDetailPage';
+import EventsPage from './pages/EventsPage';
+import EventDetailPage from './pages/EventDetailPage';
+import CreateEventPage from './pages/CreateEventPage';
+import DashboardPage from './pages/DashboardPage';
 import MentorDashboardStoriesPage from './pages/MentorDashboardStoriesPage';
 import MenteeDashboardStoriesPage from './pages/MenteeDashboardStoriesPage';
 import MentorDashboardCreateStoryPage from './pages/MentorDashboardCreateStoryPage';
@@ -24,30 +24,33 @@ import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MenteeProfilePage from './pages/MenteeProfilePage';
 import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import MentorsPage      from './pages/MentorsPage';
+import MentorsPage from './pages/MentorsPage';
 import MentorProfilePage from './pages/MentorProfilePage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
 import MenteeDashboardResourcesPage from './pages/MenteeDashboardResourcesPage';
 import AdminDashboardResourcesPage from './pages/AdminDashboardResourcesPage';
 import AdminDashboardStoriesPage from './pages/AdminDashboardStoriesPage';
 import PublicResourcesPage from './pages/PublicResourcesPage';
-import NotFoundPage     from './pages/NotFoundPage';
-import ForumPage        from './pages/ForumPage';
+import MenteeDashboardEventsPage from './pages/MenteeDashboardEventsPage';
+import MentorDashboardEventsPage from './pages/MentorDashboardEventsPage';
+import AdminDashboardEventsPage from './pages/AdminDashboardEventsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import ForumPage from './pages/ForumPage';
 import ForumTopicDetailPage from './pages/ForumTopicDetailPage';
 import ForumCreateTopicPage from './pages/ForumCreateTopicPage';
-import MenteeDashboardForumPage  from './pages/MenteeDashboardForumPage';
-import MentorDashboardForumPage  from './pages/MentorDashboardForumPage';
-import AdminDashboardForumPage   from './pages/AdminDashboardForumPage';
+import MenteeDashboardForumPage from './pages/MenteeDashboardForumPage';
+import MentorDashboardForumPage from './pages/MentorDashboardForumPage';
+import AdminDashboardForumPage from './pages/AdminDashboardForumPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
-const ANY_USER     = ['mentee', 'mentor', 'admin'];
-const MENTEE_ONLY  = ['mentee'];
-const ADMIN_ONLY   = ['admin'];
+const ANY_USER = ['mentee', 'mentor', 'admin'];
+const MENTEE_ONLY = ['mentee'];
+const ADMIN_ONLY = ['admin'];
 
 /* Role-based dashboard forum page */
 function DashboardForumRoute() {
   const { user } = useAuth();
-  if (user?.role === 'admin')  return <AdminDashboardForumPage />;
+  if (user?.role === 'admin') return <AdminDashboardForumPage />;
   if (user?.role === 'mentor') return <MentorDashboardForumPage />;
   return <MenteeDashboardForumPage />;
 }
@@ -64,6 +67,14 @@ function DashboardStoriesRoute() {
   const { user } = useAuth();
   if (user?.role === 'mentee') return <MenteeDashboardStoriesPage />;
   return <MentorDashboardStoriesPage />;
+}
+
+/* Role-based events page */
+function DashboardEventsRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'admin') return <AdminDashboardEventsPage />;
+  if (user?.role === 'mentor') return <MentorDashboardEventsPage />;
+  return <MenteeDashboardEventsPage />;
 }
 
 
@@ -99,101 +110,104 @@ function AuthLayout() {
 export default function App() {
   return (
     <ThemeProvider>
-    <BrowserRouter>
-      <AuthProvider>
-        <Toaster
-          position="top-center"
-          containerStyle={{ pointerEvents: 'none' }}
-          toastOptions={{
-            duration: 2500,
-            style: { pointerEvents: 'auto' },
-          }}
-        />
-        <Routes>
+      <BrowserRouter>
+        <AuthProvider>
+          <Toaster
+            position="top-center"
+            containerStyle={{ pointerEvents: 'none' }}
+            toastOptions={{
+              duration: 2500,
+              style: { pointerEvents: 'auto' },
+            }}
+          />
+          <Routes>
 
-          {/* All pages — with Navbar + Footer */}
-          <Route element={<MainLayout />}>
-            <Route path="/login"    element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/"            element={<HomePage />} />
-            <Route path="/stories"     element={<StoriesPage />} />
-            <Route path="/stories/:id" element={<StoryDetailPage />} />
-            <Route path="/events"      element={<EventsPage />} />
-            <Route path="/events/:id"  element={<EventDetailPage />} />
-            <Route path="/mentors"     element={<MentorsPage />} />
-            <Route path="/mentors/:id" element={<MentorProfilePage />} />
+            {/* All pages — with Navbar + Footer */}
+            <Route element={<MainLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/stories" element={<StoriesPage />} />
+              <Route path="/stories/:id" element={<StoryDetailPage />} />
+              <Route path="/events" element={<EventsPage />} />
+              <Route path="/events/:id" element={<EventDetailPage />} />
+              <Route path="/mentors" element={<MentorsPage />} />
+              <Route path="/mentors/:id" element={<MentorProfilePage />} />
 
-            <Route path="/dashboard" element={
-              <ProtectedRoute roles={ANY_USER}><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/manage-account" element={
-              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/manage-stories" element={
-              <ProtectedRoute roles={ADMIN_ONLY}><AdminDashboardStoriesPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/manage-mentors/view-all-active-mentorship" element={
-              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/manage-mentors/view-all-mentorship" element={
-              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/manage-mentors" element={
-              <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/stories" element={
-              <ProtectedRoute roles={ANY_USER}><DashboardStoriesRoute /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/stories/new" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/stories/:id/edit" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/mentorship" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/settings" element={
-              <ProtectedRoute roles={ANY_USER}><DashboardSettingsRouter /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/mentors" element={
-              <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
-            } />
-            <Route path="/forum"      element={<ForumPage />} />
-            <Route path="/forum/new"  element={
-              <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
-            } />
-            <Route path="/forum/:id"  element={<ForumTopicDetailPage />} />
-            <Route path="/forum/:id/edit" element={
-              <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/forum" element={
-              <ProtectedRoute roles={ANY_USER}><DashboardForumRoute /></ProtectedRoute>
-            } />
-            <Route path="/resources" element={<PublicResourcesPage />} />
-            <Route path="/dashboard/resources" element={
-              <ProtectedRoute roles={ANY_USER}><ResourcesRoute /></ProtectedRoute>
-            } />
-            <Route path="/dashboard/profile" element={
-              <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
-            } />
-            <Route path="/stories/:id/edit" element={
-              <ProtectedRoute roles={ANY_USER}><MentorDashboardCreateStoryPage /></ProtectedRoute>
-            } />
-            <Route path="/events/new" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>
-            } />
-            <Route path="/events/:id/edit" element={
-              <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>
-            } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute roles={ANY_USER}><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/manage-account" element={
+                <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/manage-stories" element={
+                <ProtectedRoute roles={ADMIN_ONLY}><AdminDashboardStoriesPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/manage-mentors/view-all-active-mentorship" element={
+                <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/manage-mentors/view-all-mentorship" element={
+                <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/manage-mentors" element={
+                <ProtectedRoute roles={ADMIN_ONLY}><DashboardPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/stories" element={
+                <ProtectedRoute roles={ANY_USER}><DashboardStoriesRoute /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/stories/new" element={
+                <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/stories/:id/edit" element={
+                <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardCreateStoryPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/mentorship" element={
+                <ProtectedRoute roles={MENTOR_ADMIN}><MentorDashboardMentorshipPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/settings" element={
+                <ProtectedRoute roles={ANY_USER}><DashboardSettingsRouter /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/mentors" element={
+                <ProtectedRoute roles={MENTEE_ONLY}><MenteeDashboardMentorsPage /></ProtectedRoute>
+              } />
+              <Route path="/forum" element={<ForumPage />} />
+              <Route path="/forum/new" element={
+                <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
+              } />
+              <Route path="/forum/:id" element={<ForumTopicDetailPage />} />
+              <Route path="/forum/:id/edit" element={
+                <ProtectedRoute roles={ANY_USER}><ForumCreateTopicPage /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/forum" element={
+                <ProtectedRoute roles={ANY_USER}><DashboardForumRoute /></ProtectedRoute>
+              } />
+              <Route path="/resources" element={<PublicResourcesPage />} />
+              <Route path="/dashboard/resources" element={
+                <ProtectedRoute roles={ANY_USER}><ResourcesRoute /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/events" element={
+                <ProtectedRoute roles={ANY_USER}><DashboardEventsRoute /></ProtectedRoute>
+              } />
+              <Route path="/dashboard/profile" element={
+                <ProtectedRoute roles={MENTEE_ONLY}><MenteeProfilePage /></ProtectedRoute>
+              } />
+              <Route path="/stories/:id/edit" element={
+                <ProtectedRoute roles={ANY_USER}><MentorDashboardCreateStoryPage /></ProtectedRoute>
+              } />
+              <Route path="/events/new" element={
+                <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>
+              } />
+              <Route path="/events/:id/edit" element={
+                <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>
+              } />
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
 
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }

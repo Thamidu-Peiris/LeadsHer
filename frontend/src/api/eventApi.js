@@ -10,4 +10,6 @@ export const eventApi = {
   register: (id) => api.post(`/events/${id}/register`),
   unregister: (id) => api.delete(`/events/${id}/unregister`),
   getAttendees: (id) => api.get(`/events/${id}/attendees`),
+  submitFeedback: (id, data) => api.post(`/events/${id}/feedback`, data),
+  issueCertificate: (id, userId) => api.patch(`/events/${id}/attendees/${userId}/certificate`),
 };

@@ -149,3 +149,56 @@ exports.getAttendees = catchAsync(async (req, res, next) => {
         }
     });
 });
+
+exports.submitFeedback = catchAsync(async (req, res, next) => {
+    const { rating, comment } = req.body;
+
+    const registration = await EventRegistration.findOne({
+        event: req.params.id,
+        user: req.user.id
+    });
+
+    if (!registration) {
+        return next(new APIError('You must be registered to submit feedback', 400));
+    }
+
+    if (!rating) {
+        return next(new APIError('Rating is required', 400));
+    }
+
+    registration.feedback = { rating, comment };
+    await registration.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            feedback: registration.feedback
+        }
+    });
+});
+
+exports.issueCertificate = catchAsync(async (req, res, next) => {
+    const registration = await EventRegistration.findOne({
+        event: req.params.id,
+        user: req.params.userId
+    });
+
+    if (!registration) {
+        return next(new APIError('Registration not found', 404));
+    }
+
+    registration.status = 'attended';
+    registration.certificateIssued = true;
+    if (!registration.attendedAt) {
+        registration.attendedAt = new Date();
+    }
+
+    await registration.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            registration
+        }
+    });
+});

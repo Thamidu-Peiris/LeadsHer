@@ -22,7 +22,7 @@ router.post('/:id/register', protect, registrationController.registerEvent);
 router.delete('/:id/unregister', protect, registrationController.unregisterEvent);
 router.get('/:id/attendees', protect, registrationController.getAttendees); // Host/Admin only check in controller
 
-// Feedback could be added here or in a separate controller
-// router.post('/:id/feedback', protect, registrationController.submitFeedback);
+router.post('/:id/feedback', protect, registrationController.submitFeedback);
+router.patch('/:id/attendees/:userId/certificate', protect, restrictTo('admin'), registrationController.issueCertificate);
 
 module.exports = router;
