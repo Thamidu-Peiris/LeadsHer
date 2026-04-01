@@ -34,6 +34,10 @@ const eventRegistrationSchema = new mongoose.Schema(
                 type: String,
                 maxlength: 500
             }
+        },
+        certificateIssued: {
+            type: Boolean,
+            default: false
         }
     },
     {
