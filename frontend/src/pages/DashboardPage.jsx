@@ -514,7 +514,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                           className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
                         >
                           <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location || 'Online'}</p>
+                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
                         </Link>
                       ))}
                     </div>
@@ -939,7 +939,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                           className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
                         >
                           <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location || 'Online'}</p>
+                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
                         </Link>
                       ))}
                     </div>
