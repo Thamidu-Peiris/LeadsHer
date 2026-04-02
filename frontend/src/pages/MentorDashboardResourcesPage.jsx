@@ -367,6 +367,12 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
   const [recBooks, setRecBooks]         = useState([]);
   const [recLoading, setRecLoading]     = useState(false);
 
+  /* YouTube state */
+  const [ytQuery, setYtQuery]               = useState('');
+  const [ytResults, setYtResults]           = useState([]);
+  const [ytSearching, setYtSearching]       = useState(false);
+  const [selectedYtVideo, setSelectedYtVideo] = useState(null);
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleFileUpload = async (e) => {
@@ -448,6 +454,28 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
     toast.success('Book details applied to the form');
   };
 
+  const handleYouTubeSearch = async () => {
+    if (!ytQuery.trim()) return;
+    setYtSearching(true);
+    try {
+      const res = await resourceApi.searchYouTube({ q: ytQuery.trim(), maxResults: 9 });
+      setYtResults(res.data?.videos || []);
+      if ((res.data?.videos || []).length === 0) toast('No videos found. Try a different search.', { icon: 'ℹ️' });
+    } catch {
+      toast.error('YouTube search failed');
+    } finally {
+      setYtSearching(false);
+    }
+  };
+
+  const handleSelectYtVideo = (video) => {
+    setSelectedYtVideo(video);
+    set('externalLink', video.watchUrl);
+    if (!form.title.trim()) set('title', video.title);
+    if (!form.thumbnail) set('thumbnail', video.thumbnail);
+    toast.success('Video selected');
+  };
+
   const handleSubmit = async () => {
     setError('');
     const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean);
@@ -462,7 +490,7 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
       category: form.category,
       tags,
       difficulty: form.difficulty,
-      externalLink: form.fileMode === 'link' ? form.externalLink.trim() : '',
+      externalLink: (form.fileMode === 'link' || form.fileMode === 'youtube') ? form.externalLink.trim() : '',
       author: form.author.trim(),
       isPremium: isMentor ? form.isPremium : false,
       thumbnail: form.thumbnail || '',
@@ -508,7 +536,18 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
             </div>
             <div>
               <label className={lbl}>Type *</label>
-              <select className={inp} value={form.type} onChange={(e) => set('type', e.target.value)}>
+              <select className={inp} value={form.type} onChange={(e) => {
+                const newType = e.target.value;
+                set('type', newType);
+                if (newType === 'video') {
+                  set('fileMode', 'youtube');
+                } else if (form.fileMode === 'youtube') {
+                  set('fileMode', 'link');
+                  setYtResults([]);
+                  setSelectedYtVideo(null);
+                  setYtQuery('');
+                }
+              }}>
                 {TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
               </select>
             </div>
@@ -624,6 +663,110 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
               </div>
             )}
 
+            {/* ── YouTube Search Panel (Video type only) ── */}
+            {form.type === 'video' && (
+              <div className="sm:col-span-2 border border-red-200 dark:border-red-800/40 rounded-xl overflow-hidden">
+                <div className="bg-red-50 dark:bg-red-900/20 px-4 py-3 flex items-center gap-2 border-b border-red-200 dark:border-red-800/40">
+                  <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-[18px]">smart_display</span>
+                  <span className="text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest">YouTube Search</span>
+                  <span className="ml-auto text-[10px] text-red-400 dark:text-red-500">Search and select a video to embed</span>
+                </div>
+                <div className="p-4">
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      className={`${inp} flex-1`}
+                      value={ytQuery}
+                      onChange={(e) => setYtQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleYouTubeSearch()}
+                      placeholder="Search: time management, leadership, women in tech…"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleYouTubeSearch}
+                      disabled={ytSearching || !ytQuery.trim()}
+                      className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      {ytSearching ? (
+                        <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-[16px]">search</span>
+                      )}
+                      Search
+                    </button>
+                  </div>
+
+                  {/* Selected video preview */}
+                  {selectedYtVideo && (
+                    <div className="mb-3 rounded-xl overflow-hidden border border-red-200 dark:border-red-800/40">
+                      <div className="aspect-video w-full bg-black">
+                        <iframe
+                          src={selectedYtVideo.embedUrl}
+                          title={selectedYtVideo.title}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold text-on-surface line-clamp-1">{selectedYtVideo.title}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-on-surface-variant">{selectedYtVideo.channelTitle}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedYtVideo(null); set('externalLink', ''); }}
+                          className="text-[10px] text-red-500 hover:text-red-700 font-medium flex-shrink-0 flex items-center gap-0.5"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">close</span>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search results grid */}
+                  {ytResults.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {ytResults.map((video) => (
+                        <button
+                          key={video.id}
+                          type="button"
+                          onClick={() => handleSelectYtVideo(video)}
+                          className={`text-left rounded-lg overflow-hidden border transition-all hover:border-red-400 ${
+                            selectedYtVideo?.id === video.id
+                              ? 'border-red-500 ring-2 ring-red-400/40'
+                              : 'border-slate-200 dark:border-outline-variant/40'
+                          }`}
+                        >
+                          <div className="relative aspect-video bg-slate-100 dark:bg-surface-container-low">
+                            <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                              <span className="material-symbols-outlined text-white text-[28px]">play_circle</span>
+                            </div>
+                            {selectedYtVideo?.id === video.id && (
+                              <div className="absolute top-1 right-1 bg-red-500 rounded-full p-0.5">
+                                <span className="material-symbols-outlined text-white text-[12px]">check</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-1.5">
+                            <p className="text-[10px] font-semibold text-on-surface line-clamp-2 leading-tight">{video.title}</p>
+                            <p className="text-[9px] text-slate-400 dark:text-on-surface-variant mt-0.5 line-clamp-1">{video.channelTitle}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {ytResults.length === 0 && !ytSearching && (
+                    <p className="text-xs text-slate-400 dark:text-outline text-center py-3">
+                      Search for YouTube videos to embed them as resources.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className={lbl}>Difficulty</label>
               <select className={inp} value={form.difficulty} onChange={(e) => set('difficulty', e.target.value)}>
@@ -690,23 +833,42 @@ function ResourceFormModal({ mode, initial, isMentor, onClose, onSave }) {
             <div className="sm:col-span-2">
               <label className={lbl}>Content Source</label>
               <div className="flex gap-2 mb-3">
-                {['link', 'file'].map((m) => (
+                {(form.type === 'video'
+                  ? ['youtube', 'link', 'file']
+                  : ['link', 'file']
+                ).map((m) => (
                   <button key={m} type="button" onClick={() => set('fileMode', m)}
                     className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${form.fileMode === m ? 'bg-gold-accent text-white border-gold-accent' : 'border-slate-200 text-slate-500 hover:border-gold-accent/40'}`}>
-                    {m === 'link' ? 'External Link' : 'Upload File'}
+                    {m === 'youtube' ? 'YouTube Search' : m === 'link' ? 'External Link' : 'Upload File'}
                   </button>
                 ))}
               </div>
-              {form.fileMode === 'link' ? (
+              {form.fileMode === 'youtube' ? (
+                <div className="text-xs text-slate-400 dark:text-on-surface-variant text-center py-2 border border-dashed border-slate-200 dark:border-outline-variant/40 rounded-xl">
+                  {selectedYtVideo
+                    ? <span className="text-emerald-600 font-medium flex items-center justify-center gap-1.5"><span className="material-symbols-outlined text-[14px]">check_circle</span>Video selected from YouTube panel above</span>
+                    : 'Use the YouTube Search panel above to find and select a video.'}
+                </div>
+              ) : form.fileMode === 'link' ? (
                 <input className={inp} value={form.externalLink} onChange={(e) => set('externalLink', e.target.value)} placeholder="https://..." type="url" />
               ) : (
                 <div className="border-2 border-dashed border-slate-200 dark:border-outline-variant/40 rounded-xl p-6 text-center hover:border-gold-accent/40 transition-colors">
                   {uploading ? (
                     <div className="flex justify-center"><Spinner /></div>
                   ) : uploadedFile ? (
-                    <div className="text-sm text-emerald-600 flex items-center justify-center gap-2 font-medium">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      File uploaded successfully
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-sm text-emerald-600 flex items-center justify-center gap-2 font-medium">
+                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        File uploaded successfully
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setUploadedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                        className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                        Remove file
+                      </button>
                     </div>
                   ) : (
                     <>
