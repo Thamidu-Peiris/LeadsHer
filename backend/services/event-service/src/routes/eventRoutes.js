@@ -5,24 +5,44 @@ const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Routes for Events
-router.route('/')
-    .get(eventController.getAllEvents)
-    .post(protect, restrictTo('admin', 'mentor'), eventController.createEvent);
+/* ── Public ──────────────────────────────────────────────────────────────── */
 
-router.get('/my-events', protect, eventController.getMyEvents); // Get events user is registered for
+router.get('/', eventController.getAllEvents);
+
+/* ── Protected — must be before /:id to avoid conflict ─────────────────── */
+
+router.get('/my-events',   protect, eventController.getMyEvents);
+router.get('/my-created',  protect, restrictTo('admin', 'mentor'), eventController.getMyCreatedEvents);
+
+/* ── Single event CRUD ──────────────────────────────────────────────────── */
 
 router.route('/:id')
     .get(eventController.getEvent)
-    .patch(protect, restrictTo('admin', 'mentor'), eventController.updateEvent) // Logic inside controller checks ownership
-    .delete(protect, restrictTo('admin', 'mentor'), eventController.deleteEvent); // Logic inside controller checks ownership
+    .patch(protect, restrictTo('admin', 'mentor'), eventController.updateEvent)
+    .delete(protect, restrictTo('admin', 'mentor'), eventController.deleteEvent);
 
-// Routes for Registration
-router.post('/:id/register', protect, registrationController.registerEvent);
+/* ── Registration ───────────────────────────────────────────────────────── */
+
+router.post('/:id/register',   protect, registrationController.registerEvent);
 router.delete('/:id/unregister', protect, registrationController.unregisterEvent);
-router.get('/:id/attendees', protect, registrationController.getAttendees); // Host/Admin only check in controller
+router.get('/:id/attendees',   protect, registrationController.getAttendees);
 
-// Feedback could be added here or in a separate controller
-// router.post('/:id/feedback', protect, registrationController.submitFeedback);
+/* ── Feedback (any registered attendee) ─────────────────────────────────── */
+
+router.post('/:id/feedback', protect, registrationController.submitFeedback);
+
+/* ── Admin + event-owner actions ────────────────────────────────────────── */
+
+router.patch('/:id/cancel',      protect, restrictTo('admin', 'mentor'), eventController.cancelEvent);
+
+/* ── Admin-only actions ─────────────────────────────────────────────────── */
+
+router.patch('/:id/reschedule',  protect, restrictTo('admin'), eventController.rescheduleEvent);
+router.post('/:id/certificates', protect, restrictTo('admin'), eventController.issueCertificates);
+router.get('/:id/certificates',  protect, eventController.getEventCertificates);
+
+/* ── Create (mentor / admin) ────────────────────────────────────────────── */
+
+router.post('/', protect, restrictTo('admin', 'mentor'), eventController.createEvent);
 
 module.exports = router;

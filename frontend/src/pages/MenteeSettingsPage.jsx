@@ -136,7 +136,7 @@ export default function MenteeSettingsPage() {
             {[
               { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
               { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
-              { to: '/events', icon: 'event', label: 'Events' },
+              { to: '/dashboard/events', icon: 'event', label: 'Events' },
 
               { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
               { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
