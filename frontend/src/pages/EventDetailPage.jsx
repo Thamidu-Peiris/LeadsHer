@@ -115,6 +115,17 @@ export default function EventDetailPage() {
   const spotsLeft  = Math.max(0, (event.capacity || 0) - registered_);
   const isFull     = spotsLeft === 0;
   const fillPct    = Math.min((registered_ / (event.capacity || 1)) * 100, 100);
+
+  // Determine whether the event start time has already passed
+  const isStarted = (() => {
+    if (!event.date || !event.startTime) return false;
+    try {
+      const start = new Date(event.date);
+      const [h, m] = event.startTime.split(':').map(Number);
+      start.setUTCHours(h, m, 0, 0);
+      return new Date() >= start;
+    } catch { return false; }
+  })();
   const dateStr    = new Date(event.date).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
@@ -257,7 +268,13 @@ export default function EventDetailPage() {
         <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-md p-5">
           <div className="flex flex-wrap gap-3">
             {event.status === 'upcoming' && (
-              registered ? (
+              isStarted ? (
+                /* Event start time has passed — registration closed */
+                <div className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/30 text-slate-500 dark:text-on-surface-variant rounded-xl">
+                  <span className="material-symbols-outlined text-[16px] text-red-400">lock_clock</span>
+                  Registration closed — this event has already started
+                </div>
+              ) : registered ? (
                 <button
                   onClick={handleUnregister}
                   disabled={registering}

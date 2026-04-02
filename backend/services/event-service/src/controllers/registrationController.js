@@ -23,6 +23,20 @@ exports.registerEvent = catchAsync(async (req, res, next) => {
         return next(new APIError('Cannot register for past or cancelled events', 400));
     }
 
+    // Block registration once the event start time has passed
+    if (event.date && event.startTime) {
+        try {
+            const eventStart = new Date(event.date);
+            const [hours, minutes] = event.startTime.split(':').map(Number);
+            eventStart.setUTCHours(hours, minutes, 0, 0);
+            if (new Date() >= eventStart) {
+                return next(new APIError('Registration is closed — this event has already started', 400));
+            }
+        } catch {
+            // ignore date parse issues — let the request proceed
+        }
+    }
+
     const existing = await EventRegistration.findOne({ event: event._id, user: req.user.id });
     if (existing) return next(new APIError('You are already registered for this event', 400));
 
