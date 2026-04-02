@@ -8,6 +8,8 @@ import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
+const RESOURCES_HERO_IMAGE = '/images/resources-hero.jpg';
+
 const TYPES = ['article', 'ebook', 'video', 'podcast', 'tool', 'guide'];
 
 const CATEGORIES = [
@@ -357,25 +359,51 @@ export default function PublicResourcesPage() {
     <div className="min-h-screen bg-[#f8f6f6] dark:bg-[#100f16] pt-[72px]">
 
       {/* Hero */}
-      <div className="text-center px-6 pt-16 pb-10">
-        <h1 className="font-serif-alt text-5xl md:text-7xl font-bold text-on-surface mb-4">
-          Leadership Resource Library
-        </h1>
-        <p className="text-lg text-slate-500 dark:text-on-surface-variant max-w-xl mx-auto mb-8">
-          Curated guides, ebooks, videos, and tools designed to accelerate your growth as a visionary leader.
-        </p>
-        {/* Hero search */}
-        <form onSubmit={handleSearch} className="max-w-[600px] mx-auto">
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gold-accent text-[22px]">search</span>
-            <input
-              className="w-full h-14 pl-12 pr-4 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-xl text-base placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/50 focus:border-gold-accent/50 transition-all shadow-sm"
-              placeholder="Search for articles, workshops, or mentors..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-2">
+        <section
+          className="relative mb-6 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-none"
+          aria-labelledby="resources-hero-heading"
+        >
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+            <div
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] opacity-90 sm:bg-[82%_25%] dark:opacity-35"
+              style={{ backgroundImage: `url(${RESOURCES_HERO_IMAGE})` }}
             />
           </div>
-        </form>
+          <div
+            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white/92 to-amber-50/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/92 dark:to-amber-950/40"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-white via-white/88 to-transparent sm:via-white/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/85 dark:to-transparent"
+            aria-hidden
+          />
+          <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
+            <header className="mb-6 max-w-3xl text-left">
+              <h1
+                id="resources-hero-heading"
+                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface"
+              >
+                Leadership Resource Library
+              </h1>
+              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant">
+                Curated guides, ebooks, videos, and tools designed to accelerate your growth as a visionary leader.
+              </p>
+            </header>
+            {/* Hero search */}
+            <form onSubmit={handleSearch} className="max-w-[600px]">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gold-accent text-[22px]">search</span>
+                <input
+                  className="w-full h-14 pl-12 pr-4 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-xl text-base placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/50 focus:border-gold-accent/50 transition-all shadow-sm"
+                  placeholder="Search for articles, workshops, or mentors..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
 
       {/* Type pills */}

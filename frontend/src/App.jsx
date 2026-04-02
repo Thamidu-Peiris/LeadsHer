@@ -38,6 +38,7 @@ import ForumCreateTopicPage from './pages/ForumCreateTopicPage';
 import MenteeDashboardForumPage  from './pages/MenteeDashboardForumPage';
 import MentorDashboardForumPage  from './pages/MentorDashboardForumPage';
 import AdminDashboardForumPage   from './pages/AdminDashboardForumPage';
+import DashboardEventsPage       from './pages/DashboardEventsPage';
 
 const MENTOR_ADMIN = ['mentor', 'admin'];
 const ANY_USER     = ['mentee', 'mentor', 'admin'];
@@ -186,6 +187,9 @@ export default function App() {
             } />
             <Route path="/events/:id/edit" element={
               <ProtectedRoute roles={MENTOR_ADMIN}><CreateEventPage /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/events" element={
+              <ProtectedRoute roles={ANY_USER}><DashboardEventsPage /></ProtectedRoute>
             } />
 
             <Route path="*" element={<NotFoundPage />} />
