@@ -1,11 +1,11 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5006;

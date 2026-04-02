@@ -37,7 +37,7 @@ const ADMIN_NAV = [
   { to: '/dashboard',                   icon: 'space_dashboard',  label: 'Admin Dashboard'    },
   { to: '/dashboard/manage-account',    icon: 'manage_accounts',  label: 'Manage Accounts'    },
   { to: '/stories',                     icon: 'auto_stories',     label: 'Manage Stories'     },
-  { to: '/events',                      icon: 'event',            label: 'Manage Events'      },
+  { to: '/dashboard/events',                      icon: 'event',            label: 'Manage Events'      },
   { to: '/dashboard/manage-mentors',    icon: 'groups',           label: 'Manage Mentors'     },
   { to: '/dashboard/resources',         icon: 'library_books',    label: 'Manage Resources'   },
   { to: '/dashboard/forum',             icon: 'forum',            label: 'Manage Forum'       },

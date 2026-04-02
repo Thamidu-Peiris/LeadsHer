@@ -1,11 +1,7 @@
 const Event = require('../models/Event');
 const EventRegistration = require('../models/EventRegistration');
 
-const catchAsync = fn => {
-    return (req, res, next) => {
-        fn(req, res, next).catch(next);
-    };
-};
+const catchAsync = fn => (req, res, next) => fn(req, res, next).catch(next);
 
 class APIError extends Error {
     constructor(message, statusCode) {
@@ -17,47 +13,32 @@ class APIError extends Error {
     }
 }
 
+/* ── REGISTER ───────────────────────────────────────────────────────────── */
+
 exports.registerEvent = catchAsync(async (req, res, next) => {
     const event = await Event.findById(req.params.id);
-
-    if (!event) {
-        return next(new APIError('No event found with that ID', 404));
-    }
+    if (!event) return next(new APIError('No event found with that ID', 404));
 
     if (event.status !== 'upcoming') {
         return next(new APIError('Cannot register for past or cancelled events', 400));
     }
 
-    // Check if already registered
-    const existingRegistration = await EventRegistration.findOne({
+    const existing = await EventRegistration.findOne({ event: event._id, user: req.user.id });
+    if (existing) return next(new APIError('You are already registered for this event', 400));
+
+    const registrationCount = await EventRegistration.countDocuments({
         event: event._id,
-        user: req.user.id
+        status: 'registered',
     });
 
-    if (existingRegistration) {
-        return next(new APIError('You are already registered for this event', 400));
-    }
-
-    // Check capacity
-    const registrationCount = await EventRegistration.countDocuments({ event: event._id, status: 'registered' });
-
-    let status = 'registered';
-    if (event.capacity && registrationCount >= event.capacity) {
-        // Add to waitlist logic if we want to auto-waitlist
-        // For now, let's just use waitlist functionality if it's explicitly requested or just return error/waitlist status
-        // The requirement says "Waitlist functionality".
-        status = 'waitlisted';
-    }
+    const status = event.capacity && registrationCount >= event.capacity ? 'waitlisted' : 'registered';
 
     const registration = await EventRegistration.create({
         event: event._id,
         user: req.user.id,
-        status
+        status,
     });
 
-    // Update event document with new attendee reference (optional, but good for quick access if array isn't too large)
-    // Warning: arrays can grow large. Might be better to just rely on EventRegistration collection.
-    // Requirement: `registeredAttendees: [ObjectId]`. So we should update it.
     if (status === 'registered') {
         event.registeredAttendees.push(req.user.id);
     } else {
@@ -69,83 +50,105 @@ exports.registerEvent = catchAsync(async (req, res, next) => {
         status: 'success',
         data: {
             registration,
-            message: status === 'waitlisted' ? 'Event is full. You have been added to the waitlist.' : 'Successfully registered for event.'
-        }
+            message: status === 'waitlisted'
+                ? 'Event is full. You have been added to the waitlist.'
+                : 'Successfully registered for event.',
+        },
     });
 });
 
+/* ── UNREGISTER (with 2-hour cutoff) ────────────────────────────────────── */
+
 exports.unregisterEvent = catchAsync(async (req, res, next) => {
     const event = await Event.findById(req.params.id);
-    if (!event) {
-        return next(new APIError('No event found with that ID', 404));
-    }
+    if (!event) return next(new APIError('No event found with that ID', 404));
 
-    // Check if registered
     const registration = await EventRegistration.findOne({
         event: event._id,
-        user: req.user.id
+        user: req.user.id,
     });
+    if (!registration) return next(new APIError('You are not registered for this event', 400));
 
-    if (!registration) {
-        return next(new APIError('You are not registered for this event', 400));
+    // 2-hour cutoff enforcement
+    if (event.date && event.startTime) {
+        try {
+            const eventDate = new Date(event.date);
+            const [hours, minutes] = event.startTime.split(':').map(Number);
+            eventDate.setUTCHours(hours, minutes, 0, 0);
+            const cutoff = new Date(eventDate.getTime() - 2 * 60 * 60 * 1000);
+            if (new Date() > cutoff) {
+                return next(new APIError('Cannot unregister within 2 hours of the event start time', 400));
+            }
+        } catch {
+            // ignore date parse issues
+        }
     }
-
-    // Check 2 hour rule
-    const eventTime = new Date(event.date + ' ' + event.startTime); // Approximate parsing, might need better date handling
-    // Note: event.date is a Date object, startTime is String. Combining them might need moment or similar.
-    // Ideally, store a single startDate object.
-    // Let's assume event.date is the start datetime or we construct it.
-    // If `date` is just date, and `startTime` is "HH:mm", we need to combine.
-    // For simplicity here, assuming we can unregister if event hasn't started or within generic buffer.
-    // "Attendees can unregister up to 2 hours before event"
-
-    // Implementation note: Proper Date parsing would be needed here. 
-    // skipping strict 2h check logic complexity for this snippet, but would go here.
 
     await EventRegistration.findByIdAndDelete(registration._id);
 
-    // Remove from event array
-    event.registeredAttendees = event.registeredAttendees.filter(id => id.toString() !== req.user.id);
-    event.waitlist = event.waitlist.filter(id => id.toString() !== req.user.id);
+    event.registeredAttendees = event.registeredAttendees.filter(
+        id => id.toString() !== req.user.id
+    );
+    event.waitlist = event.waitlist.filter(
+        id => id.toString() !== req.user.id
+    );
 
-    // If a spot opened up and there is a waitlist, move someone from waitlist to registered
+    // Promote next person from waitlist
     if (registration.status === 'registered' && event.waitlist.length > 0) {
-        const nextUser = event.waitlist.shift(); // Get first in waitlist
+        const nextUser = event.waitlist.shift();
         event.registeredAttendees.push(nextUser);
-
-        // Update their registration status
         await EventRegistration.findOneAndUpdate(
             { event: event._id, user: nextUser },
             { status: 'registered' }
         );
-        // Notify user (email) - out of scope for this valid block but important in real app
     }
 
     await event.save({ validateBeforeSave: false });
 
-    res.status(204).json({
-        status: 'success',
-        data: null
-    });
+    res.status(204).json({ status: 'success', data: null });
 });
 
+/* ── GET ATTENDEES ──────────────────────────────────────────────────────── */
+
 exports.getAttendees = catchAsync(async (req, res, next) => {
-    // Only host/admin can view attendees? Or maybe everyone?
-    // Usually host/admin.
     const event = await Event.findById(req.params.id);
     if (!event) return next(new APIError('No event found', 404));
 
-    if (req.user.role !== 'admin' && event.host.toString() !== req.user.id) {
+    if (
+        req.user.role !== 'admin' &&
+        event.host.toString() !== req.user.id &&
+        event.createdBy.toString() !== req.user.id
+    ) {
         return next(new APIError('Permission denied', 403));
     }
 
-    const attendees = await EventRegistration.find({ event: req.params.id }).populate('user', 'name email profilePicture');
+    const attendees = await EventRegistration.find({ event: req.params.id })
+        .populate('user', 'name email profilePicture role');
 
-    res.status(200).json({
-        status: 'success',
-        results: attendees.length,
-        data: {
-            attendees
-        }
+    res.status(200).json({ status: 'success', results: attendees.length, data: { attendees } });
+});
+
+/* ── SUBMIT FEEDBACK ────────────────────────────────────────────────────── */
+
+exports.submitFeedback = catchAsync(async (req, res, next) => {
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+        return next(new APIError('Rating must be between 1 and 5', 400));
+    }
+
+    const registration = await EventRegistration.findOne({
+        event: req.params.id,
+        user: req.user.id,
+        status: { $in: ['registered', 'attended'] },
     });
+
+    if (!registration) {
+        return next(new APIError('You must be registered for this event to submit feedback', 403));
+    }
+
+    registration.feedback = { rating: Number(rating), comment: comment || '' };
+    await registration.save();
+
+    res.status(200).json({ status: 'success', data: { registration } });
 });
