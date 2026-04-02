@@ -626,7 +626,7 @@ function MenteeView() {
 
 /* ── MENTOR VIEW ─────────────────────────────────────────────────────────── */
 
-function MentorView() {
+function MentorView({ onNew, refreshKey = 0 }) {
   const [tab, setTab]               = useState('created');
   const [created, setCreated]       = useState([]);
   const [registered, setRegistered] = useState([]);
@@ -651,7 +651,7 @@ function MentorView() {
       .finally(() => setLoadR(false));
   }, []);
 
-  useEffect(() => { fetchCreated(); fetchRegistered(); }, []);
+  useEffect(() => { fetchCreated(); fetchRegistered(); }, [refreshKey]);
 
   const handleDelete = async (ev) => {
     if (!window.confirm(`Delete "${ev.title}"? This cannot be undone.`)) return;
@@ -703,11 +703,13 @@ function MentorView() {
           icon="event"
           title="Events You Created"
           action={
-            <Link to="/events/new"
+            <button
+              type="button"
+              onClick={onNew}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
-            </Link>
+            </button>
           }
         >
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
@@ -717,11 +719,13 @@ function MentorView() {
               message="No events created yet"
               sub="Create your first event to host webinars, workshops, or networking sessions."
               cta={
-                <Link to="/events/new"
+                <button
+                  type="button"
+                  onClick={onNew}
                   className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   Create Event
-                </Link>
+                </button>
               }
             />
           ) : (
@@ -808,7 +812,7 @@ function MentorView() {
 
 /* ── ADMIN VIEW ──────────────────────────────────────────────────────────── */
 
-function AdminView() {
+function AdminView({ onNew, refreshKey = 0 }) {
   const [tab, setTab]           = useState('all');
   const [allEvents, setAll]     = useState([]);
   const [created, setCreated]   = useState([]);
@@ -837,7 +841,7 @@ function AdminView() {
       .finally(() => setLoadC(false));
   }, []);
 
-  useEffect(() => { fetchAll(); fetchCreated(); }, []);
+  useEffect(() => { fetchAll(); fetchCreated(); }, [refreshKey]);
 
   const handleCancel = async (ev) => {
     if (!window.confirm(`Cancel "${ev.title}"? Attendees will not be automatically notified.`)) return;
@@ -895,11 +899,13 @@ function AdminView() {
           icon="dashboard"
           title="All Platform Events"
           action={
-            <Link to="/events/new"
+            <button
+              type="button"
+              onClick={onNew}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
-            </Link>
+            </button>
           }
         >
           {/* Filters */}
@@ -985,11 +991,13 @@ function AdminView() {
           icon="event"
           title="Events You Created"
           action={
-            <Link to="/events/new"
+            <button
+              type="button"
+              onClick={onNew}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
-            </Link>
+            </button>
           }
         >
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
@@ -997,7 +1005,15 @@ function AdminView() {
             <EmptyState
               icon="add_circle"
               message="No events created yet"
-              cta={<Link to="/events/new" className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">Create Event</Link>}
+              cta={
+                <button
+                  type="button"
+                  onClick={onNew}
+                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  Create Event
+                </button>
+              }
             />
           ) : (
             <div className="space-y-3">
@@ -1030,6 +1046,411 @@ function AdminView() {
       {attendeesTarget  && <AttendeesModal  event={attendeesTarget}  onClose={() => setAttendeesTarget(null)} />}
       {rescheduleTarget && <RescheduleModal  event={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onSave={fetchAll} />}
       {certTarget       && <CertificatesModal event={certTarget}      onClose={() => setCertTarget(null)} />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CREATE EVENT MODAL
+═══════════════════════════════════════════════════════════════════════════ */
+
+const CATEGORIES = ['webinar', 'workshop', 'networking', 'conference', 'panel-discussion'];
+const TYPES      = ['virtual', 'physical', 'hybrid'];
+
+const EMPTY_FORM = {
+  title: '', description: '', category: 'webinar', type: 'virtual',
+  date: '', startTime: '', endTime: '', duration: '', timezone: 'UTC',
+  capacity: '', status: 'upcoming', tags: '',
+  location: { virtualLink: '', venue: '', address: '', city: '', country: '' },
+};
+
+const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
+const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+
+/* ── helpers for time math ───────────────────────────────────────────────── */
+function timeToMinutes(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function CreateEventModal({ onClose, onCreated }) {
+  const [form, setForm]     = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [touched, setTouched] = useState({});   // tracks which fields the user has interacted with
+  const [fieldErr, setFieldErr] = useState({}); // per-field error messages
+
+  /* ── auto-compute duration whenever startTime or endTime changes ── */
+  const computeDuration = (start, end) => {
+    const s = timeToMinutes(start);
+    const e = timeToMinutes(end);
+    if (s !== null && e !== null && e > s) return String(e - s);
+    return '';
+  };
+
+  /* ── per-field validation rules ── */
+  const validateField = (name, value, currentForm) => {
+    switch (name) {
+      case 'title':
+        if (!value.trim()) return 'Event title is required.';
+        if (value.trim().length < 5) return 'Title must be at least 5 characters.';
+        return '';
+      case 'description':
+        if (!value.trim()) return 'Description is required.';
+        if (value.trim().length < 10) return 'Description must be at least 10 characters.';
+        return '';
+      case 'date': {
+        if (!value) return 'Event date is required.';
+        if (value < todayStr()) return 'Event date cannot be in the past.';
+        return '';
+      }
+      case 'startTime':
+        if (!value) return 'Start time is required.';
+        return '';
+      case 'endTime': {
+        if (!value) return '';          // end time is optional
+        const s = timeToMinutes(currentForm?.startTime || '');
+        const e = timeToMinutes(value);
+        if (s !== null && e !== null && e <= s) return 'End time must be after start time.';
+        return '';
+      }
+      case 'duration':
+        if (!value || Number(value) < 1) return 'Duration must be at least 1 minute.';
+        return '';
+      case 'capacity':
+        if (!value || Number(value) < 1) return 'Capacity must be at least 1.';
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    let nextForm;
+    if (name.startsWith('location.')) {
+      const field = name.split('.')[1];
+      nextForm = { ...form, location: { ...form.location, [field]: value } };
+    } else {
+      nextForm = { ...form, [name]: value };
+    }
+
+    /* Auto-compute duration when start or end time changes */
+    if (name === 'startTime' || name === 'endTime') {
+      const start = name === 'startTime' ? value : nextForm.startTime;
+      const end   = name === 'endTime'   ? value : nextForm.endTime;
+      const auto  = computeDuration(start, end);
+      if (auto) nextForm = { ...nextForm, duration: auto };
+    }
+
+    setForm(nextForm);
+
+    /* Validate touched field immediately */
+    if (touched[name]) {
+      setFieldErr(prev => ({ ...prev, [name]: validateField(name, value, nextForm) }));
+    }
+    /* Re-validate end time when start time changes */
+    if (name === 'startTime' && touched.endTime) {
+      setFieldErr(prev => ({ ...prev, endTime: validateField('endTime', nextForm.endTime, nextForm) }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    setFieldErr(prev => ({ ...prev, [name]: validateField(name, value, form) }));
+  };
+
+  const inpClass = (name) => {
+    const hasErr = touched[name] && fieldErr[name];
+    const isOk   = touched[name] && !fieldErr[name] && form[name];
+    return `${inp} ${hasErr ? 'border-red-400 dark:border-red-500 focus:ring-red-300/40 focus:border-red-400' : isOk ? 'border-emerald-400 dark:border-emerald-500' : ''}`;
+  };
+
+  const FieldError = ({ name }) =>
+    touched[name] && fieldErr[name]
+      ? <p className="mt-1 text-[11px] text-red-500 flex items-center gap-1">
+          <span className="material-symbols-outlined text-[12px]">error</span>
+          {fieldErr[name]}
+        </p>
+      : null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    /* Validate all required fields at once on submit */
+    const required = ['title', 'description', 'date', 'startTime', 'duration', 'capacity'];
+    const errors = {};
+    required.forEach(f => { errors[f] = validateField(f, form[f], form); });
+    if (form.endTime) errors.endTime = validateField('endTime', form.endTime, form);
+
+    const allTouched = { ...touched };
+    required.forEach(f => { allTouched[f] = true; });
+    if (form.endTime) allTouched.endTime = true;
+
+    setTouched(allTouched);
+    setFieldErr(errors);
+
+    if (Object.values(errors).some(Boolean)) return;
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        duration: Number(form.duration),
+        capacity: Number(form.capacity),
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      };
+      await eventApi.create(payload);
+      toast.success('Event created successfully!');
+      onCreated?.();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create event.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* Derived display for duration */
+  const durationMins = Number(form.duration) || 0;
+  const durationLabel = durationMins > 0
+    ? durationMins >= 60
+      ? `${Math.floor(durationMins / 60)}h ${durationMins % 60 > 0 ? `${durationMins % 60}m` : ''}`.trim()
+      : `${durationMins}m`
+    : '';
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-surface-container-lowest w-full max-w-2xl rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-2xl my-8">
+
+        {/* Modal Header */}
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-gold-accent text-[22px]">add_circle</span>
+              Create New Event
+            </h2>
+            <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-1">
+              Organise a webinar, workshop, or networking session for women leaders.
+            </p>
+          </div>
+          <button type="button" onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-on-surface hover:bg-slate-100 dark:hover:bg-surface-container transition-colors shrink-0">
+            <span className="material-symbols-outlined text-[22px]">close</span>
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
+
+          {/* ── Basic Info ── */}
+          <section>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">info</span>
+              Basic Information
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className={lbl}>Title <span className="text-red-400">*</span></label>
+                <input name="title" value={form.title}
+                  onChange={handleChange} onBlur={handleBlur}
+                  className={inpClass('title')} placeholder="e.g. Women in Tech Leadership Panel" />
+                <FieldError name="title" />
+              </div>
+              <div>
+                <label className={lbl}>Description <span className="text-red-400">*</span></label>
+                <textarea name="description" value={form.description}
+                  onChange={handleChange} onBlur={handleBlur}
+                  className={`${inpClass('description')} h-24 resize-y`}
+                  placeholder="Describe what attendees will gain…" />
+                <FieldError name="description" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Category</label>
+                  <select name="category" value={form.category} onChange={handleChange} className={inp}>
+                    {CATEGORIES.map(c => (
+                      <option key={c} value={c}>{c.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={lbl}>Type</label>
+                  <select name="type" value={form.type} onChange={handleChange} className={inp}>
+                    {TYPES.map(t => (
+                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-slate-100 dark:border-outline-variant/20" />
+
+          {/* ── Schedule ── */}
+          <section>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+              Schedule
+            </h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lbl}>Date <span className="text-red-400">*</span></label>
+                  <input type="date" name="date" value={form.date}
+                    min={todayStr()}
+                    onChange={handleChange} onBlur={handleBlur}
+                    className={inpClass('date')} />
+                  <FieldError name="date" />
+                </div>
+                <div>
+                  <label className={lbl}>Timezone</label>
+                  <input name="timezone" value={form.timezone} onChange={handleChange}
+                    className={inp} placeholder="UTC" />
+                </div>
+              </div>
+
+              {/* Time row: Start | End | Duration (auto) */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className={lbl}>Start Time <span className="text-red-400">*</span></label>
+                  <input type="time" name="startTime" value={form.startTime}
+                    onChange={handleChange} onBlur={handleBlur}
+                    className={inpClass('startTime')} />
+                  <FieldError name="startTime" />
+                </div>
+                <div>
+                  <label className={lbl}>End Time</label>
+                  <input type="time" name="endTime" value={form.endTime}
+                    onChange={handleChange} onBlur={handleBlur}
+                    className={inpClass('endTime')} />
+                  <FieldError name="endTime" />
+                </div>
+                <div>
+                  <label className={lbl}>
+                    Duration (min) <span className="text-red-400">*</span>
+                    {durationLabel && (
+                      <span className="ml-1 normal-case text-gold-accent font-semibold tracking-normal">· {durationLabel}</span>
+                    )}
+                  </label>
+                  <input type="number" name="duration" value={form.duration}
+                    onChange={handleChange} onBlur={handleBlur}
+                    className={inpClass('duration')} placeholder="auto" min="1" />
+                  <FieldError name="duration" />
+                  {form.startTime && form.endTime && form.duration && !fieldErr.endTime && (
+                    <p className="mt-1 text-[11px] text-emerald-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                      Auto-calculated from times
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-slate-100 dark:border-outline-variant/20" />
+
+          {/* ── Location ── */}
+          <section>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">location_on</span>
+              Location
+            </h3>
+            <div className="space-y-4">
+              {(form.type === 'virtual' || form.type === 'hybrid') && (
+                <div>
+                  <label className={lbl}>Virtual Link</label>
+                  <input name="location.virtualLink" value={form.location.virtualLink}
+                    onChange={handleChange} className={inp} placeholder="https://meet.example.com/…" type="url" />
+                </div>
+              )}
+              {(form.type === 'physical' || form.type === 'hybrid') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Venue</label>
+                    <input name="location.venue" value={form.location.venue}
+                      onChange={handleChange} className={inp} placeholder="Venue name" />
+                  </div>
+                  <div>
+                    <label className={lbl}>City</label>
+                    <input name="location.city" value={form.location.city}
+                      onChange={handleChange} className={inp} placeholder="City" />
+                  </div>
+                  <div>
+                    <label className={lbl}>Address</label>
+                    <input name="location.address" value={form.location.address}
+                      onChange={handleChange} className={inp} placeholder="Street address" />
+                  </div>
+                  <div>
+                    <label className={lbl}>Country</label>
+                    <input name="location.country" value={form.location.country}
+                      onChange={handleChange} className={inp} placeholder="Country" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <hr className="border-slate-100 dark:border-outline-variant/20" />
+
+          {/* ── Settings ── */}
+          <section>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">tune</span>
+              Settings
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={lbl}>Capacity <span className="text-red-400">*</span></label>
+                <input type="number" name="capacity" value={form.capacity}
+                  onChange={handleChange} onBlur={handleBlur}
+                  className={inpClass('capacity')} placeholder="100" min="1" />
+                <FieldError name="capacity" />
+              </div>
+              <div>
+                <label className={lbl}>Status</label>
+                <select name="status" value={form.status} onChange={handleChange} className={inp}>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="ongoing">Ongoing</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className={lbl}>Tags (comma-separated)</label>
+                <input name="tags" value={form.tags} onChange={handleChange}
+                  className={inp} placeholder="leadership, networking, women" />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Actions ── */}
+          <div className="flex gap-3 pt-2 border-t border-slate-100 dark:border-outline-variant/20">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md shadow-gold-accent/20"
+            >
+              {saving ? (
+                <><Spinner size="sm" /> Creating…</>
+              ) : (
+                <><span className="material-symbols-outlined text-[18px]">add_circle</span> Create Event</>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-slate-300 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -1076,7 +1497,11 @@ const ADMIN_NAV = [
 export default function DashboardEventsPage() {
   const { user, isAdmin, isMentor, isMentee, canManageEvents, logout } = useAuth();
   const navigate = useNavigate();
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileOpen, setProfileOpen]   = useState(false);
+  const [createOpen, setCreateOpen]     = useState(false);
+  const [refreshKey, setRefreshKey]     = useState(0);
+
+  const handleCreated = () => setRefreshKey(k => k + 1);
 
   const firstName = user?.name?.split(' ')?.[0] || 'User';
   const avatarSrc = user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=C9A84C&color=fff`;
@@ -1198,19 +1623,21 @@ export default function DashboardEventsPage() {
                 Browse All
               </Link>
               {canManageEvents && (
-                <Link to="/events/new"
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-gold-accent/20">
                   <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Create Event
-                </Link>
+                </button>
               )}
             </div>
           </div>
 
           {/* Role-based content */}
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            {isAdmin              && <AdminView />}
-            {isMentor && !isAdmin && <MentorView />}
+            {isAdmin              && <AdminView  onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
+            {isMentor && !isAdmin && <MentorView onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
             {isMentee             && <MenteeView />}
             {!isAdmin && !isMentor && !isMentee && (
               <div className={`${CARD} p-10`}>
@@ -1224,6 +1651,14 @@ export default function DashboardEventsPage() {
           </div>
         </div>
       </main>
+
+      {/* Create Event Modal */}
+      {createOpen && (
+        <CreateEventModal
+          onClose={() => setCreateOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
     </div>
   );
 }
