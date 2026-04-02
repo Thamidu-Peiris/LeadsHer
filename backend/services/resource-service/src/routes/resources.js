@@ -22,6 +22,7 @@ const {
   rejectResource,
   searchBooks,
   recommendBooks,
+  searchYouTube,
 } = require('../controllers/resourceController');
 
 // Public
@@ -41,6 +42,9 @@ router.post('/upload-thumbnail', protect, imageUpload.single('thumbnail'), uploa
 // Google Books API (must be before /:id routes)
 router.get('/books/search', protect, searchBooks);
 router.get('/books/recommend', protect, recommendBooks);
+
+// YouTube API (must be before /:id routes)
+router.get('/youtube/search', protect, searchYouTube);
 
 // Public with optional auth
 router.get('/:id', optionalAuth, getResourceById);
