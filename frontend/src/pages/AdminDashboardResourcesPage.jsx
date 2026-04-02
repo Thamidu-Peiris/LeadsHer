@@ -470,9 +470,19 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
                   {uploading ? (
                     <div className="flex justify-center"><Spinner /></div>
                   ) : uploadedFile ? (
-                    <div className="text-sm text-emerald-600 flex items-center justify-center gap-2 font-medium">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      File uploaded successfully
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-sm text-emerald-600 flex items-center justify-center gap-2 font-medium">
+                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        File uploaded successfully
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setUploadedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                        className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                        Remove file
+                      </button>
                     </div>
                   ) : (
                     <>

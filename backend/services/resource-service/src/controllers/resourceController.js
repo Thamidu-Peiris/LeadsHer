@@ -311,3 +311,41 @@ exports.recommendBooks = async (req, res) => {
     res.status(500).json({ message: err.message || 'Failed to get book recommendations.' });
   }
 };
+
+// GET /api/resources/youtube/search?q=query&maxResults=9
+exports.searchYouTube = async (req, res) => {
+  try {
+    const { q, maxResults = 9 } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(400).json({ message: 'Search query is required.' });
+    }
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ message: 'YouTube API key not configured.' });
+    }
+    const limit = Math.min(20, parseInt(maxResults, 10) || 9);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q.trim())}&maxResults=${limit}&type=video&key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      return res.status(502).json({ message: errData.error?.message || 'YouTube API request failed.' });
+    }
+    const data = await response.json();
+    const videos = (data.items || []).map((item) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      thumbnail:
+        item.snippet.thumbnails?.high?.url ||
+        item.snippet.thumbnails?.medium?.url ||
+        item.snippet.thumbnails?.default?.url || '',
+      channelTitle: item.snippet.channelTitle,
+      publishedAt: item.snippet.publishedAt,
+      embedUrl: `https://www.youtube.com/embed/${item.id.videoId}`,
+      watchUrl: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    }));
+    res.json({ videos, total: data.pageInfo?.totalResults || 0 });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Failed to search YouTube.' });
+  }
+};

@@ -28,4 +28,6 @@ export const resourceApi = {
   // Google Books
   searchBooks: (params) => api.get('/resources/books/search', { params }),
   getBookRecommendations: (params) => api.get('/resources/books/recommend', { params }),
+  // YouTube
+  searchYouTube: (params) => api.get('/resources/youtube/search', { params }),
 };
