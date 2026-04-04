@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { eventApi } from '../api/eventApi';
+import { authApi } from '../api/authApi';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
 
@@ -1495,16 +1497,23 @@ const ADMIN_NAV = [
 ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function DashboardEventsPage() {
-  const { user, isAdmin, isMentor, isMentee, canManageEvents, logout } = useAuth();
+  const { user, isAdmin, isMentor, isMentee, canManageEvents, logout, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [profileOpen, setProfileOpen]   = useState(false);
   const [createOpen, setCreateOpen]     = useState(false);
   const [refreshKey, setRefreshKey]     = useState(0);
 
   const handleCreated = () => setRefreshKey(k => k + 1);
 
-  const firstName = user?.name?.split(' ')?.[0] || 'User';
-  const avatarSrc = user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=C9A84C&color=fff`;
+  // Refresh user profile to get the latest profile picture
+  useEffect(() => {
+    authApi.getProfile()
+      .then((res) => {
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      })
+      .catch(() => {});
+  }, []);
+
 
   const roleLabel = isAdmin ? 'Admin' : isMentor ? 'Mentor' : 'Mentee';
   const sidebarNav = isAdmin ? ADMIN_NAV : isMentor ? MENTOR_NAV : MENTEE_NAV;
@@ -1519,94 +1528,9 @@ export default function DashboardEventsPage() {
     : 'Browse, register, and submit feedback for events.';
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+    <>
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-        {/* Profile */}
-        <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-              <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={avatarSrc} />
-            </div>
-          </div>
-          <div className="text-center">
-            <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-            <div className="mt-1 flex justify-center">
-              <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                {roleLabel}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {sidebarNav.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/dashboard'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                  isActive
-                    ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                    : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                }`
-              }
-            >
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-sm font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      {/* ── Main ─────────────────────────────────────────────────────────── */}
-      <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-
-        {/* Header / Breadcrumb */}
-        <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-            <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-on-surface">Events</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen(v => !v)}
-                className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-              >
-                <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={avatarSrc} />
-              </button>
-              {profileOpen && (
-                <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                  <div className="px-5 py-4 border-b border-outline-variant/15">
-                    <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'User'}</p>
-                    <p className="font-sans-modern text-xs text-outline line-clamp-1">{user?.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try { await logout(); toast.success('You have signed out.'); }
-                      finally { setProfileOpen(false); navigate('/'); }
-                    }}
-                    className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                    role="menuitem"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+        <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Events' }]} />
 
         {/* Page content */}
         <div className="flex-1 bg-slate-50 dark:bg-surface">
@@ -1650,8 +1574,6 @@ export default function DashboardEventsPage() {
             )}
           </div>
         </div>
-      </main>
-
       {/* Create Event Modal */}
       {createOpen && (
         <CreateEventModal
@@ -1659,6 +1581,6 @@ export default function DashboardEventsPage() {
           onCreated={handleCreated}
         />
       )}
-    </div>
+    </>
   );
 }

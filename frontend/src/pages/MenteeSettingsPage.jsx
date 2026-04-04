@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/authApi';
@@ -117,70 +118,8 @@ export default function MenteeSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-4 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="p-4 mt-auto border-t border-outline-variant/20">
-            <Link
-              to="/dashboard/mentors"
-              className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              FIND A MENTOR
-            </Link>
-          </div>
-        </aside>
-
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Settings</span>
-            </div>
-          </header>
+    <>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} showAvatar={false} />
 
           <div className="p-8 max-w-5xl space-y-8">
             <div>
@@ -321,9 +260,7 @@ export default function MenteeSettingsPage() {
               </section>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 
