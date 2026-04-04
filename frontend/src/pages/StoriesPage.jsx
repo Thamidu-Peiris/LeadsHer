@@ -203,56 +203,65 @@ export default function StoriesPage() {
   return (
     <div className="pt-20 pb-12 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <section className="relative mt-3 overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.08] via-surface-container-low to-tertiary/[0.08] dark:from-primary/20 dark:via-surface-container-lowest dark:to-tertiary/15 shadow-sm p-4 sm:p-5 mb-8">
-          <div className="absolute -top-16 -right-12 w-48 h-48 rounded-full bg-gold-accent/15 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-14 -left-10 w-44 h-44 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-          <div className="relative">
-          <form onSubmit={handleSearch} className="flex flex-col lg:flex-row gap-3 lg:items-center">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+        <section className="mb-8 mt-3 space-y-4">
+          <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:gap-3 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[18px] text-pink-500 dark:text-pink-400">
+                search
+              </span>
               <input
                 type="text"
                 placeholder="Search by title, excerpt, or topic..."
                 value={filters.search}
                 onChange={(e) => setFilter('search', e.target.value)}
-                className="w-full bg-surface-container-lowest dark:bg-surface-container border border-outline-variant/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-on-surface placeholder:text-outline/70 focus:outline-none focus:ring-2 focus:ring-gold-accent/25 focus:border-gold-accent/40 transition-all"
+                className="w-full rounded-full border border-pink-200 bg-white py-2.5 pl-11 pr-5 text-sm text-black shadow-sm shadow-pink-500/5 placeholder:text-neutral-500 transition-all focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-400/35 dark:border-pink-500/35 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-pink-400"
               />
             </div>
-            <button type="submit" className="px-5 py-2.5 rounded-xl bg-on-surface text-inverse-on-surface text-xs font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-opacity">
-              Search
-            </button>
-            {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
-              <Link to="/dashboard/stories/new" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-sm shadow-primary/10 hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined text-[16px]">edit_square</span>
-                New
-              </Link>
-            )}
-            <select
-              value={filters.sort}
-              onChange={(e) => setFilter('sort', e.target.value)}
-              className="w-full lg:w-auto bg-surface-container-lowest dark:bg-surface-container border border-outline-variant/20 rounded-xl py-2.5 px-3 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/25 focus:border-gold-accent/40 transition-all"
-            >
-              {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-          </form>
-          <div className="mt-4 rounded-2xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/60 to-white p-2 sm:p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:border-pink-500/25 dark:from-neutral-950 dark:via-pink-950/20 dark:to-neutral-950">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setFilter('category', c)}
-                  className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 ${
-                    filters.category === c
-                      ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
-                      : 'bg-white text-black border-pink-200 hover:border-pink-400 hover:bg-pink-50/90 active:scale-[0.98] dark:bg-black dark:text-white dark:border-pink-500/35 dark:hover:bg-pink-950/40 dark:hover:border-pink-400/60'
-                  }`}
+            <div className="flex flex-wrap items-stretch gap-2 sm:gap-3">
+              <button
+                type="submit"
+                className="min-h-[42px] shrink-0 rounded-xl border border-pink-600 bg-pink-500 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-pink-500/25 transition-all hover:bg-pink-600 active:scale-[0.98] dark:border-pink-400 dark:bg-pink-500 dark:hover:bg-pink-400"
+              >
+                Search
+              </button>
+              {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
+                <Link
+                  to="/dashboard/stories/new"
+                  className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-pink-400 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-black shadow-sm transition-all hover:border-pink-500 hover:bg-pink-50 active:scale-[0.98] dark:border-pink-500/50 dark:bg-neutral-950 dark:text-white dark:hover:bg-pink-950/50"
                 >
-                  {CATEGORY_LABELS[c]}
-                </button>
-              ))}
+                  <span className="material-symbols-outlined text-[16px] text-pink-500 dark:text-pink-400">edit_square</span>
+                  New
+                </Link>
+              )}
+              <select
+                value={filters.sort}
+                onChange={(e) => setFilter('sort', e.target.value)}
+                className="min-h-[42px] w-full min-w-[10rem] cursor-pointer rounded-xl border border-pink-200 bg-white py-2.5 pl-3 pr-4 text-xs font-semibold uppercase tracking-wide text-black shadow-sm shadow-pink-500/5 transition-all focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-400/35 lg:w-auto dark:border-pink-500/35 dark:bg-neutral-950 dark:text-white dark:focus:border-pink-400"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
+          </form>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setFilter('category', c)}
+                className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 ${
+                  filters.category === c
+                    ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
+                    : 'bg-white text-black border-pink-200 hover:border-pink-400 hover:bg-pink-50/90 active:scale-[0.98] dark:bg-neutral-950 dark:text-white dark:border-pink-500/35 dark:hover:bg-pink-950/40 dark:hover:border-pink-400/60'
+                }`}
+              >
+                {CATEGORY_LABELS[c]}
+              </button>
+            ))}
           </div>
         </section>
 
