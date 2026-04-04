@@ -235,21 +235,23 @@ export default function StoriesPage() {
               {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </form>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setFilter('category', c)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em] border transition-colors ${
-                  filters.category === c
-                    ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                    : 'bg-surface-container-lowest dark:bg-surface-container border-outline-variant/25 text-outline hover:border-outline-variant/45 hover:text-on-surface'
-                }`}
-              >
-                {CATEGORY_LABELS[c]}
-              </button>
-            ))}
+          <div className="mt-4 rounded-2xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/60 to-white p-2 sm:p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:border-pink-500/25 dark:from-neutral-950 dark:via-pink-950/20 dark:to-neutral-950">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setFilter('category', c)}
+                  className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 ${
+                    filters.category === c
+                      ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
+                      : 'bg-white text-black border-pink-200 hover:border-pink-400 hover:bg-pink-50/90 active:scale-[0.98] dark:bg-black dark:text-white dark:border-pink-500/35 dark:hover:bg-pink-950/40 dark:hover:border-pink-400/60'
+                  }`}
+                >
+                  {CATEGORY_LABELS[c]}
+                </button>
+              ))}
+            </div>
           </div>
           </div>
         </section>
