@@ -240,60 +240,7 @@ export default function MentorDashboardCreateStoryPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80"
-                />
-              </div>
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen min-w-0">
+    <>
           <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-white/95 dark:bg-surface-container-lowest/95 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -606,9 +553,7 @@ export default function MentorDashboardCreateStoryPage() {
               </div>
             </aside>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 

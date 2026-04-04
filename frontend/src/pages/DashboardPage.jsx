@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
@@ -30,7 +31,6 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
   const [onboardOpen, setOnboardOpen] = useState(false);
   const [onboardLoading, setOnboardLoading] = useState(false);
   const [onboardSaving, setOnboardSaving] = useState(false);
@@ -145,9 +145,8 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   );
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Onboarding modal */}
+    <>
+      {/* Onboarding modal */}
         {onboardOpen && (
           <div className="fixed inset-0 z-[60] bg-black/35 flex items-center justify-center p-6">
             <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-8">
@@ -235,160 +234,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             </div>
           </div>
         )}
-        {/* Fixed left sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          {/* Profile */}
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src={avatarSrc}
-                />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Bottom */}
-          <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-3">
-            <div className="flex items-center justify-between px-4 py-2 text-outline hover:text-on-surface cursor-pointer transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[22px]">notifications</span>
-                <span className="text-sm font-medium">Notifications</span>
-              </div>
-              <span className="w-2 h-2 bg-tertiary rounded-full" />
-            </div>
-            <button className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
-              UPGRADE TO PRO
-            </button>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Dashboard</span>
-            </div>
-
-            <div className="max-w-md w-full px-4 hidden md:block">
-              <div className="relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
-                  search
-                </span>
-                <input
-                  className="w-full bg-surface-container-lowest border border-outline-variant/25 rounded-full py-2 pl-10 pr-4 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-1 focus:ring-gold-accent transition-all"
-                  placeholder="Search experiences, mentors..."
-                  type="text"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button className="w-10 h-10 rounded-full bg-white dark:bg-surface-container border border-outline-variant/25 flex items-center justify-center text-outline hover:text-gold-accent transition-colors">
-                <span className="material-symbols-outlined">help_outline</span>
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src={avatarSrc}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50"
-                  >
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard' }]} />
 
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
@@ -547,9 +393,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               </p>
             </footer>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -557,7 +401,6 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
   const navigate = useNavigate();
   const { logout, updateUser } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const menteeUserId = user?.id ?? user?._id;
   const menteePromptKey = menteeUserId ? `leadsher_mentee_dashboard_profile_${menteeUserId}` : '';
@@ -620,9 +463,8 @@ function MenteeDashboard({ user, myStories, myEvents }) {
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* First-time mentee profile modal */}
+    <>
+      {/* First-time mentee profile modal */}
         {menteeProfileOpen && (
           <div
             className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-sm"
@@ -713,130 +555,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
           </div>
         )}
 
-        {/* Fixed left sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          {/* Profile — icon opens menu with Profile link */}
-          <div className="p-4 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-3">
-            <Link
-              to="/mentors"
-              className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              FIND A MENTOR
-            </Link>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Dashboard</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src={menteeAvatarSrc}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentee'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-                    <Link
-                      to="/dashboard/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
-                      role="menuitem"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard' }]} />
 
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
@@ -975,9 +694,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               </p>
             </footer>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -1191,61 +908,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
   }, [reportData, requests, activeMentorships, feedbackRows]);
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        <aside className="fixed left-0 top-0 h-screen w-[280px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img
-                    alt="Admin avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <div className="text-center">
-                <p className="text-on-surface font-bold text-lg leading-tight">{user?.name || 'Admin'}</p>
-                <span className="inline-flex mt-2 px-3 py-1 rounded-full bg-gold-accent/15 text-gold-accent text-[10px] font-bold tracking-widest uppercase border border-gold-accent/25">
-                  Admin
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'space_dashboard', label: 'Admin Dashboard' },
-              { to: '/dashboard/manage-account', icon: 'manage_accounts', label: 'Manage User Account' },
-              { to: '/dashboard/manage-stories', icon: 'auto_stories', label: 'Manage Stories' },
-              { to: '/dashboard/events', icon: 'event', label: 'Manage Events' },
-              { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentorship' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Manage Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-
-        <main className={`ml-[280px] flex-1 flex flex-col min-h-screen ${isManageMentorsRoute ? 'bg-surface' : ''}`}>
+    <>
           {isManageMentorsRoute ? (
             <header className="relative w-full h-16 min-h-[64px] sticky top-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 border-b border-outline-variant/20">
               <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline shrink-0 min-w-0 font-sans-modern">
@@ -1711,8 +1374,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
             </div>
             )}
           </div>
-        </main>
-      </div>
 
       {editModalOpen && (
         <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
@@ -1792,7 +1453,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

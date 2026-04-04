@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
@@ -952,26 +953,9 @@ export default function AdminDashboardResourcesPage() {
 
   /* ─── RENDER ─────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#f8f6f6] dark:bg-[#100f16]">
-      <div className="relative flex min-h-screen overflow-hidden text-on-surface">
+    <>
 
-        {/* ── Sidebar ── */}
-        <AdminSidebar user={user} onLogout={handleLogout} />
-
-        {/* ── Main ── */}
-        <main className="ml-[280px] flex-1 flex flex-col min-h-screen">
-
-          {/* ── Header ── */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline">
-                <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span className="text-on-surface">Manage Resources</span>
-              </div>
-            </div>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]} showAvatar={false}>
             <button
               onClick={() => setUploadModal(true)}
               className="bg-gold-accent text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-gold-accent/20"
@@ -979,7 +963,7 @@ export default function AdminDashboardResourcesPage() {
               <span className="material-symbols-outlined text-[18px]">add</span>
               Upload Resource
             </button>
-          </header>
+          </DashboardTopBar>
 
           {/* ── Content ── */}
           <div className="p-8 space-y-6 pb-32">
@@ -1158,8 +1142,6 @@ export default function AdminDashboardResourcesPage() {
               </>
             )}
           </div>
-        </main>
-
         {/* ── Modals ── */}
         {uploadModal && (
           <ResourceFormModal mode="create" onClose={() => setUploadModal(false)} onSave={handleCreate} />
@@ -1180,7 +1162,6 @@ export default function AdminDashboardResourcesPage() {
           bookmarkCount={bookmarkedIds.size}
           onRemove={handleBookmark}
         />
-      </div>
-    </div>
+    </>
   );
 }

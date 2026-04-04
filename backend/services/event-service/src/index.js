@@ -3,7 +3,6 @@ require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
@@ -12,7 +11,6 @@ const PORT = process.env.PORT || 5006;
 
 // Middleware
 app.use(express.json());
-app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 

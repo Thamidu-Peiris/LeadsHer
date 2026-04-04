@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
@@ -37,7 +38,6 @@ function StoryThumb({ story }) {
 export default function AdminDashboardStoriesPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState([]);
   const [deletingId, setDeletingId] = useState('');
@@ -192,6 +192,7 @@ export default function AdminDashboardStoriesPage() {
   ];
 
   return (
+
     <div className="min-h-screen">
       <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
         <aside className="fixed left-0 top-0 h-screen w-[280px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
@@ -295,6 +296,7 @@ export default function AdminDashboardStoriesPage() {
               )}
             </div>
           </header>
+
 
           <div className="p-8 space-y-5 max-w-[1280px] mx-auto w-full">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
@@ -431,9 +433,6 @@ export default function AdminDashboardStoriesPage() {
               </div>
             )}
           </div>
-        </main>
-      </div>
-
       {deleteDialog.open && (
         <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
           <div className="w-full max-w-md bg-white border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden">
@@ -517,6 +516,6 @@ export default function AdminDashboardStoriesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
