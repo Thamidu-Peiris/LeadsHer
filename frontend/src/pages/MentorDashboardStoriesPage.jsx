@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
@@ -53,8 +54,6 @@ export default function MentorDashboardStoriesPage() {
   const userId = user?.id ?? user?._id;
   const storiesCacheKey = userId ? `leadsher_mentor_stories_${userId}` : '';
 
-  const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
-  const [profileOpen, setProfileOpen] = useState(false);
   const [mentorProfile, setMentorProfile] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -200,135 +199,8 @@ export default function MentorDashboardStoriesPage() {
   }, [stories, statusFilter]);
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src={avatarSrc}
-                />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-3">
-            <button className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
-              UPGRADE TO PRO
-            </button>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
-                Dashboard
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Stories</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src={avatarSrc}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+    <>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Stories' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -553,9 +425,6 @@ export default function MentorDashboardStoriesPage() {
               </p>
             </footer>
           </div>
-        </main>
-      </div>
-
       {deleteDialog.open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <button
@@ -594,7 +463,7 @@ export default function MentorDashboardStoriesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
