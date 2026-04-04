@@ -267,22 +267,22 @@ export default function StoriesPage() {
 
         {featuredStories.length > 0 && activeFeatured && (
           <section className="mb-10">
-            <div className="relative overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.11] via-surface-container-low to-tertiary/[0.10] p-4 sm:p-5 lg:p-6 shadow-[0_14px_36px_rgba(15,23,42,0.08)]">
-              <div className="absolute -top-16 -left-10 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-16 -right-8 w-52 h-52 rounded-full bg-tertiary/20 blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden rounded-3xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/80 to-pink-100/35 p-4 sm:p-5 lg:p-6 shadow-[0_14px_36px_-8px_rgba(219,39,119,0.18)] ring-1 ring-black/[0.03] dark:border-pink-500/30 dark:from-neutral-950 dark:via-pink-950/25 dark:to-neutral-950 dark:shadow-black/40 dark:ring-white/5">
+              <div className="absolute -top-16 -left-10 w-44 h-44 rounded-full bg-pink-300/35 blur-3xl pointer-events-none dark:bg-pink-500/15" />
+              <div className="absolute -bottom-16 -right-8 w-52 h-52 rounded-full bg-pink-400/25 blur-3xl pointer-events-none dark:bg-pink-600/12" />
               <div className="relative flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-primary/90">Curated highlights</p>
-                  <h2 className="font-serif-alt text-2xl sm:text-3xl font-bold text-on-surface mt-1">Featured Stories</h2>
+                  <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-pink-600 dark:text-pink-400">Curated highlights</p>
+                  <h2 className="font-serif-alt text-2xl sm:text-3xl font-bold text-pink-950 dark:text-pink-50 mt-1">Featured Stories</h2>
                 </div>
-                <span className="hidden sm:inline-flex px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary text-[10px] uppercase tracking-[0.18em] font-bold">
+                <span className="hidden sm:inline-flex px-3 py-1 rounded-full border border-pink-200/90 bg-pink-100/80 text-pink-800 text-[10px] uppercase tracking-[0.18em] font-bold dark:border-pink-500/40 dark:bg-pink-950/60 dark:text-pink-200">
                   Editor picks
                 </span>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5">
                 <article
-                  className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
+                  className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-pink-100/90 bg-white/92 dark:border-pink-500/20 dark:bg-neutral-950/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(219,39,119,0.1)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
                   key={`${activeFeatured._id}-${featuredSlideIndex}`}
                   style={{
                     animation:
@@ -295,22 +295,22 @@ export default function StoriesPage() {
                     {activeFeatured.coverImage ? (
                       <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-tertiary/25" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-pink-400/45 to-rose-500/30 dark:from-pink-600/35 dark:to-rose-900/40" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5">
-                      <span className="inline-flex px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                      <span className="inline-flex px-2.5 py-1 rounded-full bg-pink-500/95 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm shadow-pink-900/20">
                         Featured
                       </span>
                       <h3 className="mt-2 font-serif-alt text-2xl sm:text-3xl text-white leading-tight line-clamp-3">{activeFeatured.title}</h3>
                       <p className="mt-1 text-sm text-white/85 line-clamp-1">{activeFeatured.author?.name || 'Mentor'}</p>
                     </div>
                   </div>
-                  <div className="shrink-0 p-4 sm:p-5 border-t border-outline-variant/10 bg-white/95 dark:bg-surface-container-lowest/90">
+                  <div className="shrink-0 p-4 sm:p-5 border-t border-pink-100/80 dark:border-pink-500/15 bg-white/95 dark:bg-neutral-950/90">
                     <p className="text-sm text-on-surface-variant line-clamp-3">
                       {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 200)}
                     </p>
-                    <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors">
+                    <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-pink-600 bg-pink-500 text-white text-xs font-bold uppercase tracking-wider shadow-sm shadow-pink-500/25 transition-colors hover:bg-pink-600 dark:border-pink-400 dark:bg-pink-500 dark:hover:bg-pink-400">
                       Read featured
                       <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                     </Link>
@@ -319,7 +319,7 @@ export default function StoriesPage() {
 
                 {sideFeatured.length > 0 && (
                 <div className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full">
-                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-outline mb-1.5 shrink-0 hidden lg:block">
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-pink-600 dark:text-pink-400 mb-1.5 shrink-0 hidden lg:block">
                     More featured
                   </p>
                   <div
@@ -334,7 +334,7 @@ export default function StoriesPage() {
                       <Link
                         key={`${s._id}-${featuredSlideIndex}-${idx}`}
                         to={`/stories/${s._id}`}
-                        className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-primary/35 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
+                        className="group flex items-center gap-3 rounded-xl border border-pink-100/90 bg-white/95 dark:border-pink-500/25 dark:bg-neutral-950/90 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-pink-400/60 dark:hover:border-pink-400/50 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
                         style={{
                           animation: `featuredSideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both`,
                           animationDelay: `${60 + idx * 55}ms`,
@@ -348,11 +348,11 @@ export default function StoriesPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1 py-0.5">
-                          <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-primary font-bold leading-tight">Featured</p>
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-pink-600 dark:text-pink-400 font-bold leading-tight">Featured</p>
                           <p className="font-semibold text-sm text-on-surface line-clamp-2 leading-snug mt-0.5">{s.title}</p>
                           <p className="text-xs text-outline line-clamp-1 mt-1 leading-snug">{s.author?.name || 'Mentor'}</p>
                         </div>
-                        <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors shrink-0 text-[18px] sm:text-[20px]">arrow_forward</span>
+                        <span className="material-symbols-outlined text-pink-300/80 dark:text-pink-500/50 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors shrink-0 text-[18px] sm:text-[20px]">arrow_forward</span>
                       </Link>
                     ))}
                   </div>
