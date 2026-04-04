@@ -62,8 +62,10 @@ export default function StoriesPage() {
   const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
   /** Displayed hero + sidebar index; updates mid-transition after exit animation. */
   const [featuredDisplayIndex, setFeaturedDisplayIndex] = useState(0);
-  /** idle → exiting (hero down/side down) → swap index → entering (new hero/side from top) → idle */
+  /** idle → exiting → swap index → entering → idle */
   const [featuredSwapPhase, setFeaturedSwapPhase] = useState('idle');
+  /** Alternates each tick: "swap" (vertical/diagonal) vs "glide" (smooth horizontal handoff). */
+  const [featuredAnimKind, setFeaturedAnimKind] = useState('swap');
   const featuredFirstSyncRef = useRef(true);
   const featuredDisplayRef = useRef(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -155,6 +157,7 @@ export default function StoriesPage() {
 
     if (featuredSlideIndex === featuredDisplayRef.current) return;
 
+    setFeaturedAnimKind((featuredSlideIndex + 1) % 2 === 0 ? 'swap' : 'glide');
     setFeaturedSwapPhase('exiting');
     const idOut = window.setTimeout(() => {
       setFeaturedDisplayIndex(featuredSlideIndex);
@@ -188,6 +191,24 @@ export default function StoriesPage() {
   const heroFullWidth = featuredStories.length === 1;
   /** Spread cards only when the column is full-ish; otherwise stack from the top (avoids huge gaps). */
   const spreadSideCards = sideFeatured.length >= 5;
+
+  const featuredMotion = useMemo(
+    () =>
+      featuredAnimKind === 'glide'
+        ? {
+            heroOut: 'featuredHeroGlideOut',
+            heroIn: 'featuredHeroGlideIn',
+            sideOut: 'featuredSideColumnGlideOut',
+            sideIn: 'featuredSideColumnGlideIn',
+          }
+        : {
+            heroOut: 'featuredHeroSwapOut',
+            heroIn: 'featuredHeroSwapIn',
+            sideOut: 'featuredSideColumnSwapOut',
+            sideIn: 'featuredSideColumnSwapIn',
+          },
+    [featuredAnimKind]
+  );
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -358,9 +379,9 @@ export default function StoriesPage() {
                     featuredStories.length <= 1
                       ? { animation: 'featuredHeroIn 0.85s cubic-bezier(0.4, 0, 0.2, 1) both' }
                       : featuredSwapPhase === 'exiting'
-                        ? { animation: `featuredHeroSwapOut ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
+                        ? { animation: `${featuredMotion.heroOut} ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
                         : featuredSwapPhase === 'entering'
-                          ? { animation: `featuredHeroSwapIn ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
+                          ? { animation: `${featuredMotion.heroIn} ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
                           : undefined
                   }
                 >
@@ -400,9 +421,9 @@ export default function StoriesPage() {
                   className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full"
                   style={
                     featuredStories.length > 1 && featuredSwapPhase === 'exiting'
-                      ? { animation: `featuredSideColumnSwapOut ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
+                      ? { animation: `${featuredMotion.sideOut} ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
                       : featuredStories.length > 1 && featuredSwapPhase === 'entering'
-                        ? { animation: `featuredSideColumnSwapIn ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
+                        ? { animation: `${featuredMotion.sideIn} ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
                         : undefined
                   }
                 >

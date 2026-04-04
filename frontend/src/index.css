@@ -258,6 +258,78 @@
   }
 }
 
+/**
+ * Featured carousel variant B — smooth “glide”: hero drifts left/down, next story glides in from the right;
+ * sidebar column drifts the opposite way for a gentle handoff (no harsh white cut).
+ */
+@keyframes featuredHeroGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0.6;
+    transform: translate3d(-36px, 14px, 0) scale(0.94);
+  }
+}
+
+@keyframes featuredHeroGlideIn {
+  from {
+    opacity: 0.78;
+    transform: translate3d(48px, -18px, 0) scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (min-width: 1024px) {
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0.62;
+      transform: translate3d(-14%, 18px, 0) scale(0.9);
+    }
+  }
+
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.84;
+      transform: translate3d(16%, -22px, 0) scale(1.06);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+@keyframes featuredSideColumnGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.48;
+    transform: translate3d(28px, 10px, 0);
+  }
+}
+
+@keyframes featuredSideColumnGlideIn {
+  from {
+    opacity: 0.52;
+    transform: translate3d(-32px, -14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   @keyframes featuredHeroIn {
     from {
@@ -310,6 +382,38 @@
   @keyframes featuredSideColumnSwapIn {
     from {
       opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.38;
+    }
+  }
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.38;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideColumnGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.32;
+    }
+  }
+  @keyframes featuredSideColumnGlideIn {
+    from {
+      opacity: 0.32;
     }
     to {
       opacity: 1;
