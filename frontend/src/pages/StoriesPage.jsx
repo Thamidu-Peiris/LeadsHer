@@ -203,7 +203,8 @@ export default function StoriesPage() {
   return (
     <div className="pt-20 pb-12 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <section className="mb-8 mt-3 space-y-4">
+        <section className="mb-8 mt-3">
+          <div className="rounded-2xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/70 to-pink-100/25 p-4 sm:p-5 space-y-4 shadow-[0_8px_30px_-12px_rgba(219,39,119,0.12)] ring-1 ring-black/[0.04] dark:border-pink-500/30 dark:from-neutral-950 dark:via-pink-950/20 dark:to-neutral-950 dark:shadow-black/25 dark:ring-white/5">
           <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:gap-3 lg:flex-row lg:items-center">
             <div className="relative min-w-0 flex-1">
               <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[18px] text-pink-500 dark:text-pink-400">
@@ -253,15 +254,16 @@ export default function StoriesPage() {
                 key={c}
                 type="button"
                 onClick={() => setFilter('category', c)}
-                className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 ${
+                className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 active:scale-[0.98] ${
                   filters.category === c
                     ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
-                    : 'bg-white text-black border-pink-200 hover:border-pink-400 hover:bg-pink-50/90 active:scale-[0.98] dark:bg-neutral-950 dark:text-white dark:border-pink-500/35 dark:hover:bg-pink-950/40 dark:hover:border-pink-400/60'
+                    : 'bg-pink-100 text-pink-800 border-pink-300/90 hover:bg-pink-200 hover:border-pink-400 hover:text-pink-950 dark:bg-pink-950/55 dark:text-pink-200 dark:border-pink-500/50 dark:hover:bg-pink-900/70 dark:hover:border-pink-400 dark:hover:text-pink-50'
                 }`}
               >
                 {CATEGORY_LABELS[c]}
               </button>
             ))}
+          </div>
           </div>
         </section>
 
