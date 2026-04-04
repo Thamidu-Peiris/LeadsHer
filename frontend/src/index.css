@@ -150,6 +150,42 @@
   }
 }
 
+/** Featured Stories: main card enters from the left */
+@keyframes featuredHeroIn {
+  from {
+    opacity: 0;
+    transform: translate3d(-28px, 12px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/** Featured Stories: big card swap every carousel tick (smooth crossfade + lift) */
+@keyframes featuredCarouselHero {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/** Featured Stories: side list items enter from the right */
+@keyframes featuredSideIn {
+  from {
+    opacity: 0;
+    transform: translate3d(20px, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @layer components {
   /* Buttons */
   .btn-primary {
