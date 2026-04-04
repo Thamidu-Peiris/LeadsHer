@@ -44,8 +44,12 @@ export default function DashboardLayout() {
 
   const sidebarWidth = isAdmin ? 'ml-[280px]' : 'ml-[260px]';
 
+  const mainColumnClass = isMentee
+    ? `${sidebarWidth} flex-1 flex min-h-screen flex-col bg-[#ffe6f5] dark:bg-rose-950 text-on-surface`
+    : `${sidebarWidth} flex-1 flex min-h-screen flex-col bg-[#ffe6f5] dark:bg-surface text-on-surface`;
+
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+    <div className="relative flex min-h-screen bg-surface text-on-surface">
       {isMentor && (
         <MentorSidebar user={user} mentorProfile={mentorProfile} avatarSrc={avatarSrc} />
       )}
@@ -57,7 +61,7 @@ export default function DashboardLayout() {
       )}
 
       {/* Page content — only this area re-renders on navigation */}
-      <div className={`${sidebarWidth} flex-1 flex flex-col min-h-screen`}>
+      <div className={mainColumnClass}>
         <Outlet />
       </div>
     </div>

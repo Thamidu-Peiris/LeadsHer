@@ -8,7 +8,7 @@ import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
-const RESOURCES_HERO_IMAGE = '/images/resources-hero.jpg';
+const RESOURCES_HERO_IMAGE = '/images/resources-hero.png';
 
 const TYPES = ['article', 'ebook', 'video', 'podcast', 'tool', 'guide'];
 
@@ -361,32 +361,24 @@ export default function PublicResourcesPage() {
       {/* Hero */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-2">
         <section
-          className="relative mb-6 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-none"
+          className="relative mb-6 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100 dark:border-outline-variant/25 dark:bg-surface-container-lowest"
           aria-labelledby="resources-hero-heading"
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
             <div
-              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] opacity-90 sm:bg-[82%_25%] dark:opacity-35"
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] sm:bg-[82%_25%] dark:opacity-40"
               style={{ backgroundImage: `url(${RESOURCES_HERO_IMAGE})` }}
             />
           </div>
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white/92 to-amber-50/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/92 dark:to-amber-950/40"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-white via-white/88 to-transparent sm:via-white/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/85 dark:to-transparent"
-            aria-hidden
-          />
           <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
             <header className="mb-6 max-w-3xl text-left">
               <h1
                 id="resources-hero-heading"
-                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface"
+                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface [text-shadow:0_0_20px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.9)] dark:[text-shadow:none]"
               >
                 Leadership Resource Library
               </h1>
-              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant">
+              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant [text-shadow:0_0_12px_rgba(255,255,255,0.9)] dark:[text-shadow:none]">
                 Curated guides, ebooks, videos, and tools designed to accelerate your growth as a visionary leader.
               </p>
             </header>
@@ -485,7 +477,7 @@ export default function PublicResourcesPage() {
         {isAuthenticated ? (
           <Link
             to="/dashboard/resources"
-            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-gold-accent/20"
+            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-black hover:bg-neutral-900 text-white px-6 py-2.5 rounded-lg font-bold text-sm active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">dashboard</span>
             My Library

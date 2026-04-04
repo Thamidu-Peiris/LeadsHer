@@ -128,7 +128,7 @@ export default function MenteeSettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+              <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-gold-accent text-2xl">manage_accounts</span>
                   <div className="flex-1 min-w-0">
@@ -226,7 +226,7 @@ export default function MenteeSettingsPage() {
                 </div>
               </section>
 
-              <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4 lg:sticky lg:top-24">
+              <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 lg:sticky lg:top-24">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">

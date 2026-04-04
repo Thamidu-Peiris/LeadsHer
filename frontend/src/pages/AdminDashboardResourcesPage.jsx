@@ -134,7 +134,7 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
   };
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -958,7 +958,7 @@ export default function AdminDashboardResourcesPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]} showAvatar={false}>
             <button
               onClick={() => setUploadModal(true)}
-              className="bg-gold-accent text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-gold-accent/20"
+              className="bg-gold-accent text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Upload Resource

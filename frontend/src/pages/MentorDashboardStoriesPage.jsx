@@ -25,7 +25,7 @@ function StoryCoverThumb({ story, index }) {
   return (
     <Link
       to={`/stories/${story._id}`}
-      className="relative shrink-0 block w-[88px] h-[66px] sm:w-[104px] sm:h-[78px] rounded-lg overflow-hidden border border-outline-variant/12 bg-surface-container-low ring-1 ring-black/[0.03] shadow-sm group/thumb"
+      className="relative shrink-0 block w-[88px] h-[66px] sm:w-[104px] sm:h-[78px] rounded-lg overflow-hidden border border-outline-variant/12 bg-surface-container-low ring-1 ring-black/[0.03] group/thumb"
       aria-label={`View ${story.title || 'story'}`}
     >
       {showImg ? (
@@ -203,7 +203,7 @@ export default function MentorDashboardStoriesPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Stories' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Stories Studio</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -213,7 +213,7 @@ export default function MentorDashboardStoriesPage() {
               <div className="flex gap-3 flex-wrap">
                 <Link
                   to="/dashboard/stories/new"
-                  className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                  className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
                   + New Story
                 </Link>
@@ -252,7 +252,7 @@ export default function MentorDashboardStoriesPage() {
             </section>
 
             {stats.topViewed.length > 0 && (
-              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6">
                 <h2 className="font-serif-alt text-xl font-bold text-on-surface">Story Analytics</h2>
                 <p className="text-xs text-outline mt-1">Top performing stories by views</p>
                 <div className="mt-4 space-y-3">
@@ -322,7 +322,7 @@ export default function MentorDashboardStoriesPage() {
             {loading ? (
               <div className="flex justify-center py-16"><Spinner size="lg" /></div>
             ) : displayedStories.length === 0 ? (
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-10 text-center">
+              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-10 text-center">
                 <p className="text-on-surface-variant mb-5">
                   {statusFilter === 'draft' ? 'No drafts created yet.' : statusFilter === 'published' ? 'No published stories yet.' : 'No stories created yet.'}
                 </p>
@@ -333,7 +333,7 @@ export default function MentorDashboardStoriesPage() {
                 {displayedStories.map((s, idx) => (
                   <li
                     key={s._id}
-                    className="group relative rounded-xl border border-outline-variant/[0.12] dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_4px_14px_rgba(15,23,42,0.07)] hover:border-outline-variant/25 transition-[box-shadow,border-color] duration-200"
+                    className="group relative rounded-xl border border-outline-variant/[0.12] dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest hover:border-outline-variant/25 transition-[border-color] duration-200"
                   >
                     <div className="p-4 sm:p-4 sm:pr-5">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
@@ -454,7 +454,7 @@ export default function MentorDashboardStoriesPage() {
                 type="button"
                 onClick={handleDeleteConfirmed}
                 disabled={deleting}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-60"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors disabled:opacity-60"
               >
                 {deleting && <Spinner size="sm" className="text-white" />}
                 {deleting ? 'Deleting...' : 'Yes, delete'}

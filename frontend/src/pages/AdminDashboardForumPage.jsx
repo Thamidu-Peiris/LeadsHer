@@ -351,7 +351,7 @@ export default function AdminDashboardForumPage() {
               </Link>
               <Link
                 to="/forum/new"
-                className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors shadow-md shadow-gold-accent/15"
+                className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 New Discussion
