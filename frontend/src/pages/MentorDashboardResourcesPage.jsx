@@ -101,7 +101,7 @@ function ResourceCard({ resource, userId, isMentor, bookmarkedIds, onBookmark, o
   };
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -1170,7 +1170,7 @@ export default function MentorDashboardResourcesPage() {
                   onClick={() => handleTypeChange(pill.key)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     activeType === pill.key
-                      ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
+                      ? 'bg-gold-accent text-white'
                       : 'bg-transparent border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
                   }`}
                 >
@@ -1216,7 +1216,7 @@ export default function MentorDashboardResourcesPage() {
                   <button
                     onClick={() => { setFilterDifficulty(''); setPage(1); }}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                      !filterDifficulty ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
+                      !filterDifficulty ? 'bg-white dark:bg-surface-container-low text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
                     All
@@ -1226,7 +1226,7 @@ export default function MentorDashboardResourcesPage() {
                       key={d}
                       onClick={() => { setFilterDifficulty(d); setPage(1); }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
-                        filterDifficulty === d ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
+                        filterDifficulty === d ? 'bg-white dark:bg-surface-container-low text-on-surface' : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                       }`}
                     >
                       {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -1261,7 +1261,7 @@ export default function MentorDashboardResourcesPage() {
               {isMentor && (
                 <button
                   onClick={() => setUploadModal(true)}
-                  className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-gold-accent/20"
+                  className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">add_circle</span>
                   Upload Resource

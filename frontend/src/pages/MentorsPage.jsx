@@ -31,7 +31,7 @@ const CATEGORY_CHIPS = [
 const PAGE_LIMIT = 6;
 
 /** Blurred hero background (public/images — replace file to customize) */
-const MENTORS_HERO_IMAGE = '/images/mentors-hero.jpg';
+const MENTORS_HERO_IMAGE = '/images/mentors-hero.png';
 
 const SORT_OPTIONS = [
   { value: '-rating', label: 'Best match' },
@@ -206,32 +206,24 @@ export default function MentorsPage() {
     <div className="min-h-screen bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgb(237_233_254/0.85),rgb(255_255_255)_42%,rgb(249_250_251))] text-neutral-900 dark:bg-none dark:bg-surface dark:text-on-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-14">
         <section
-          className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-none"
+          className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100 dark:border-outline-variant/25 dark:bg-surface-container-lowest"
           aria-labelledby="mentors-hero-heading"
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
             <div
-              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] opacity-90 sm:bg-[82%_25%] dark:opacity-35"
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] sm:bg-[82%_25%] dark:opacity-40"
               style={{ backgroundImage: `url(${MENTORS_HERO_IMAGE})` }}
             />
           </div>
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white/92 to-rose-50/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/92 dark:to-rose-950/40"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-white via-white/88 to-transparent sm:via-white/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/85 dark:to-transparent"
-            aria-hidden
-          />
           <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
             <header className="mb-8 max-w-3xl text-left">
               <h1
                 id="mentors-hero-heading"
-                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface"
+                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface [text-shadow:0_0_20px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.9)] dark:[text-shadow:none]"
               >
                 Find a Mentor
               </h1>
-              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant">
+              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant [text-shadow:0_0_12px_rgba(255,255,255,0.9)] dark:[text-shadow:none]">
                 Connect with experienced women leaders who can guide your journey
               </p>
             </header>

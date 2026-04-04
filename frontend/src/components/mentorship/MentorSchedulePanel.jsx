@@ -42,7 +42,7 @@ export default function MentorSchedulePanel({ active = [], history = [] }) {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+      <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
         <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Session schedule</h2>
         <p className="text-on-surface-variant text-sm mb-6">
           Scheduled mentorship sessions across active and past mentorships, newest first. Connect Google Calendar below to

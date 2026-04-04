@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const FALLBACK_AVATAR =
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
@@ -18,6 +19,7 @@ const FALLBACK_AVATAR =
  */
 export default function DashboardTopBar({ crumbs = [], children, showAvatar = true }) {
   const { user, isMentee, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -34,7 +36,7 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
   };
 
   return (
-    <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
+    <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white dark:bg-surface-container-lowest sticky top-0 z-30 px-8 flex items-center justify-between">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
         <Link className="hover:text-gold-accent transition-colors" to="/">
@@ -59,6 +61,18 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
         <div className="flex items-center gap-3">
           {children}
 
+          {/* Dark mode toggle — shown on all dashboard top bars */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="w-10 h-10 rounded-full flex items-center justify-center border border-outline-variant/25 hover:border-gold-accent text-outline hover:text-gold-accent transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+
           {showAvatar && (
             <div className="relative">
               <button
@@ -78,7 +92,7 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
               {open && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50 rounded-xl overflow-hidden"
+                  className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 z-50 rounded-xl overflow-hidden"
                 >
                   <div className="px-5 py-4 border-b border-outline-variant/15">
                     <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">

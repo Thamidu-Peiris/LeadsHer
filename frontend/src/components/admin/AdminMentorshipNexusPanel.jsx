@@ -520,7 +520,7 @@ export default function AdminMentorshipNexusPanel({
               : 'No requests to display.'}
           </p>
         ) : (
-          <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20 shadow-sm">
+          <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead className="bg-surface-container-high/50">
@@ -704,7 +704,7 @@ export default function AdminMentorshipNexusPanel({
           )}
         </div>
 
-        <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20 shadow-sm">
+        <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-high/50">
@@ -856,7 +856,7 @@ export default function AdminMentorshipNexusPanel({
               return (
                 <div
                   key={f._id}
-                  className="bg-white p-6 rounded-xl editorial-shadow border border-outline-variant/20"
+                  className="bg-white p-6 rounded-xl border border-outline-variant/20"
                 >
                   <div className="flex flex-col gap-4">
                     {fb.mentorRating != null && (

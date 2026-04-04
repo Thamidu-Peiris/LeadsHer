@@ -24,7 +24,7 @@ const CAT_STYLE = {
   'panel-discussion': 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
 };
 
-const CARD = 'bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-sm';
+const CARD = 'bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20';
 
 function label(val) {
   return (val || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -60,7 +60,7 @@ function TabBar({ tabs, active, onChange }) {
           onClick={() => onChange(t.key)}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
             active === t.key
-              ? 'bg-white dark:bg-surface-container-lowest text-on-surface shadow-sm'
+              ? 'bg-white dark:bg-surface-container-lowest text-on-surface'
               : 'text-slate-400 dark:text-on-surface-variant hover:text-on-surface'
           }`}
         >
@@ -1435,7 +1435,7 @@ function CreateEventModal({ onClose, onCreated }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md shadow-gold-accent/20"
+              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all"
             >
               {saving ? (
                 <><Spinner size="sm" /> Creating…</>
@@ -1533,16 +1533,16 @@ export default function DashboardEventsPage() {
         <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Events' }]} />
 
         {/* Page content */}
-        <div className="flex-1 bg-slate-50 dark:bg-surface">
+        <div className="flex-1 bg-transparent">
           {/* Page header */}
-          <div className="bg-white dark:bg-surface-container-lowest border-b border-outline-variant/20 px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="bg-transparent border-b border-outline-variant/20 px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
               <p className="text-sm text-on-surface-variant mt-1">{pageSubtitle}</p>
             </div>
             <div className="flex gap-3 shrink-0">
               <Link to="/events"
-                className="flex items-center gap-2 px-4 py-2 border border-outline-variant/40 text-on-surface-variant text-sm font-bold rounded-lg hover:border-gold-accent/40 hover:text-gold-accent transition-colors">
+                className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-neutral-900 text-white text-sm font-bold rounded-lg transition-colors">
                 <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                 Browse All
               </Link>
@@ -1550,7 +1550,7 @@ export default function DashboardEventsPage() {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-gold-accent/20">
+                  className="flex items-center gap-2 px-4 py-2 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-lg transition-all">
                   <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Create Event
                 </button>

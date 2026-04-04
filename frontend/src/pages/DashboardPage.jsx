@@ -149,7 +149,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
       {/* Onboarding modal */}
         {onboardOpen && (
           <div className="fixed inset-0 z-[60] bg-black/35 flex items-center justify-center p-6">
-            <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-8">
+            <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 p-8">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                   <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Complete your mentor profile</h2>
@@ -239,7 +239,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
             {/* Welcome banner */}
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
@@ -255,14 +255,14 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
                     >
                       + New Event
                     </Link>
@@ -276,7 +276,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="col-span-12 lg:col-span-8 space-y-8">
                 {/* Activity grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Published</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myStories.length}</h4>
@@ -284,7 +284,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Your published stories</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
@@ -292,7 +292,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Community Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews + totalLikes}</h4>
@@ -308,19 +308,19 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Latest Stories</h2>
-                    <Link className="text-gold-accent text-xs font-bold hover:underline flex items-center gap-1 uppercase tracking-wider" to="/stories">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/stories">
                       View all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
 
                   {myStories.length === 0 ? (
-                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-on-surface-variant">
+                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 text-on-surface-variant">
                       You haven&apos;t written any stories yet.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
+                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
                             <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
@@ -345,7 +345,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 
               {/* Right column */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
                   </h3>
@@ -367,7 +367,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   )}
                 </div>
 
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
@@ -560,7 +560,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
             {/* Welcome banner */}
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-tertiary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -575,7 +575,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/mentors"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                    className="bg-black text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-neutral-900 active:scale-95 transition-all"
                   >
                     Find a Mentor
                   </Link>
@@ -593,7 +593,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               {/* Left column */}
               <div className="col-span-12 lg:col-span-8 space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
@@ -601,7 +601,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Saved</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">0</h4>
@@ -609,7 +609,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Wishlist (coming soon)</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Reading Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews}</h4>
@@ -624,17 +624,22 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Recent Activity</h2>
-                    <Link className="text-gold-accent text-xs font-bold hover:underline flex items-center gap-1 uppercase tracking-wider" to="/events">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/events">
                       View events <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
 
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6">
                     <p className="text-on-surface-variant text-sm">
                       Start by exploring mentors and joining an event. Your mentorship requests will appear here.
                     </p>
                     <div className="mt-4 flex gap-3 flex-wrap">
-                      <Link to="/mentors" className="btn-primary">Explore mentors</Link>
+                      <Link
+                        to="/dashboard/mentors"
+                        className="inline-flex items-center justify-center px-8 py-4 bg-black text-white font-label text-xs tracking-[0.2em] uppercase transition-transform hover:-translate-y-0.5 hover:bg-neutral-900 active:scale-[0.98]"
+                      >
+                        Explore mentors
+                      </Link>
                       <Link to="/dashboard/stories" className="btn-outline">Read stories</Link>
                     </div>
                   </div>
@@ -643,9 +648,9 @@ function MenteeDashboard({ user, myStories, myEvents }) {
 
               {/* Right column */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
+                    <span className="material-symbols-outlined text-black dark:text-neutral-100">calendar_today</span> Upcoming Events
                   </h3>
                   {myEvents.length === 0 ? (
                     <p className="text-outline text-sm">No registered events yet.</p>
@@ -663,12 +668,12 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                       ))}
                     </div>
                   )}
-                  <Link to="/events" className="text-gold-accent text-xs font-bold hover:underline uppercase tracking-wider flex items-center gap-1">
+                  <Link to="/events" className="text-black dark:text-neutral-100 text-xs font-bold hover:underline uppercase tracking-wider flex items-center gap-1">
                     Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </Link>
                 </div>
 
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
@@ -689,7 +694,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
             </div>
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
-              <p className="text-[10px] text-outline tracking-widest uppercase">
+              <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">
                 © {new Date().getFullYear()} LeadsHer. Built for brilliance.
               </p>
             </footer>
@@ -969,7 +974,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 </div>
               </div>
               {profileOpen && (
-                <div className="absolute right-8 top-14 w-56 bg-white border border-outline-variant/20 editorial-shadow z-[60] rounded-xl overflow-hidden">
+                <div className="absolute right-8 top-14 w-56 bg-white border border-outline-variant/20 z-[60] rounded-xl overflow-hidden">
                   <div className="px-5 py-4 border-b border-outline-variant/15">
                     <p className="text-sm font-semibold text-on-surface line-clamp-1 font-sans-modern">{user?.name || 'Admin'}</p>
                     <p className="text-xs text-outline line-clamp-1 font-sans-modern">{user?.email}</p>
@@ -1040,7 +1045,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                   />
                 </button>
                 {profileOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
+                  <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 z-50">
                     <div className="px-5 py-4 border-b border-outline-variant/15">
                       <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
                       <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
@@ -1079,7 +1084,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 { label: 'Active Mentorships', value: activeMentorships.length, icon: 'groups' },
                 { label: 'Requests', value: requests.length, icon: 'report' },
               ].map((card) => (
-                <div key={card.label} className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-5">
+                <div key={card.label} className="bg-white border border-outline-variant/20 rounded-xl p-5">
                   <div className="flex items-start justify-between">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">{card.label}</p>
                     <span className="material-symbols-outlined text-gold-accent">{card.icon}</span>
@@ -1105,7 +1110,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                   />
                 )}
                 {isManageAccountRoute ? (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
                     <p className="text-on-surface-variant text-sm mt-2 mb-6">
                       Separate views for mentors and mentees with quick moderation actions.
@@ -1118,7 +1123,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                         onClick={() => setManageAccountTab('mentors')}
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
                           manageAccountTab === 'mentors'
-                            ? 'bg-primary text-white shadow-sm'
+                            ? 'bg-primary text-white'
                             : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
@@ -1129,7 +1134,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                         onClick={() => setManageAccountTab('mentees')}
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
                           manageAccountTab === 'mentees'
-                            ? 'bg-primary text-white shadow-sm'
+                            ? 'bg-primary text-white'
                             : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
@@ -1318,7 +1323,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             )}
 
             {!isManageAccountRoute && !isManageMentorsRoute && (
-            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+            <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
                 <Link
@@ -1360,7 +1365,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             )}
 
             {!isManageAccountRoute && !isManageMentorsRoute && (
-            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+            <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
               <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
               <p className="text-on-surface-variant text-sm mt-2 mb-6">
                 Use quick links to manage platform entities and moderation workflows.
@@ -1531,7 +1536,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10">
       {/* Welcome */}
-      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/15 editorial-shadow px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/15 px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-on-surface">
             Welcome back, {user?.name?.split(' ')[0]}! 👋
@@ -1593,9 +1598,9 @@ export default function DashboardPage() {
                 <StoryCard story={s} />
                 <div className="absolute top-2 right-2 hidden group-hover:flex gap-1.5">
                   <Link to={`/dashboard/stories/${s._id}/edit`}
-                    className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-gray-700 hover:bg-gray-50 border">Edit</Link>
+                    className="bg-white text-xs px-2.5 py-1 rounded-lg text-gray-700 hover:bg-gray-50 border">Edit</Link>
                   <button onClick={() => handleDeleteStory(s._id)}
-                    className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 border">Del</button>
+                    className="bg-white text-xs px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 border">Del</button>
                 </div>
               </div>
             ))}
