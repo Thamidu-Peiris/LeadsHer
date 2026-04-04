@@ -54,6 +54,8 @@ export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
   const [stories, setStories]     = useState([]);
   const [featuredStories, setFeaturedStories] = useState([]);
+  /** Rotates which story is in the large featured card (4s interval when 2+ stories). */
+  const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -88,10 +90,37 @@ export default function StoriesPage() {
       .catch(() => setFeaturedStories([]));
   }, []);
 
-  /** Up to 7 from API: #1 = hero, #2–#7 = sidebar (max 6). Fewer rows if you have fewer featured stories published. */
-  const activeFeatured = featuredStories[0];
-  const sideFeatured =
-    featuredStories.length > 1 ? featuredStories.slice(1, MAX_FEATURED_STORIES) : [];
+  useEffect(() => {
+    if (!featuredStories.length) {
+      setFeaturedSlideIndex(0);
+      return;
+    }
+    setFeaturedSlideIndex((i) => (i >= featuredStories.length ? 0 : i));
+  }, [featuredStories.length]);
+
+  useEffect(() => {
+    if (featuredStories.length <= 1) return undefined;
+    const id = window.setInterval(() => {
+      setFeaturedSlideIndex((idx) => (idx + 1) % featuredStories.length);
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [featuredStories]);
+
+  /** Up to 7 from API; large card + sidebar rotate together every 4s. */
+  const activeFeatured = useMemo(() => {
+    if (!featuredStories.length) return null;
+    return featuredStories[featuredSlideIndex] ?? featuredStories[0];
+  }, [featuredStories, featuredSlideIndex]);
+
+  const sideFeatured = useMemo(() => {
+    const len = featuredStories.length;
+    if (len <= 1) return [];
+    const maxSide = Math.min(MAX_FEATURED_STORIES - 1, len - 1);
+    return Array.from({ length: maxSide }, (_, idx) =>
+      featuredStories[(featuredSlideIndex + idx + 1) % len]
+    );
+  }, [featuredStories, featuredSlideIndex]);
+
   const heroFullWidth = featuredStories.length === 1;
   /** Spread cards only when the column is full-ish; otherwise stack from the top (avoids huge gaps). */
   const spreadSideCards = sideFeatured.length >= 5;
@@ -243,8 +272,13 @@ export default function StoriesPage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5">
                 <article
                   className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
-                  key={activeFeatured._id}
-                  style={{ animation: 'featuredHeroIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both' }}
+                  key={`${activeFeatured._id}-${featuredSlideIndex}`}
+                  style={{
+                    animation:
+                      featuredStories.length <= 1
+                        ? 'featuredHeroIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both'
+                        : 'featuredCarouselHero 0.55s cubic-bezier(0.22, 1, 0.36, 1) both',
+                  }}
                 >
                   <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[min(480px,62vh)] bg-surface-container-low">
                     {activeFeatured.coverImage ? (
@@ -278,6 +312,7 @@ export default function StoriesPage() {
                     More featured
                   </p>
                   <div
+                    key={featuredSlideIndex}
                     className={
                       spreadSideCards
                         ? 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-between lg:gap-0'
@@ -286,12 +321,12 @@ export default function StoriesPage() {
                   >
                     {sideFeatured.map((s, idx) => (
                       <Link
-                        key={s._id}
+                        key={`${s._id}-${featuredSlideIndex}-${idx}`}
                         to={`/stories/${s._id}`}
                         className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-primary/35 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
                         style={{
-                          animation: `featuredSideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both`,
-                          animationDelay: `${80 + idx * 65}ms`,
+                          animation: `featuredSideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both`,
+                          animationDelay: `${60 + idx * 55}ms`,
                         }}
                       >
                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
