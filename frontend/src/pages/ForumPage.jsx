@@ -191,55 +191,48 @@ export default function ForumPage() {
           <h1 className="font-serif-alt text-4xl md:text-5xl font-bold text-white mb-4">
             LeadsHer Forum
           </h1>
-          <p className="text-white/60 text-lg max-w-xl mx-auto mb-8">
+          <p className="text-white/60 text-lg max-w-xl mx-auto">
             Ask questions, share insights, and grow alongside a community of women leaders.
           </p>
-          {user ? (
-            <Link
-              to="/forum/new"
-              className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-lg shadow-gold-accent/25"
-            >
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              Start a Discussion
-            </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-lg shadow-gold-accent/25"
-            >
-              Join the Conversation
-            </Link>
-          )}
         </div>
       </section>
 
       <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="relative group">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
-              search
-            </span>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search discussions…"
-              className="w-full bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl py-3 pl-12 pr-32 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-gold-accent hover:bg-gold-accent/90 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        {/* Search + Start a Discussion */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <form onSubmit={handleSearch} className="w-full min-w-0 max-w-md sm:max-w-lg sm:shrink-0">
+            <div className="relative group">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search discussions…"
+                className="w-full bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl py-3 pl-12 pr-32 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gold-accent hover:bg-gold-accent/90 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+          <Link
+            to={user ? '/forum/new' : '/login'}
+            className="inline-flex shrink-0 items-center justify-center gap-2 bg-black hover:bg-neutral-900 text-white font-bold px-6 py-3 rounded-lg transition-colors w-full sm:w-auto"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Start a Discussion
+          </Link>
+        </div>
 
         {/* Filters row */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           {/* Category tabs */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
             {CATEGORIES.map((c) => (
               <button
                 key={c.value}
@@ -293,7 +286,10 @@ export default function ForumPage() {
                 <p className="text-on-surface-variant font-medium mb-2">No discussions yet</p>
                 <p className="text-outline text-sm mb-6">Be the first to start a conversation.</p>
                 {user && (
-                  <Link to="/forum/new" className="btn-primary inline-flex items-center gap-2">
+                  <Link
+                    to="/forum/new"
+                    className="inline-flex items-center gap-2 bg-black hover:bg-neutral-900 text-white font-bold px-6 py-3 rounded-lg transition-colors"
+                  >
                     <span className="material-symbols-outlined text-[18px]">add</span>
                     Start a Discussion
                   </Link>

@@ -259,7 +259,7 @@ export default function MenteeDashboardMentorsPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Find Mentors' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentorship</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -294,7 +294,7 @@ export default function MenteeDashboardMentorsPage() {
             ) : (
               <>
                 {tab === 'directory' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-neutral-200/90 editorial-shadow rounded-xl overflow-hidden">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-neutral-200/90 rounded-xl overflow-hidden">
                     <div className="border-b border-neutral-200/80 bg-gradient-to-br from-white via-white to-rose-50/40 px-4 py-5 sm:px-6">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="relative min-w-0 flex-1">
@@ -310,13 +310,13 @@ export default function MenteeDashboardMentorsPage() {
                             onChange={(e) => setSearchInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleDirectorySearch()}
                             placeholder="Search by name, expertise, or industry…"
-                            className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 shadow-sm outline-none transition-shadow placeholder:text-neutral-400 focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                            className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 outline-none transition-shadow placeholder:text-neutral-400 focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={handleDirectorySearch}
-                          className="shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors hover:bg-neutral-800"
+                          className="shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-neutral-800"
                         >
                           Search
                         </button>
@@ -386,7 +386,7 @@ export default function MenteeDashboardMentorsPage() {
                               return (
                                 <article
                                   key={m._id}
-                                  className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 shadow-sm transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-md dark:border-outline-variant/20 dark:bg-surface-container-lowest"
+                                  className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 transition-[border-color] hover:border-neutral-300 dark:border-outline-variant/20 dark:bg-surface-container-lowest"
                                 >
                                   <div className="flex gap-2.5">
                                     {avatarSrc ? (
@@ -474,7 +474,7 @@ export default function MenteeDashboardMentorsPage() {
                                           message: 'I would love to learn from your experience.',
                                         });
                                       }}
-                                      className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:hover:bg-rose-900/50"
+                                      className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black transition-colors hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:hover:bg-rose-900/50"
                                     >
                                       Request
                                     </button>
@@ -504,7 +504,7 @@ export default function MenteeDashboardMentorsPage() {
                 )}
 
                 {tab === 'requests' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">My Requests</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Track and cancel pending requests.</p>
                     {requests.length === 0 ? (
@@ -565,7 +565,7 @@ export default function MenteeDashboardMentorsPage() {
                 )}
 
                 {tab === 'active' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentorship</h2>
                     <p className="text-on-surface-variant text-sm mb-6">View your active mentorship, log sessions, and update goals.</p>
 
@@ -645,7 +645,7 @@ export default function MenteeDashboardMentorsPage() {
                 )}
 
                 {tab === 'history' && (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Past mentorships — submit feedback on completed ones.</p>
 
@@ -701,7 +701,7 @@ export default function MenteeDashboardMentorsPage() {
             {/* Request modal */}
             {requestingMentor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Request Mentorship</h3>
@@ -762,7 +762,7 @@ export default function MenteeDashboardMentorsPage() {
             {/* Goals modal */}
             {goalsFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
@@ -796,7 +796,7 @@ export default function MenteeDashboardMentorsPage() {
             {/* Feedback modal */}
             {feedbackFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
@@ -844,7 +844,7 @@ export default function MenteeDashboardMentorsPage() {
             )}
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
-              <p className="text-[10px] text-outline tracking-widest uppercase">
+              <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">
                 © {new Date().getFullYear()} LeadsHer. Built for brilliance.
               </p>
             </footer>

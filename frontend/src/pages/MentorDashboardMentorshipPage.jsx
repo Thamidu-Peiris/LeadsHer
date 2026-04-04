@@ -297,7 +297,7 @@ export default function MentorDashboardMentorshipPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Mentorship' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentorship</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -332,7 +332,7 @@ export default function MentorDashboardMentorshipPage() {
             ) : (
               <>
                 {tab === 'requests' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center mb-6">
                       <div>
                         <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Requests</h2>
@@ -407,7 +407,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'active' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentees</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Schedule sessions, update goals, mark complete, and submit feedback.</p>
 
@@ -519,7 +519,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'history' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Completed and past mentorships.</p>
 
@@ -581,7 +581,7 @@ export default function MentorDashboardMentorshipPage() {
             {/* Goals modal */}
             {goalsFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Goals</h3>
@@ -613,7 +613,7 @@ export default function MentorDashboardMentorshipPage() {
             {/* Session modal */}
             {sessionFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Schedule session</h3>
@@ -697,7 +697,7 @@ export default function MentorDashboardMentorshipPage() {
             {/* Feedback modal */}
             {feedbackFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>

@@ -76,14 +76,14 @@ export default function MenteeDashboardForumPage() {
                   to="/forum"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/40 px-4 py-2.5 rounded-lg transition-all"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-black border border-black hover:bg-black hover:text-white px-4 py-2.5 rounded-lg transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                   Browse Forum
                 </Link>
                 <Link
                   to="/forum/new"
-                  className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors shadow-md shadow-gold-accent/15"
+                  className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   New Discussion

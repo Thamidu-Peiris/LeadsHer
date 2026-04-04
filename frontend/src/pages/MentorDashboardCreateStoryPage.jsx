@@ -287,7 +287,7 @@ export default function MentorDashboardCreateStoryPage() {
                     />
                   </button>
                   {profileOpen && (
-                    <div role="menu" className="absolute right-0 mt-2 w-52 bg-white dark:bg-surface-container border border-outline-variant/20 shadow-lg rounded-xl z-50 overflow-hidden">
+                    <div role="menu" className="absolute right-0 mt-2 w-52 bg-white dark:bg-surface-container border border-outline-variant/20 rounded-xl z-50 overflow-hidden">
                       <div className="px-4 py-3 border-b border-outline-variant/10">
                         <p className="text-sm font-semibold text-on-surface truncate">{user?.name || 'Mentor'}</p>
                         <p className="text-xs text-outline truncate">{user?.email}</p>
@@ -324,7 +324,7 @@ export default function MentorDashboardCreateStoryPage() {
                   type="button"
                   disabled={saving}
                   onClick={() => saveStory('published')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-primary text-white shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   {saving ? <Spinner size="sm" className="text-white" /> : 'Publish'}
                   {!saving && <span className="material-symbols-outlined text-[16px]">send</span>}
@@ -355,7 +355,7 @@ export default function MentorDashboardCreateStoryPage() {
                         />
                         <div className="absolute inset-0 bg-black/25" />
                         <div className="relative z-10 flex flex-wrap items-center justify-center gap-2">
-                          <label className="cursor-pointer bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-on-surface transition-colors shadow-sm">
+                          <label className="cursor-pointer bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-on-surface transition-colors">
                             Replace
                             <input
                               type="file"
@@ -366,7 +366,7 @@ export default function MentorDashboardCreateStoryPage() {
                           </label>
                           <button
                             type="button"
-                            className="bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-tertiary transition-colors shadow-sm"
+                            className="bg-white/95 hover:bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-tertiary transition-colors"
                             onClick={() => {
                               if (coverPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(coverPreviewUrl);
                               setCoverPreviewUrl('');
@@ -474,7 +474,7 @@ export default function MentorDashboardCreateStoryPage() {
                           onClick={() => setField('category', c.value)}
                           className={`h-[86px] rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                             active
-                              ? 'border-gold-accent/55 bg-gold-accent/10 text-on-surface shadow-sm'
+                              ? 'border-gold-accent/55 bg-gold-accent/10 text-on-surface'
                               : 'border-outline-variant/20 bg-white dark:bg-surface-container hover:border-outline-variant/40 hover:bg-surface-container-lowest'
                           }`}
                         >

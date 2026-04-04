@@ -67,7 +67,7 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate,
   };
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -460,8 +460,8 @@ export default function MenteeDashboardResourcesPage() {
                   onClick={() => handleTypeChange(pill.key)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                     activeType === pill.key
-                      ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
-                      : 'bg-transparent border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
+                      ? 'bg-gold-accent text-white'
+                      : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
                   }`}
                 >
                   {pill.label}
@@ -526,7 +526,7 @@ export default function MenteeDashboardResourcesPage() {
                       onClick={() => { setFilterDifficulty(''); setPage(1); }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
                         !filterDifficulty
-                          ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface'
+                          ? 'bg-white dark:bg-surface-container-low text-on-surface'
                           : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                       }`}
                     >
@@ -538,7 +538,7 @@ export default function MenteeDashboardResourcesPage() {
                         onClick={() => { setFilterDifficulty(d); setPage(1); }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
                           filterDifficulty === d
-                            ? 'bg-white dark:bg-surface-container-low shadow-sm text-on-surface'
+                            ? 'bg-white dark:bg-surface-container-low text-on-surface'
                             : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
@@ -631,7 +631,7 @@ export default function MenteeDashboardResourcesPage() {
               )}
             </div>
 
-            <div className="text-center text-xs text-slate-400 dark:text-outline py-4">
+            <div className="text-center text-xs text-black dark:text-neutral-100 py-4">
               © 2026 LEADSHER. BUILT FOR BRILLIANCE.
             </div>
           </div>

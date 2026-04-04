@@ -328,7 +328,7 @@ export default function AdminDashboardStoriesPage() {
             {loading ? (
               <div className="py-16 flex justify-center"><Spinner size="lg" /></div>
             ) : filteredStories.length === 0 ? (
-              <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-center text-on-surface-variant">
+              <div className="bg-white border border-outline-variant/20 rounded-xl p-8 text-center text-on-surface-variant">
                 No stories found.
               </div>
             ) : (

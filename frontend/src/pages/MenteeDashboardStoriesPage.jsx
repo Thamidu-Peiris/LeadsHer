@@ -43,13 +43,13 @@ export default function MenteeDashboardStoriesPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Stories' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
               <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Stories for You</h1>
               <p className="text-on-surface-variant text-sm mt-1">Personalized story feed inside your dashboard.</p>
             </section>
 
             {topStories.length > 0 && (
-              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6">
                 <h2 className="font-serif-alt text-xl font-bold text-on-surface mb-4">Top Stories Right Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {topStories.map((s) => (
@@ -66,7 +66,7 @@ export default function MenteeDashboardStoriesPage() {
               {loading ? (
                 <div className="flex justify-center py-16"><Spinner size="lg" /></div>
               ) : stories.length === 0 ? (
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-center">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 text-center">
                   <p className="text-on-surface-variant">No stories available right now.</p>
                 </div>
               ) : (
