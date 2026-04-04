@@ -4,6 +4,7 @@ import { storyApi } from '../api/storyApi';
 import Pagination from '../components/common/Pagination';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
+import { MAX_FEATURED_STORIES } from '../constants/featuredStories';
 
 const CATEGORIES = ['all', 'leadership', 'entrepreneurship', 'STEM', 'corporate', 'social-impact', 'career-growth'];
 const CATEGORY_LABELS = {
@@ -53,7 +54,8 @@ export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
   const [stories, setStories]     = useState([]);
   const [featuredStories, setFeaturedStories] = useState([]);
-  const [featuredIndex, setFeaturedIndex] = useState(0);
+  /** Rotates which story is in the large featured card (4s interval when 2+ stories). */
+  const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -78,34 +80,50 @@ export default function StoriesPage() {
   useEffect(() => { fetchStories(filters); }, [filters]);
 
   useEffect(() => {
-    storyApi.getFeatured()
-      .then((res) => setFeaturedStories(res.data?.stories || []))
+    storyApi
+      .getFeatured()
+      .then((res) => {
+        const raw = res.data?.stories ?? res.data;
+        const list = Array.isArray(raw) ? raw.slice(0, MAX_FEATURED_STORIES) : [];
+        setFeaturedStories(list);
+      })
       .catch(() => setFeaturedStories([]));
   }, []);
 
   useEffect(() => {
-    if (featuredStories.length <= 1) return undefined;
-    const timer = setInterval(() => {
-      setFeaturedIndex((i) => (i + 1) % featuredStories.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [featuredStories]);
-
-  useEffect(() => {
     if (!featuredStories.length) {
-      setFeaturedIndex(0);
+      setFeaturedSlideIndex(0);
       return;
     }
-    setFeaturedIndex((i) => (i >= featuredStories.length ? 0 : i));
+    setFeaturedSlideIndex((i) => (i >= featuredStories.length ? 0 : i));
   }, [featuredStories.length]);
 
-  const activeFeatured = featuredStories[featuredIndex] || featuredStories[0];
-  const sideFeatured = featuredStories.length <= 1
-    ? []
-    : Array.from(
-      { length: Math.min(3, Math.max(0, featuredStories.length - 1)) },
-      (_, idx) => featuredStories[(featuredIndex + idx + 1) % featuredStories.length]
+  useEffect(() => {
+    if (featuredStories.length <= 1) return undefined;
+    const id = window.setInterval(() => {
+      setFeaturedSlideIndex((idx) => (idx + 1) % featuredStories.length);
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [featuredStories]);
+
+  /** Up to 7 from API; large card + sidebar rotate together every 4s. */
+  const activeFeatured = useMemo(() => {
+    if (!featuredStories.length) return null;
+    return featuredStories[featuredSlideIndex] ?? featuredStories[0];
+  }, [featuredStories, featuredSlideIndex]);
+
+  const sideFeatured = useMemo(() => {
+    const len = featuredStories.length;
+    if (len <= 1) return [];
+    const maxSide = Math.min(MAX_FEATURED_STORIES - 1, len - 1);
+    return Array.from({ length: maxSide }, (_, idx) =>
+      featuredStories[(featuredSlideIndex + idx + 1) % len]
     );
+  }, [featuredStories, featuredSlideIndex]);
+
+  const heroFullWidth = featuredStories.length === 1;
+  /** Spread cards only when the column is full-ish; otherwise stack from the top (avoids huge gaps). */
+  const spreadSideCards = sideFeatured.length >= 5;
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -185,48 +203,61 @@ export default function StoriesPage() {
   return (
     <div className="pt-20 pb-12 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <section className="relative mt-3 overflow-hidden rounded-2xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.08] via-surface-container-low to-tertiary/[0.08] dark:from-primary/20 dark:via-surface-container-lowest dark:to-tertiary/15 shadow-sm p-4 sm:p-5 mb-8">
-          <div className="absolute -top-16 -right-12 w-48 h-48 rounded-full bg-gold-accent/15 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-14 -left-10 w-44 h-44 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-          <div className="relative">
-          <form onSubmit={handleSearch} className="flex flex-col lg:flex-row gap-3 lg:items-center">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+        <section className="mb-8 mt-3">
+          <div className="rounded-2xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/70 to-pink-100/25 p-4 sm:p-5 space-y-4 shadow-[0_8px_30px_-12px_rgba(219,39,119,0.12)] ring-1 ring-black/[0.04] dark:border-pink-500/30 dark:from-neutral-950 dark:via-pink-950/20 dark:to-neutral-950 dark:shadow-black/25 dark:ring-white/5">
+          <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:gap-3 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[18px] text-pink-500 dark:text-pink-400">
+                search
+              </span>
               <input
                 type="text"
                 placeholder="Search by title, excerpt, or topic..."
                 value={filters.search}
                 onChange={(e) => setFilter('search', e.target.value)}
-                className="w-full bg-surface-container-lowest dark:bg-surface-container border border-outline-variant/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-on-surface placeholder:text-outline/70 focus:outline-none focus:ring-2 focus:ring-gold-accent/25 focus:border-gold-accent/40 transition-all"
+                className="w-full rounded-full border border-pink-200 bg-white py-2.5 pl-11 pr-5 text-sm text-black shadow-sm shadow-pink-500/5 placeholder:text-neutral-500 transition-all focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-400/35 dark:border-pink-500/35 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-pink-400"
               />
             </div>
-            <button type="submit" className="px-5 py-2.5 rounded-xl bg-on-surface text-inverse-on-surface text-xs font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-opacity">
-              Search
-            </button>
-            {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
-              <Link to="/dashboard/stories/new" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-primary/25 bg-primary text-white text-xs font-bold uppercase tracking-[0.14em] shadow-sm shadow-primary/10 hover:bg-primary/90 transition-colors">
-                <span className="material-symbols-outlined text-[16px]">edit_square</span>
-                New
-              </Link>
-            )}
-            <select
-              value={filters.sort}
-              onChange={(e) => setFilter('sort', e.target.value)}
-              className="w-full lg:w-auto bg-surface-container-lowest dark:bg-surface-container border border-outline-variant/20 rounded-xl py-2.5 px-3 text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/25 focus:border-gold-accent/40 transition-all"
-            >
-              {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
+            <div className="flex flex-wrap items-stretch gap-2 sm:gap-3">
+              <button
+                type="submit"
+                className="min-h-[42px] shrink-0 rounded-xl border border-pink-600 bg-pink-500 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-pink-500/25 transition-all hover:bg-pink-600 active:scale-[0.98] dark:border-pink-400 dark:bg-pink-500 dark:hover:bg-pink-400"
+              >
+                Search
+              </button>
+              {isAuthenticated && (user?.role === 'mentor' || user?.role === 'admin') && (
+                <Link
+                  to="/dashboard/stories/new"
+                  className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-pink-400 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-black shadow-sm transition-all hover:border-pink-500 hover:bg-pink-50 active:scale-[0.98] dark:border-pink-500/50 dark:bg-neutral-950 dark:text-white dark:hover:bg-pink-950/50"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-pink-500 dark:text-pink-400">edit_square</span>
+                  New
+                </Link>
+              )}
+              <select
+                value={filters.sort}
+                onChange={(e) => setFilter('sort', e.target.value)}
+                className="min-h-[42px] w-full min-w-[10rem] cursor-pointer rounded-xl border border-pink-200 bg-white py-2.5 pl-3 pr-4 text-xs font-semibold uppercase tracking-wide text-black shadow-sm shadow-pink-500/5 transition-all focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-400/35 lg:w-auto dark:border-pink-500/35 dark:bg-neutral-950 dark:text-white dark:focus:border-pink-400"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </form>
-          <div className="mt-4 flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
             {CATEGORIES.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setFilter('category', c)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.12em] border transition-colors ${
+                className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 active:scale-[0.98] ${
                   filters.category === c
-                    ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                    : 'bg-surface-container-lowest dark:bg-surface-container border-outline-variant/25 text-outline hover:border-outline-variant/45 hover:text-on-surface'
+                    ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
+                    : 'bg-pink-100 text-pink-800 border-pink-300/90 hover:bg-pink-200 hover:border-pink-400 hover:text-pink-950 dark:bg-pink-950/55 dark:text-pink-200 dark:border-pink-500/50 dark:hover:bg-pink-900/70 dark:hover:border-pink-400 dark:hover:text-pink-50'
                 }`}
               >
                 {CATEGORY_LABELS[c]}
@@ -238,75 +269,97 @@ export default function StoriesPage() {
 
         {featuredStories.length > 0 && activeFeatured && (
           <section className="mb-10">
-            <div className="relative overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-primary/[0.11] via-surface-container-low to-tertiary/[0.10] p-4 sm:p-5 lg:p-6 shadow-[0_14px_36px_rgba(15,23,42,0.08)]">
-              <div className="absolute -top-16 -left-10 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-16 -right-8 w-52 h-52 rounded-full bg-tertiary/20 blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden rounded-3xl border border-pink-200/90 bg-gradient-to-br from-white via-pink-50/80 to-pink-100/35 p-4 sm:p-5 lg:p-6 shadow-[0_14px_36px_-8px_rgba(219,39,119,0.18)] ring-1 ring-black/[0.03] dark:border-pink-500/30 dark:from-neutral-950 dark:via-pink-950/25 dark:to-neutral-950 dark:shadow-black/40 dark:ring-white/5">
+              <div className="absolute -top-16 -left-10 w-44 h-44 rounded-full bg-pink-300/35 blur-3xl pointer-events-none dark:bg-pink-500/15" />
+              <div className="absolute -bottom-16 -right-8 w-52 h-52 rounded-full bg-pink-400/25 blur-3xl pointer-events-none dark:bg-pink-600/12" />
               <div className="relative flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-primary/90">Curated highlights</p>
-                  <h2 className="font-serif-alt text-2xl sm:text-3xl font-bold text-on-surface mt-1">Featured Stories</h2>
+                  <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-pink-600 dark:text-pink-400">Curated highlights</p>
+                  <h2 className="font-serif-alt text-2xl sm:text-3xl font-bold text-pink-950 dark:text-pink-50 mt-1">Featured Stories</h2>
                 </div>
-                <span className="hidden sm:inline-flex px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary text-[10px] uppercase tracking-[0.18em] font-bold">
+                <span className="hidden sm:inline-flex px-3 py-1 rounded-full border border-pink-200/90 bg-pink-100/80 text-pink-800 text-[10px] uppercase tracking-[0.18em] font-bold dark:border-pink-500/40 dark:bg-pink-950/60 dark:text-pink-200">
                   Editor picks
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5">
                 <article
-                  className="lg:col-span-7 group rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)]"
-                  key={activeFeatured._id}
-                  style={{ animation: 'storySlideInRight 520ms cubic-bezier(0.22, 1, 0.36, 1) both' }}
+                  className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-pink-100/90 bg-white/92 dark:border-pink-500/20 dark:bg-neutral-950/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(219,39,119,0.1)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
+                  key={`${activeFeatured._id}-${featuredSlideIndex}`}
+                  style={{
+                    animation:
+                      featuredStories.length <= 1
+                        ? 'featuredHeroIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both'
+                        : 'featuredCarouselHero 0.55s cubic-bezier(0.22, 1, 0.36, 1) both',
+                  }}
                 >
-                  <div className="relative aspect-[16/9] bg-surface-container-low">
+                  <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[min(480px,62vh)] bg-surface-container-low">
                     {activeFeatured.coverImage ? (
-                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/30 to-tertiary/25" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-pink-400/45 to-rose-500/30 dark:from-pink-600/35 dark:to-rose-900/40" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <span className="inline-flex px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5">
+                      <span className="inline-flex px-2.5 py-1 rounded-full bg-pink-500/95 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm shadow-pink-900/20">
                         Featured
                       </span>
-                      <h3 className="mt-2 font-serif-alt text-2xl text-white leading-tight line-clamp-2">{activeFeatured.title}</h3>
+                      <h3 className="mt-2 font-serif-alt text-2xl sm:text-3xl text-white leading-tight line-clamp-3">{activeFeatured.title}</h3>
                       <p className="mt-1 text-sm text-white/85 line-clamp-1">{activeFeatured.author?.name || 'Mentor'}</p>
                     </div>
                   </div>
-                  <div className="p-4">
-                    <p className="text-sm text-on-surface-variant line-clamp-2">
-                      {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 180)}
+                  <div className="shrink-0 p-4 sm:p-5 border-t border-pink-100/80 dark:border-pink-500/15 bg-white/95 dark:bg-neutral-950/90">
+                    <p className="text-sm text-on-surface-variant line-clamp-3">
+                      {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 200)}
                     </p>
-                    <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors">
+                    <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-pink-600 bg-pink-500 text-white text-xs font-bold uppercase tracking-wider shadow-sm shadow-pink-500/25 transition-colors hover:bg-pink-600 dark:border-pink-400 dark:bg-pink-500 dark:hover:bg-pink-400">
                       Read featured
                       <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                     </Link>
                   </div>
                 </article>
 
-                <div className="lg:col-span-5 space-y-3">
-                  {sideFeatured.map((s, idx) => (
-                    <Link
-                      key={s._id}
-                      to={`/stories/${s._id}`}
-                      className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm p-3 hover:border-primary/35 transition-all hover:translate-x-1"
-                      style={{ animation: `storySlideInRight ${420 + idx * 80}ms cubic-bezier(0.22, 1, 0.36, 1) both` }}
-                    >
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
-                        {s.coverImage ? (
-                          <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Featured</p>
-                        <p className="font-semibold text-sm text-on-surface line-clamp-1">{s.title}</p>
-                        <p className="text-xs text-outline line-clamp-1">{s.author?.name || 'Mentor'}</p>
-                      </div>
-                      <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors ml-auto">arrow_forward</span>
-                    </Link>
-                  ))}
+                {sideFeatured.length > 0 && (
+                <div className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full">
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-pink-600 dark:text-pink-400 mb-1.5 shrink-0 hidden lg:block">
+                    More featured
+                  </p>
+                  <div
+                    key={featuredSlideIndex}
+                    className={
+                      spreadSideCards
+                        ? 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-between lg:gap-0'
+                        : 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-start'
+                    }
+                  >
+                    {sideFeatured.map((s, idx) => (
+                      <Link
+                        key={`${s._id}-${featuredSlideIndex}-${idx}`}
+                        to={`/stories/${s._id}`}
+                        className="group flex items-center gap-3 rounded-xl border border-pink-100/90 bg-white/95 dark:border-pink-500/25 dark:bg-neutral-950/90 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-pink-400/60 dark:hover:border-pink-400/50 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
+                        style={{
+                          animation: `featuredSideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both`,
+                          animationDelay: `${60 + idx * 55}ms`,
+                        }}
+                      >
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
+                          {s.coverImage ? (
+                            <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          ) : (
+                            <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 py-0.5">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-pink-600 dark:text-pink-400 font-bold leading-tight">Featured</p>
+                          <p className="font-semibold text-sm text-on-surface line-clamp-2 leading-snug mt-0.5">{s.title}</p>
+                          <p className="text-xs text-outline line-clamp-1 mt-1 leading-snug">{s.author?.name || 'Mentor'}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-pink-300/80 dark:text-pink-500/50 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors shrink-0 text-[18px] sm:text-[20px]">arrow_forward</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
+                )}
               </div>
             </div>
           </section>
