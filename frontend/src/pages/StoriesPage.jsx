@@ -4,6 +4,7 @@ import { storyApi } from '../api/storyApi';
 import Pagination from '../components/common/Pagination';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
+import { MAX_FEATURED_STORIES } from '../constants/featuredStories';
 
 const CATEGORIES = ['all', 'leadership', 'entrepreneurship', 'STEM', 'corporate', 'social-impact', 'career-growth'];
 const CATEGORY_LABELS = {
@@ -53,7 +54,6 @@ export default function StoriesPage() {
   const { isAuthenticated, user } = useAuth();
   const [stories, setStories]     = useState([]);
   const [featuredStories, setFeaturedStories] = useState([]);
-  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -78,34 +78,23 @@ export default function StoriesPage() {
   useEffect(() => { fetchStories(filters); }, [filters]);
 
   useEffect(() => {
-    storyApi.getFeatured()
-      .then((res) => setFeaturedStories(res.data?.stories || []))
+    storyApi
+      .getFeatured()
+      .then((res) => {
+        const raw = res.data?.stories ?? res.data;
+        const list = Array.isArray(raw) ? raw.slice(0, MAX_FEATURED_STORIES) : [];
+        setFeaturedStories(list);
+      })
       .catch(() => setFeaturedStories([]));
   }, []);
 
-  useEffect(() => {
-    if (featuredStories.length <= 1) return undefined;
-    const timer = setInterval(() => {
-      setFeaturedIndex((i) => (i + 1) % featuredStories.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [featuredStories]);
-
-  useEffect(() => {
-    if (!featuredStories.length) {
-      setFeaturedIndex(0);
-      return;
-    }
-    setFeaturedIndex((i) => (i >= featuredStories.length ? 0 : i));
-  }, [featuredStories.length]);
-
-  const activeFeatured = featuredStories[featuredIndex] || featuredStories[0];
-  const sideFeatured = featuredStories.length <= 1
-    ? []
-    : Array.from(
-      { length: Math.min(5, Math.max(0, featuredStories.length - 1)) },
-      (_, idx) => featuredStories[(featuredIndex + idx + 1) % featuredStories.length]
-    );
+  /** Up to 7 from API: #1 = hero, #2–#7 = sidebar (max 6). Fewer rows if you have fewer featured stories published. */
+  const activeFeatured = featuredStories[0];
+  const sideFeatured =
+    featuredStories.length > 1 ? featuredStories.slice(1, MAX_FEATURED_STORIES) : [];
+  const heroFullWidth = featuredStories.length === 1;
+  /** Spread cards only when the column is full-ish; otherwise stack from the top (avoids huge gaps). */
+  const spreadSideCards = sideFeatured.length >= 5;
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -251,11 +240,11 @@ export default function StoriesPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch gap-4 lg:gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5">
                 <article
-                  className="lg:col-span-8 group flex flex-col h-full min-h-0 rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)] lg:min-h-[min(640px,78vh)]"
+                  className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
                   key={activeFeatured._id}
-                  style={{ animation: 'storySlideInRight 520ms cubic-bezier(0.22, 1, 0.36, 1) both' }}
+                  style={{ animation: 'featuredHeroIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both' }}
                 >
                   <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[min(480px,62vh)] bg-surface-container-low">
                     {activeFeatured.coverImage ? (
@@ -283,35 +272,46 @@ export default function StoriesPage() {
                   </div>
                 </article>
 
-                <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-outline mb-2 shrink-0 hidden lg:block">
+                {sideFeatured.length > 0 && (
+                <div className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full">
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-outline mb-1.5 shrink-0 hidden lg:block">
                     More featured
                   </p>
-                  <div className="flex flex-1 flex-col gap-2 min-h-0">
+                  <div
+                    className={
+                      spreadSideCards
+                        ? 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-between lg:gap-0'
+                        : 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-start'
+                    }
+                  >
                     {sideFeatured.map((s, idx) => (
                       <Link
                         key={s._id}
                         to={`/stories/${s._id}`}
-                        className="group flex lg:flex-1 lg:min-h-0 items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2.5 hover:border-primary/35 transition-all hover:translate-x-0.5 overflow-hidden"
-                        style={{ animation: `storySlideInRight ${420 + idx * 70}ms cubic-bezier(0.22, 1, 0.36, 1) both` }}
+                        className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-primary/35 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
+                        style={{
+                          animation: `featuredSideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both`,
+                          animationDelay: `${80 + idx * 65}ms`,
+                        }}
                       >
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0 self-center">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
                           {s.coverImage ? (
                             <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           ) : (
                             <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
                           )}
                         </div>
-                        <div className="min-w-0 flex-1 self-center">
-                          <p className="text-[9px] uppercase tracking-widest text-primary font-bold">Featured</p>
-                          <p className="font-semibold text-xs sm:text-sm text-on-surface line-clamp-2 leading-snug">{s.title}</p>
-                          <p className="text-[11px] text-outline line-clamp-1 mt-0.5">{s.author?.name || 'Mentor'}</p>
+                        <div className="min-w-0 flex-1 py-0.5">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-primary font-bold leading-tight">Featured</p>
+                          <p className="font-semibold text-sm text-on-surface line-clamp-2 leading-snug mt-0.5">{s.title}</p>
+                          <p className="text-xs text-outline line-clamp-1 mt-1 leading-snug">{s.author?.name || 'Mentor'}</p>
                         </div>
-                        <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors shrink-0 self-center text-[18px]">arrow_forward</span>
+                        <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors shrink-0 text-[18px] sm:text-[20px]">arrow_forward</span>
                       </Link>
                     ))}
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </section>

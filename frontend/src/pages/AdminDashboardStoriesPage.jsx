@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
+import { MAX_FEATURED_STORIES } from '../constants/featuredStories';
 import Spinner from '../components/common/Spinner';
 
 function trimText(v, max = 120) {
@@ -82,6 +83,11 @@ export default function AdminDashboardStoriesPage() {
       return title.includes(q) || excerpt.includes(q) || author.includes(q);
     });
   }, [stories, query, statusFilter]);
+
+  const featuredPublishedCount = useMemo(
+    () => stories.filter((s) => s.isFeatured && (s.status || 'draft') === 'published').length,
+    [stories]
+  );
 
   const handleDelete = async () => {
     if (!deleteDialog.id) return;
@@ -242,6 +248,14 @@ export default function AdminDashboardStoriesPage() {
                 <span className="text-on-surface">Manage Stories</span>
               </div>
               <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Stories</h1>
+              <p className="text-sm text-outline mt-1 max-w-xl">
+                Featured on <span className="text-on-surface-variant">/stories</span>:{' '}
+                <span className="font-semibold text-on-surface tabular-nums">
+                  {featuredPublishedCount}
+                </span>
+                {' / '}
+                {MAX_FEATURED_STORIES} published stories max. Use Feature and order arrows to control the homepage block.
+              </p>
             </div>
             <div className="relative">
               <button

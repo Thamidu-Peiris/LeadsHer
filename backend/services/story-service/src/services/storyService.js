@@ -5,8 +5,11 @@ const User = require('../models/User');
 const normalizeRole = (r) => String(r || '').toLowerCase();
 const isAdminRole = (r) => normalizeRole(r) === 'admin';
 
-/** 1 hero + 5 “More featured” on /stories */
-const MAX_FEATURED_STORIES = 6;
+/**
+ * Max featured (published) stories. Frontend: `frontend/src/constants/featuredStories.js`.
+ * Layout on /stories: 1 large + up to 6 in “More featured” = 7 total.
+ */
+const MAX_FEATURED_STORIES = 7;
 
 const stripHtml = (s) => String(s || '').replace(/<[^>]*>/g, ' ');
 
