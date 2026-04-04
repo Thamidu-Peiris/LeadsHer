@@ -103,7 +103,7 @@ export default function StoriesPage() {
   const sideFeatured = featuredStories.length <= 1
     ? []
     : Array.from(
-      { length: Math.min(3, Math.max(0, featuredStories.length - 1)) },
+      { length: Math.min(5, Math.max(0, featuredStories.length - 1)) },
       (_, idx) => featuredStories[(featuredIndex + idx + 1) % featuredStories.length]
     );
 
@@ -251,30 +251,30 @@ export default function StoriesPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch gap-4 lg:gap-5">
                 <article
-                  className="lg:col-span-7 group rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)]"
+                  className="lg:col-span-8 group flex flex-col h-full min-h-0 rounded-2xl overflow-hidden border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(15,23,42,0.09)] lg:min-h-[min(640px,78vh)]"
                   key={activeFeatured._id}
                   style={{ animation: 'storySlideInRight 520ms cubic-bezier(0.22, 1, 0.36, 1) both' }}
                 >
-                  <div className="relative aspect-[16/9] bg-surface-container-low">
+                  <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[min(480px,62vh)] bg-surface-container-low">
                     {activeFeatured.coverImage ? (
-                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/30 to-tertiary/25" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-tertiary/25" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5">
                       <span className="inline-flex px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
                         Featured
                       </span>
-                      <h3 className="mt-2 font-serif-alt text-2xl text-white leading-tight line-clamp-2">{activeFeatured.title}</h3>
+                      <h3 className="mt-2 font-serif-alt text-2xl sm:text-3xl text-white leading-tight line-clamp-3">{activeFeatured.title}</h3>
                       <p className="mt-1 text-sm text-white/85 line-clamp-1">{activeFeatured.author?.name || 'Mentor'}</p>
                     </div>
                   </div>
-                  <div className="p-4">
-                    <p className="text-sm text-on-surface-variant line-clamp-2">
-                      {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 180)}
+                  <div className="shrink-0 p-4 sm:p-5 border-t border-outline-variant/10 bg-white/95 dark:bg-surface-container-lowest/90">
+                    <p className="text-sm text-on-surface-variant line-clamp-3">
+                      {stripHtmlToText(activeFeatured.excerpt || activeFeatured.content).slice(0, 200)}
                     </p>
                     <Link to={`/stories/${activeFeatured._id}`} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors">
                       Read featured
@@ -283,29 +283,34 @@ export default function StoriesPage() {
                   </div>
                 </article>
 
-                <div className="lg:col-span-5 space-y-3">
-                  {sideFeatured.map((s, idx) => (
-                    <Link
-                      key={s._id}
-                      to={`/stories/${s._id}`}
-                      className="group flex items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm p-3 hover:border-primary/35 transition-all hover:translate-x-1"
-                      style={{ animation: `storySlideInRight ${420 + idx * 80}ms cubic-bezier(0.22, 1, 0.36, 1) both` }}
-                    >
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
-                        {s.coverImage ? (
-                          <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Featured</p>
-                        <p className="font-semibold text-sm text-on-surface line-clamp-1">{s.title}</p>
-                        <p className="text-xs text-outline line-clamp-1">{s.author?.name || 'Mentor'}</p>
-                      </div>
-                      <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors ml-auto">arrow_forward</span>
-                    </Link>
-                  ))}
+                <div className="lg:col-span-4 flex flex-col h-full min-h-0">
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-outline mb-2 shrink-0 hidden lg:block">
+                    More featured
+                  </p>
+                  <div className="flex flex-1 flex-col gap-2 min-h-0">
+                    {sideFeatured.map((s, idx) => (
+                      <Link
+                        key={s._id}
+                        to={`/stories/${s._id}`}
+                        className="group flex lg:flex-1 lg:min-h-0 items-center gap-3 rounded-xl border border-white/35 bg-white/90 dark:bg-surface-container-lowest/95 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2.5 hover:border-primary/35 transition-all hover:translate-x-0.5 overflow-hidden"
+                        style={{ animation: `storySlideInRight ${420 + idx * 70}ms cubic-bezier(0.22, 1, 0.36, 1) both` }}
+                      >
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0 self-center">
+                          {s.coverImage ? (
+                            <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          ) : (
+                            <div className={`w-full h-full bg-gradient-to-br ${CARD_BG[idx % CARD_BG.length]}`} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 self-center">
+                          <p className="text-[9px] uppercase tracking-widest text-primary font-bold">Featured</p>
+                          <p className="font-semibold text-xs sm:text-sm text-on-surface line-clamp-2 leading-snug">{s.title}</p>
+                          <p className="text-[11px] text-outline line-clamp-1 mt-0.5">{s.author?.name || 'Mentor'}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors shrink-0 self-center text-[18px]">arrow_forward</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

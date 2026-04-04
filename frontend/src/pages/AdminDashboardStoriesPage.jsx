@@ -41,6 +41,7 @@ export default function AdminDashboardStoriesPage() {
   const [stories, setStories] = useState([]);
   const [deletingId, setDeletingId] = useState('');
   const [featuringId, setFeaturingId] = useState('');
+  const [reorderingId, setReorderingId] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', title: '' });
   const [commentsDialog, setCommentsDialog] = useState({
     open: false,
@@ -101,15 +102,30 @@ export default function AdminDashboardStoriesPage() {
   const handleToggleFeature = async (story) => {
     setFeaturingId(story._id);
     try {
-      await storyApi.update(story._id, { isFeatured: !story.isFeatured });
+      const res = await storyApi.update(story._id, { isFeatured: !story.isFeatured });
+      const updated = res.data;
       setStories((prev) =>
-        prev.map((s) => (s._id === story._id ? { ...s, isFeatured: !s.isFeatured } : s))
+        prev.map((s) => (s._id === story._id ? { ...s, ...updated } : s))
       );
       toast.success(!story.isFeatured ? 'Story featured' : 'Story unfeatured');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to update feature status');
     } finally {
       setFeaturingId('');
+    }
+  };
+
+  const handleReorderFeatured = async (story, direction) => {
+    if (!story.isFeatured || (story.status || 'draft') !== 'published') return;
+    setReorderingId(story._id);
+    try {
+      await storyApi.update(story._id, { featuredReorder: direction });
+      await loadStories();
+      toast.success('Featured order updated');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to reorder featured stories');
+    } finally {
+      setReorderingId('');
     }
   };
 
@@ -333,40 +349,67 @@ export default function AdminDashboardStoriesPage() {
                           {(s.commentCount || 0)} comments
                         </span>
                       </div>
-                      <div className="grid grid-cols-4 gap-2 lg:w-[470px]">
-                        <Link
-                          to={`/dashboard/stories/${s._id}/edit`}
-                          className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40 text-center"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => openModerateComments(s)}
-                          className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40"
-                        >
-                          Comments
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleFeature(s)}
-                          disabled={featuringId === s._id}
-                          className={`px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider disabled:opacity-60 ${
-                            s.isFeatured
-                              ? 'border-outline-variant/25 bg-surface-container-lowest text-on-surface hover:border-outline-variant/40'
-                              : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
-                          }`}
-                        >
-                          {featuringId === s._id ? 'Saving...' : s.isFeatured ? 'Unfeature' : 'Feature'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteDialog({ open: true, id: s._id, title: s.title || 'Untitled story' })}
-                          disabled={deletingId === s._id}
-                          className="px-3 py-1.5 rounded-md border border-red-300 bg-red-50 text-xs font-bold uppercase tracking-wider text-red-700 hover:bg-red-100 disabled:opacity-60"
-                        >
-                          {deletingId === s._id ? 'Deleting...' : 'Delete'}
-                        </button>
+                      <div className="flex flex-col gap-2 lg:w-[470px] lg:items-end">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+                          <Link
+                            to={`/dashboard/stories/${s._id}/edit`}
+                            className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40 text-center"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openModerateComments(s)}
+                            className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40"
+                          >
+                            Comments
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeature(s)}
+                            disabled={featuringId === s._id}
+                            className={`px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider disabled:opacity-60 ${
+                              s.isFeatured
+                                ? 'border-outline-variant/25 bg-surface-container-lowest text-on-surface hover:border-outline-variant/40'
+                                : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
+                            }`}
+                          >
+                            {featuringId === s._id ? 'Saving...' : s.isFeatured ? 'Unfeature' : 'Feature'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteDialog({ open: true, id: s._id, title: s.title || 'Untitled story' })}
+                            disabled={deletingId === s._id}
+                            className="px-3 py-1.5 rounded-md border border-red-300 bg-red-50 text-xs font-bold uppercase tracking-wider text-red-700 hover:bg-red-100 disabled:opacity-60"
+                          >
+                            {deletingId === s._id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                        {s.isFeatured && (s.status || 'draft') === 'published' && (
+                          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                            <span className="text-[10px] uppercase tracking-widest text-outline font-bold mr-1 hidden sm:inline">
+                              Featured order
+                            </span>
+                            <button
+                              type="button"
+                              title="Move up in featured list"
+                              onClick={() => handleReorderFeatured(s, 'up')}
+                              disabled={reorderingId === s._id}
+                              className="inline-flex items-center justify-center w-9 h-9 rounded-md border border-outline-variant/25 bg-white text-on-surface hover:border-gold-accent/40 disabled:opacity-60"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+                            </button>
+                            <button
+                              type="button"
+                              title="Move down in featured list"
+                              onClick={() => handleReorderFeatured(s, 'down')}
+                              disabled={reorderingId === s._id}
+                              className="inline-flex items-center justify-center w-9 h-9 rounded-md border border-outline-variant/25 bg-white text-on-surface hover:border-gold-accent/40 disabled:opacity-60"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

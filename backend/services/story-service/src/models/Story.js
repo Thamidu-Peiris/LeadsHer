@@ -30,6 +30,8 @@ const storySchema = new mongoose.Schema(
     views: { type: Number, default: 0, index: true },
     readingTime: { type: Number, default: 1 }, // minutes
     isFeatured: { type: Boolean, default: false, index: true },
+    /** Lower numbers appear first in Featured Stories (admin-controlled). */
+    featuredOrder: { type: Number, default: null },
     publishedAt: { type: Date, default: null, index: true },
     // Backward compat
     images: [{ type: String }],
