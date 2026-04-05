@@ -189,18 +189,55 @@ export default function AdminDashboardStoriesPage() {
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
             title="Manage Stories"
-          >
-            <>
-              Featured on <span className="text-on-surface-variant">/stories</span>:{' '}
-              <span className="font-semibold text-on-surface tabular-nums">
-                {featuredPublishedCount}
-              </span>
-              {' / '}
-              {MAX_FEATURED_STORIES} published stories max. Use Feature and order arrows to control the homepage block.
-            </>
-          </AdminPageHeader>
+            hideTitleRow
+          />
 
           <div className="p-8 space-y-5 max-w-[1280px] mx-auto w-full">
+            <section
+              className="overflow-hidden rounded-xl border border-outline-variant/20 bg-gradient-to-br from-white to-slate-50/80 p-6 shadow-sm ring-1 ring-black/[0.04]"
+              aria-labelledby="manage-stories-heading"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0">
+                  <h1
+                    id="manage-stories-heading"
+                    className="font-serif-alt text-2xl font-bold tracking-tight text-on-surface sm:text-3xl"
+                  >
+                    Manage Stories
+                  </h1>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-on-surface-variant">
+                    Review, edit, and moderate stories — feature published posts and set their order for the public{' '}
+                    <span className="font-medium text-on-surface">/stories</span> page.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-stretch gap-2 rounded-lg border border-outline-variant/25 bg-white/90 px-4 py-3 shadow-sm sm:min-w-[200px]">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-outline">
+                    <span className="material-symbols-outlined text-primary text-[18px]" aria-hidden>
+                      auto_stories
+                    </span>
+                    Featured on /stories
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span
+                      className="text-3xl font-bold tabular-nums tracking-tight text-on-surface"
+                      aria-live="polite"
+                    >
+                      {featuredPublishedCount}
+                    </span>
+                    <span className="text-lg font-medium text-on-surface-variant">/</span>
+                    <span className="text-xl font-semibold tabular-nums text-on-surface-variant">
+                      {MAX_FEATURED_STORIES}
+                    </span>
+                    <span className="ml-1 text-xs text-on-surface-variant">published max</span>
+                  </div>
+                  <p className="border-t border-outline-variant/15 pt-2 text-[11px] leading-snug text-on-surface-variant">
+                    <span className="font-semibold text-on-surface">Feature</span> toggles inclusion ·{' '}
+                    <span className="font-semibold text-on-surface">Arrows</span> set order
+                  </p>
+                </div>
+              </div>
+            </section>
+
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
               <input
                 value={query}

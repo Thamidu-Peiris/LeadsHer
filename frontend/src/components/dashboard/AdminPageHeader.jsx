@@ -13,6 +13,8 @@ export default function AdminPageHeader({
   profileOpen,
   setProfileOpen,
   avatarSrc,
+  /** When true, only breadcrumbs + top bar render (use a page-level title card below). */
+  hideTitleRow = false,
 }) {
   return (
     <>
@@ -23,10 +25,12 @@ export default function AdminPageHeader({
         setProfileOpen={setProfileOpen}
         avatarSrc={avatarSrc}
       />
-      <div className="px-4 sm:px-8 pt-3 pb-2">
-        <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{title}</h1>
-        {children != null && <div className="text-sm text-outline mt-1 max-w-xl">{children}</div>}
-      </div>
+      {!hideTitleRow && (
+        <div className="px-4 sm:px-8 pt-3 pb-2">
+          <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{title}</h1>
+          {children != null && <div className="text-sm text-outline mt-1 max-w-xl">{children}</div>}
+        </div>
+      )}
     </>
   );
 }
