@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, default: '' },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationCodeHash: { type: String, select: false },
   },
   { timestamps: true }
 );

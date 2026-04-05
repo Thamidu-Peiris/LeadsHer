@@ -11,23 +11,62 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Name, email and password are required.' });
     }
     const result = await authService.registerUser({ name, email, password, role });
-    res.status(201).json({ message: 'Registered successfully. Please verify your email.', ...result });
+    const msg = result.requiresVerification
+      ? 'Check your email for a verification code to finish signing up.'
+      : 'Registered successfully.';
+    res.status(201).json({ message: msg, ...result });
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message || 'Registration failed.' });
   }
 };
 
-// POST /api/auth/verify-email
+// POST /api/auth/verify-email — body: { token } from link, or { email, code } for 6-digit code
 exports.verifyEmail = async (req, res) => {
   try {
-    const token = req.body?.token || req.query?.token;
-    if (!token) {
-      return res.status(400).json({ message: 'Verification token is required.' });
-    }
-    const result = await authService.verifyEmail(token);
+    const { token, email, code } = req.body || {};
+    const qToken = req.query?.token;
+    const result = await authService.verifyEmail({
+      token: token || qToken,
+      email,
+      code,
+    });
     res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message || 'Verification failed.' });
+  }
+};
+
+// POST /api/auth/resend-verification — body: { email }
+exports.resendVerification = async (req, res) => {
+  try {
+    const email = req.body?.email;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+    const result = await authService.resendVerificationCode(email);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to resend verification.' });
+  }
+};
+
+// GET /api/auth/registration-config — public
+exports.registrationConfig = async (req, res) => {
+  try {
+    const result = await authService.getRegistrationConfig();
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to load config.' });
+  }
+};
+
+// PUT /api/auth/admin/settings — admin only
+exports.adminUpdateSettings = async (req, res) => {
+  try {
+    const result = await authService.updateAdminAppSettings(req.body || {});
+    res.json({ message: 'Settings updated.', ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to update settings.' });
   }
 };
 
@@ -42,7 +81,10 @@ exports.login = async (req, res) => {
     const result = await authService.loginUser({ email, password });
     res.json({ message: 'Logged in successfully.', ...result });
   } catch (err) {
-    res.status(err.status || 500).json({ message: err.message || 'Login failed.' });
+    res.status(err.status || 500).json({
+      message: err.message || 'Login failed.',
+      ...(err.code && { code: err.code }),
+    });
   }
 };
 

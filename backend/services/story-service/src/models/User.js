@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     profilePicture: { type: String, default: '' },
     avatar: { type: String, default: '' }, // backward compat
     isEmailVerified: { type: Boolean, default: false },
+    emailVerificationCodeHash: { type: String, select: false },
   },
   { timestamps: true }
 );

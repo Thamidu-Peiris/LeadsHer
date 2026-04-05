@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const AppSettings = require('../models/AppSettings');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
+
+const sha256 = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+
+const randomSixDigitCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -36,6 +41,14 @@ const normalizeRole = (r) => {
   return ['admin', 'mentor', 'mentee', 'guest'].includes(s) ? s : 'mentee';
 };
 
+const getEmailVerificationRequired = async () => {
+  const s = await AppSettings.getSingleton();
+  return s.emailVerificationRequired !== false;
+};
+
+/** New signup flow (verification on) always sets this; existing accounts created before that do not → they skip verification. */
+const hasPendingEmailVerification = (user) => Boolean(user?.emailVerificationCodeHash);
+
 const registerUser = async ({ name, email, password, role }) => {
   const existing = await User.findOne({ email });
   if (existing) {
@@ -43,46 +56,142 @@ const registerUser = async ({ name, email, password, role }) => {
     err.status = 400;
     throw err;
   }
+  const verificationRequired = await getEmailVerificationRequired();
+
+  if (!verificationRequired) {
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: normalizeRole(role),
+      isEmailVerified: true,
+    });
+    const token = signToken(user._id);
+    return {
+      token,
+      user: toUserResponse(user),
+      emailVerificationRequired: false,
+      requiresVerification: false,
+    };
+  }
+
   const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedVerification = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  const hashedVerification = sha256(verificationToken);
+  const code = randomSixDigitCode();
+  const codeHash = sha256(code);
+
   const user = await User.create({
     name,
     email,
     password,
     role: normalizeRole(role),
+    isEmailVerified: false,
     emailVerificationToken: hashedVerification,
     emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000,
+    emailVerificationCodeHash: codeHash,
+    emailVerificationCodeExpires: Date.now() + 15 * 60 * 1000,
   });
-  await sendVerificationEmail(user.email, verificationToken);
-  const token = signToken(user._id);
-  return {
-    token,
-    user: toUserResponse(user),
-    emailVerificationSent: true,
-    ...(process.env.NODE_ENV !== 'production' && { verificationToken }),
+  await sendVerificationEmail(user.email, verificationToken, code);
+
+  const payload = {
+    requiresVerification: true,
+    emailVerificationRequired: true,
+    email: user.email,
+    message: 'Check your email for a verification code to finish signing up.',
+    ...(process.env.NODE_ENV !== 'production' && {
+      verificationToken,
+      verificationCode: code,
+    }),
   };
+  return payload;
 };
 
-const verifyEmail = async (token) => {
-  const hashed = crypto.createHash('sha256').update(token).digest('hex');
-  const user = await User.findOne({
-    emailVerificationToken: hashed,
-    emailVerificationExpires: { $gt: Date.now() },
-  }).select('+emailVerificationToken +emailVerificationExpires');
-  if (!user) {
-    const err = new Error('Invalid or expired verification token.');
+const verifyEmail = async ({ token, email, code }) => {
+  let user;
+
+  if (email && code) {
+    const normalized = String(code).replace(/\s/g, '');
+    if (!/^\d{6}$/.test(normalized)) {
+      const err = new Error('Enter the 6-digit code from your email.');
+      err.status = 400;
+      throw err;
+    }
+    const hash = sha256(normalized);
+    user = await User.findOne({
+      email: String(email).toLowerCase().trim(),
+      emailVerificationCodeHash: hash,
+      emailVerificationCodeExpires: { $gt: Date.now() },
+    }).select(
+      '+emailVerificationToken +emailVerificationExpires +emailVerificationCodeHash +emailVerificationCodeExpires'
+    );
+    if (!user) {
+      const err = new Error('Invalid or expired code. Request a new code from the registration page.');
+      err.status = 400;
+      throw err;
+    }
+  } else if (token) {
+    const hashed = sha256(token);
+    user = await User.findOne({
+      emailVerificationToken: hashed,
+      emailVerificationExpires: { $gt: Date.now() },
+    }).select(
+      '+emailVerificationToken +emailVerificationExpires +emailVerificationCodeHash +emailVerificationCodeExpires'
+    );
+    if (!user) {
+      const err = new Error('Invalid or expired verification link.');
+      err.status = 400;
+      throw err;
+    }
+  } else {
+    const err = new Error('Provide a verification code or link.');
     err.status = 400;
     throw err;
   }
+
   user.isEmailVerified = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationExpires = undefined;
+  user.emailVerificationCodeHash = undefined;
+  user.emailVerificationCodeExpires = undefined;
   await user.save();
-  return { message: 'Email verified successfully.', user: toUserResponse(user) };
+
+  const jwtToken = signToken(user._id);
+  return {
+    message: 'Email verified successfully.',
+    token: jwtToken,
+    user: toUserResponse(user),
+  };
+};
+
+const resendVerificationCode = async (email) => {
+  const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select(
+    '+emailVerificationToken +emailVerificationExpires +emailVerificationCodeHash +emailVerificationCodeExpires'
+  );
+  if (!user || user.isEmailVerified) {
+    return { message: 'If that email is registered and not verified, we sent a new code.' };
+  }
+  const required = await getEmailVerificationRequired();
+  if (!required) {
+    return { message: 'If that email is registered and not verified, we sent a new code.' };
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = sha256(verificationToken);
+  user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  const code = randomSixDigitCode();
+  user.emailVerificationCodeHash = sha256(code);
+  user.emailVerificationCodeExpires = Date.now() + 15 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+  await sendVerificationEmail(user.email, verificationToken, code);
+
+  return {
+    message: 'If that email is registered and not verified, we sent a new code.',
+    ...(process.env.NODE_ENV !== 'production' && { verificationCode: code, verificationToken }),
+  };
 };
 
 const loginUser = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email }).select('+password +emailVerificationCodeHash');
   if (!user || !(await user.comparePassword(password))) {
     const err = new Error('Invalid email or password.');
     err.status = 401;
@@ -92,6 +201,17 @@ const loginUser = async ({ email, password }) => {
     const err = new Error('Account is suspended. Contact admin.');
     err.status = 403;
     throw err;
+  }
+  const required = await getEmailVerificationRequired();
+  if (required && !user.isEmailVerified && hasPendingEmailVerification(user)) {
+    const err = new Error('Verify your email before signing in. Check your inbox for the code.');
+    err.status = 403;
+    err.code = 'EMAIL_NOT_VERIFIED';
+    throw err;
+  }
+  if (!user.isEmailVerified && !hasPendingEmailVerification(user)) {
+    user.isEmailVerified = true;
+    await user.save({ validateBeforeSave: false });
   }
   const token = signToken(user._id);
   return { token, user: toUserResponse(user) };
@@ -255,11 +375,33 @@ const adminSetSuspension = async (userId, suspended, reason) => {
   return toUserResponse(user);
 };
 
+const getRegistrationConfig = async () => {
+  const required = await getEmailVerificationRequired();
+  return { emailVerificationRequired: required };
+};
+
+const updateAdminAppSettings = async ({ emailVerificationRequired }) => {
+  if (typeof emailVerificationRequired !== 'boolean') {
+    const err = new Error('emailVerificationRequired must be a boolean.');
+    err.status = 400;
+    throw err;
+  }
+  const doc = await AppSettings.findOneAndUpdate(
+    { _id: 'singleton' },
+    { $set: { emailVerificationRequired } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+  return { emailVerificationRequired: doc.emailVerificationRequired };
+};
+
 module.exports = {
   signToken,
   registerUser,
   verifyEmail,
+  resendVerificationCode,
   loginUser,
+  getRegistrationConfig,
+  updateAdminAppSettings,
   getProfileById,
   updateProfileById,
   forgotPasswordForEmail,
@@ -271,4 +413,5 @@ module.exports = {
   adminSetUserRole,
   adminSetSuspension,
   toUserResponse,
+  getEmailVerificationRequired,
 };
