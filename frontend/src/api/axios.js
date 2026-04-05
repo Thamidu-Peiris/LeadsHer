@@ -16,7 +16,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+    const p = window.location.pathname;
+    const publicAuth = p.startsWith('/login') || p.startsWith('/register') || p.startsWith('/forgot-password') || p.startsWith('/reset-password');
+    if (err.response?.status === 401 && !publicAuth) {
       localStorage.removeItem('leadsher_token');
       localStorage.removeItem('leadsher_user');
       window.location.href = '/login';
