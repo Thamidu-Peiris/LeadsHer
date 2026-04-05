@@ -13,7 +13,7 @@ export default function AdminUserMenu({
   open,
   onOpenChange,
   avatarSrc,
-  buttonClassName = 'w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors',
+  buttonClassName = 'w-10 h-10 rounded-full overflow-hidden border border-[#f43f5e]/45 hover:border-[#f43f5e] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35',
   menuClassName = 'absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 z-50 rounded-xl overflow-hidden',
 }) {
   const { logout } = useAuth();

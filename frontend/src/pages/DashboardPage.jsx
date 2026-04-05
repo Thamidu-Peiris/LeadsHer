@@ -704,7 +704,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   );
 }
 
-function AdminDashboard({ user, myStories, myEvents }) {
+function AdminDashboard({ user }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Admin';
   const location = useLocation();
   const navigate = useNavigate();
@@ -727,16 +727,21 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const [activeMentorships, setActiveMentorships] = useState([]);
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [reportData, setReportData] = useState(null);
+  const [platformStoryTotal, setPlatformStoryTotal] = useState(0);
+  const [platformEventTotal, setPlatformEventTotal] = useState(0);
+
   const loadAdminData = async () => {
     setLoadingAdmin(true);
     try {
-      const [u, mp, rq, ac, fb, rp] = await Promise.allSettled([
+      const [u, mp, rq, ac, fb, rp, st, ev] = await Promise.allSettled([
         authApi.adminListUsers({ limit: 5000 }),
         mentorApi.getAll({ limit: 500 }),
         mentorshipApi.adminGetRequests(),
         mentorshipApi.adminGetActive(),
         mentorshipApi.adminGetFeedback(),
         mentorshipApi.adminGetReports(),
+        storyApi.getAll({ limit: 1, page: 1 }),
+        eventApi.getAll({ limit: 10000, page: 1 }),
       ]);
       let userList = [];
       if (u.status === 'fulfilled') {
@@ -748,11 +753,13 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
       if (mp.status === 'fulfilled') setMentorProfiles(mp.value.data?.data || mp.value.data?.mentors || []);
       if (rq.status === 'fulfilled') {
-        const raw = rq.value.data?.data || [];
+        const body = rq.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setRequests(raw.map((r) => enrichRequest(r, authIdx)));
       }
       if (ac.status === 'fulfilled') {
-        const raw = ac.value.data?.data || [];
+        const body = ac.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setActiveMentorships(raw.map((m) => enrichMentorship(m, authIdx)));
       }
       if (fb.status === 'fulfilled') {
@@ -760,6 +767,26 @@ function AdminDashboard({ user, myStories, myEvents }) {
         setFeedbackRows(raw.map((f) => enrichFeedbackRow(f, authIdx)));
       }
       if (rp.status === 'fulfilled') setReportData(rp.value.data?.data || null);
+
+      if (st.status === 'fulfilled') {
+        const d = st.value.data || {};
+        const total = d.pagination?.total;
+        setPlatformStoryTotal(
+          typeof total === 'number'
+            ? total
+            : (Array.isArray(d.stories) ? d.stories.length : 0)
+        );
+      } else {
+        setPlatformStoryTotal(0);
+      }
+
+      if (ev.status === 'fulfilled') {
+        const d = ev.value.data || {};
+        const events = d.data?.events || d.events || [];
+        setPlatformEventTotal(Array.isArray(events) ? events.length : 0);
+      } else {
+        setPlatformEventTotal(0);
+      }
     } finally {
       setLoadingAdmin(false);
     }
@@ -933,15 +960,15 @@ function AdminDashboard({ user, myStories, myEvents }) {
             {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
-                { label: 'Total Events', value: myEvents.length, icon: 'event' },
+                { label: 'Total Stories', value: platformStoryTotal, icon: 'auto_stories' },
+                { label: 'Total Events', value: platformEventTotal, icon: 'event' },
                 { label: 'Active Mentorships', value: activeMentorships.length, icon: 'groups' },
                 { label: 'Requests', value: requests.length, icon: 'report' },
               ].map((card) => (
                 <div key={card.label} className="bg-white border border-outline-variant/20 rounded-xl p-5">
                   <div className="flex items-start justify-between">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">{card.label}</p>
-                    <span className="material-symbols-outlined text-gold-accent">{card.icon}</span>
+                    <span className="material-symbols-outlined text-[#f43f5e]">{card.icon}</span>
                   </div>
                   <p className="mt-4 text-3xl font-serif-alt font-bold text-on-surface">{card.value}</p>
                 </div>
@@ -1182,7 +1209,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
                 <Link
                   to="/dashboard/manage-account"
-                  className="text-xs uppercase tracking-widest font-bold text-primary hover:underline"
+                  className="text-xs uppercase tracking-widest font-bold text-[#f43f5e] hover:text-[#e11d48] hover:underline"
                 >
                   Manage verifications
                 </Link>
@@ -1379,11 +1406,7 @@ export default function DashboardPage() {
   }
   if (roleLc === 'admin') {
     return (
-      <AdminDashboard
-        user={user}
-        myStories={myStories}
-        myEvents={myEvents}
-      />
+      <AdminDashboard user={user} />
     );
   }
 

@@ -30,7 +30,7 @@ export default function AdminTopBar({
           type="button"
           onClick={toggleTheme}
           aria-label="Toggle dark mode"
-          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center border border-outline-variant/25 hover:border-gold-accent text-outline hover:text-gold-accent transition-colors"
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center border border-[#f43f5e]/45 text-outline hover:text-[#f43f5e] hover:border-[#f43f5e] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35"
         >
           <span className="material-symbols-outlined text-[20px]">
             {theme === 'dark' ? 'light_mode' : 'dark_mode'}
