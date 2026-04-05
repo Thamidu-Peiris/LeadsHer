@@ -27,7 +27,7 @@ function StoryThumb({ story }) {
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary/25 to-tertiary/20 flex items-center justify-center">
+        <div className="w-full h-full bg-gradient-to-br from-[#f43f5e]/15 to-rose-100/40 flex items-center justify-center">
           <span className="material-symbols-outlined text-outline text-[18px]">image</span>
         </div>
       )}
@@ -194,10 +194,10 @@ export default function AdminDashboardStoriesPage() {
 
           <div className="p-8 space-y-5 max-w-[1280px] mx-auto w-full">
             <section
-              className="overflow-hidden rounded-xl border border-outline-variant/20 bg-gradient-to-br from-white to-slate-50/80 p-6 shadow-sm ring-1 ring-black/[0.04]"
+              className="rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm dark:border-outline-variant/20 dark:bg-white"
               aria-labelledby="manage-stories-heading"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
                 <div className="min-w-0">
                   <h1
                     id="manage-stories-heading"
@@ -207,32 +207,32 @@ export default function AdminDashboardStoriesPage() {
                   </h1>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-on-surface-variant">
                     Review, edit, and moderate stories — feature published posts and set their order for the public{' '}
-                    <span className="font-medium text-on-surface">/stories</span> page.
+                    <span className="font-semibold text-[#f43f5e]">/stories</span> page.
                   </p>
                 </div>
-                <div className="flex shrink-0 flex-col items-stretch gap-2 rounded-lg border border-outline-variant/25 bg-white/90 px-4 py-3 shadow-sm sm:min-w-[200px]">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-outline">
-                    <span className="material-symbols-outlined text-primary text-[18px]" aria-hidden>
+                <div className="flex shrink-0 flex-col gap-3 rounded-xl border border-outline-variant/25 bg-white px-5 py-4 sm:min-w-[220px]">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#f43f5e]">
+                    <span className="material-symbols-outlined text-[20px]" aria-hidden>
                       auto_stories
                     </span>
                     Featured on /stories
                   </div>
-                  <div className="flex items-baseline gap-1.5">
+                  <div className="flex flex-wrap items-baseline gap-1">
                     <span
-                      className="text-3xl font-bold tabular-nums tracking-tight text-on-surface"
+                      className="text-3xl font-bold tabular-nums tracking-tight text-[#f43f5e]"
                       aria-live="polite"
                     >
                       {featuredPublishedCount}
                     </span>
-                    <span className="text-lg font-medium text-on-surface-variant">/</span>
-                    <span className="text-xl font-semibold tabular-nums text-on-surface-variant">
+                    <span className="text-xl font-medium text-rose-300">/</span>
+                    <span className="text-2xl font-semibold tabular-nums text-rose-900/70">
                       {MAX_FEATURED_STORIES}
                     </span>
-                    <span className="ml-1 text-xs text-on-surface-variant">published max</span>
+                    <span className="ml-1 text-xs font-medium text-on-surface-variant">published max</span>
                   </div>
-                  <p className="border-t border-outline-variant/15 pt-2 text-[11px] leading-snug text-on-surface-variant">
-                    <span className="font-semibold text-on-surface">Feature</span> toggles inclusion ·{' '}
-                    <span className="font-semibold text-on-surface">Arrows</span> set order
+                  <p className="border-t border-[#f43f5e]/15 pt-3 text-xs leading-snug text-on-surface-variant">
+                    <span className="font-semibold text-[#f43f5e]">Feature</span> toggles inclusion ·{' '}
+                    <span className="font-semibold text-[#f43f5e]">Arrows</span> set order
                   </p>
                 </div>
               </div>
@@ -243,12 +243,12 @@ export default function AdminDashboardStoriesPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by title, excerpt, author..."
-                className="px-4 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                className="min-h-[44px] rounded-lg border-2 border-outline-variant/30 bg-white px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-[#f43f5e] focus:outline-none focus:ring-0"
               />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm text-on-surface"
+                className="min-h-[44px] rounded-lg border-2 border-outline-variant/30 bg-white px-3 py-2.5 text-sm font-medium text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0"
               >
                 <option value="all">All statuses</option>
                 <option value="published">Published</option>
@@ -257,7 +257,7 @@ export default function AdminDashboardStoriesPage() {
               <button
                 type="button"
                 onClick={loadStories}
-                className="px-4 py-2.5 rounded-lg border border-outline-variant/25 bg-white text-sm font-semibold text-on-surface hover:border-gold-accent/40"
+                className="min-h-[44px] rounded-lg border-2 border-[#f43f5e]/35 bg-[#f43f5e] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#e11d48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 active:scale-[0.99]"
               >
                 Refresh
               </button>
@@ -293,7 +293,7 @@ export default function AdminDashboardStoriesPage() {
                           {s.status || 'draft'}
                         </span>
                         {s.isFeatured && (
-                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-primary/30 bg-primary/10 text-primary font-bold">
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-[#f43f5e]/35 bg-[#f43f5e]/10 font-bold text-[#f43f5e]">
                             Featured
                           </span>
                         )}
@@ -308,14 +308,14 @@ export default function AdminDashboardStoriesPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
                           <Link
                             to={`/dashboard/stories/${s._id}/edit`}
-                            className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40 text-center"
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white px-3 text-center text-xs font-bold uppercase tracking-wider text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30"
                           >
                             Edit
                           </Link>
                           <button
                             type="button"
                             onClick={() => openModerateComments(s)}
-                            className="px-3 py-1.5 rounded-md border border-outline-variant/25 bg-white text-xs font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent/40"
+                            className="min-h-[40px] rounded-lg border-2 border-outline-variant/35 bg-white px-3 text-xs font-bold uppercase tracking-wider text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30"
                           >
                             Comments
                           </button>
@@ -323,10 +323,10 @@ export default function AdminDashboardStoriesPage() {
                             type="button"
                             onClick={() => handleToggleFeature(s)}
                             disabled={featuringId === s._id}
-                            className={`px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider disabled:opacity-60 ${
+                            className={`min-h-[40px] rounded-lg border-2 px-3 text-xs font-bold uppercase tracking-wider shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-60 ${
                               s.isFeatured
-                                ? 'border-outline-variant/25 bg-surface-container-lowest text-on-surface hover:border-outline-variant/40'
-                                : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
+                                ? 'border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 focus-visible:ring-slate-400'
+                                : 'border-[#f43f5e]/40 bg-[#f43f5e]/10 text-[#f43f5e] hover:bg-[#f43f5e]/18 focus-visible:ring-[#f43f5e]/40'
                             }`}
                           >
                             {featuringId === s._id ? 'Saving...' : s.isFeatured ? 'Unfeature' : 'Feature'}
@@ -335,33 +335,33 @@ export default function AdminDashboardStoriesPage() {
                             type="button"
                             onClick={() => setDeleteDialog({ open: true, id: s._id, title: s.title || 'Untitled story' })}
                             disabled={deletingId === s._id}
-                            className="px-3 py-1.5 rounded-md border border-red-300 bg-red-50 text-xs font-bold uppercase tracking-wider text-red-700 hover:bg-red-100 disabled:opacity-60"
+                            className="min-h-[40px] rounded-lg border-2 border-red-400 bg-red-50 px-3 text-xs font-bold uppercase tracking-wider text-red-800 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-60"
                           >
                             {deletingId === s._id ? 'Deleting...' : 'Delete'}
                           </button>
                         </div>
                         {s.isFeatured && (s.status || 'draft') === 'published' && (
-                          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-                            <span className="text-[10px] uppercase tracking-widest text-outline font-bold mr-1 hidden sm:inline">
-                              Featured order
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                            <span className="text-[10px] uppercase tracking-widest font-bold text-[#f43f5e] mr-1 hidden sm:inline">
+                              Order
                             </span>
                             <button
                               type="button"
                               title="Move up in featured list"
                               onClick={() => handleReorderFeatured(s, 'up')}
                               disabled={reorderingId === s._id}
-                              className="inline-flex items-center justify-center w-9 h-9 rounded-md border border-outline-variant/25 bg-white text-on-surface hover:border-gold-accent/40 disabled:opacity-60"
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#f43f5e]/30 bg-white text-[#f43f5e] shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35"
                             >
-                              <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+                              <span className="material-symbols-outlined text-[22px]">arrow_upward</span>
                             </button>
                             <button
                               type="button"
                               title="Move down in featured list"
                               onClick={() => handleReorderFeatured(s, 'down')}
                               disabled={reorderingId === s._id}
-                              className="inline-flex items-center justify-center w-9 h-9 rounded-md border border-outline-variant/25 bg-white text-on-surface hover:border-gold-accent/40 disabled:opacity-60"
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#f43f5e]/30 bg-white text-[#f43f5e] shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35"
                             >
-                              <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
+                              <span className="material-symbols-outlined text-[22px]">arrow_downward</span>
                             </button>
                           </div>
                         )}
@@ -392,7 +392,7 @@ export default function AdminDashboardStoriesPage() {
               <button
                 type="button"
                 onClick={() => setDeleteDialog({ open: false, id: '', title: '' })}
-                className="px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-sm font-semibold text-on-surface hover:border-gold-accent/40"
+                className="rounded-lg border-2 border-outline-variant/35 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30"
               >
                 Cancel
               </button>
