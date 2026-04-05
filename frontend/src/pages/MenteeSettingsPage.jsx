@@ -130,7 +130,7 @@ export default function MenteeSettingsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-2xl">manage_accounts</span>
+                  <span className="material-symbols-outlined text-2xl text-rose-500 dark:text-rose-400">manage_accounts</span>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-on-surface text-lg">Profile settings</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
@@ -138,7 +138,7 @@ export default function MenteeSettingsPage() {
                     </p>
                     {profileLoading ? (
                       <div className="mt-4 flex items-center gap-3 text-sm text-outline">
-                        <span className="w-5 h-5 rounded-full border-2 border-gold-accent border-t-transparent animate-spin" />
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-rose-500 border-t-transparent dark:border-rose-400" />
                         Loading profile…
                       </div>
                     ) : (
@@ -155,7 +155,7 @@ export default function MenteeSettingsPage() {
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
-                                <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                                <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface transition-colors hover:border-rose-400 hover:bg-rose-50 dark:hover:border-rose-500/50 dark:hover:bg-rose-950/40">
                                   Choose image
                                   <input
                                     type="file"
@@ -178,7 +178,7 @@ export default function MenteeSettingsPage() {
                             name="name"
                             value={profileForm.name}
                             onChange={handleProfileChange}
-                            className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                            className="w-full rounded-lg border border-outline-variant/40 px-4 py-2.5 text-sm outline-none focus:border-rose-400"
                           />
                         </div>
                         <div>
@@ -188,7 +188,7 @@ export default function MenteeSettingsPage() {
                             value={profileForm.bio}
                             onChange={handleProfileChange}
                             rows={3}
-                            className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none resize-y"
+                            className="w-full resize-y rounded-lg border border-outline-variant/40 px-4 py-2.5 text-sm outline-none focus:border-rose-400"
                             placeholder="Short introduction"
                           />
                         </div>
@@ -199,7 +199,7 @@ export default function MenteeSettingsPage() {
                             value={profileForm.learningGoals}
                             onChange={handleProfileChange}
                             rows={2}
-                            className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none resize-y"
+                            className="w-full resize-y rounded-lg border border-outline-variant/40 px-4 py-2.5 text-sm outline-none focus:border-rose-400"
                             placeholder="What do you want to learn or achieve?"
                           />
                         </div>
@@ -209,14 +209,14 @@ export default function MenteeSettingsPage() {
                             name="interests"
                             value={profileForm.interests}
                             onChange={handleProfileChange}
-                            className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                            className="w-full rounded-lg border border-outline-variant/40 px-4 py-2.5 text-sm outline-none focus:border-rose-400"
                             placeholder="e.g. leadership, STEM, entrepreneurship"
                           />
                         </div>
                         <button
                           type="submit"
                           disabled={profileSaving}
-                          className="w-full sm:w-auto bg-gold-accent text-white text-xs font-bold px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
+                          className="w-full rounded-lg bg-rose-500 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-60 dark:hover:bg-rose-400 sm:w-auto"
                         >
                           {profileSaving ? 'Saving…' : 'Save changes'}
                         </button>
@@ -228,7 +228,7 @@ export default function MenteeSettingsPage() {
 
               <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 lg:sticky lg:top-24">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
+                  <span className="material-symbols-outlined text-2xl text-rose-500 dark:text-rose-400">lock_reset</span>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-on-surface text-lg">Forgot / reset password</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
@@ -241,13 +241,13 @@ export default function MenteeSettingsPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         autoComplete="email"
-                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                        className="w-full rounded-lg border border-outline-variant/40 px-4 py-2.5 text-sm outline-none focus:border-rose-400"
                         placeholder="you@example.com"
                       />
                       <button
                         type="submit"
                         disabled={sendingReset}
-                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 disabled:opacity-50"
+                        className="w-full rounded-lg bg-rose-500 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-50 dark:hover:bg-rose-400 sm:w-auto"
                       >
                         {sendingReset ? 'Sending…' : 'Send reset link'}
                       </button>

@@ -25,7 +25,7 @@ export default function MenteeSidebar({ user, avatarSrc }) {
       {/* ── Profile ── */}
       <div className="flex flex-col items-center gap-3 border-b border-outline-variant/20 p-6">
         <div className="relative">
-          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gold-accent p-0.5">
+          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-rose-400 p-0.5 dark:border-rose-400">
             <img
               alt="Mentee avatar"
               className="h-full w-full rounded-full object-cover"
@@ -37,7 +37,7 @@ export default function MenteeSidebar({ user, avatarSrc }) {
         <div className="text-center">
           <h3 className="font-bold text-lg text-on-surface">{firstName}</h3>
           <div className="mt-1 flex justify-center">
-            <span className="rounded-full border border-gold-accent/20 bg-gold-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gold-accent">
+            <span className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-300">
               Mentee
             </span>
           </div>
@@ -54,7 +54,7 @@ export default function MenteeSidebar({ user, avatarSrc }) {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 text-sm font-medium transition-all ${
                 isActive
-                  ? 'border-gold-accent bg-gold-accent/5 text-gold-accent'
+                  ? 'border-rose-500 bg-rose-50 text-rose-700 dark:border-rose-400 dark:bg-rose-950/40 dark:text-rose-300'
                   : 'border-transparent text-outline hover:bg-surface-container-low hover:text-on-surface'
               }`
             }
