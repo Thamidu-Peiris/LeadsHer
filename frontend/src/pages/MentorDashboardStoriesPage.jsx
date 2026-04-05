@@ -49,7 +49,7 @@ function StoryCoverThumb({ story, index }) {
 }
 
 export default function MentorDashboardStoriesPage() {
-  const { user, logout, canManageEvents } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id ?? user?._id;
   const storiesCacheKey = userId ? `leadsher_mentor_stories_${userId}` : '';
@@ -213,18 +213,10 @@ export default function MentorDashboardStoriesPage() {
               <div className="flex gap-3 flex-wrap">
                 <Link
                   to="/dashboard/stories/new"
-                  className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                  className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
                 >
                   + New Story
                 </Link>
-                {canManageEvents && (
-                  <Link
-                    to="/events/new"
-                    className="px-6 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
-                  >
-                    + New Event
-                  </Link>
-                )}
               </div>
             </section>
 
@@ -274,7 +266,7 @@ export default function MentorDashboardStoriesPage() {
                           <span className="text-outline">{value} views · {s.likeCount || 0} likes</span>
                         </div>
                         <div className="h-2 bg-surface-container-low rounded-full overflow-hidden">
-                          <div className="h-2 bg-gold-accent rounded-full" style={{ width: `${width}%` }} />
+                          <div className="h-2 bg-rose-500 rounded-full" style={{ width: `${width}%` }} />
                         </div>
                         {stats.topViewed.length > 1 && (
                           <div className="mt-3 flex items-center justify-end gap-1.5">
@@ -285,7 +277,7 @@ export default function MentorDashboardStoriesPage() {
                                 onClick={() => setTopStoryIndex(i)}
                                 aria-label={`Show top story ${i + 1}`}
                                 className={`h-1.5 rounded-full transition-all ${
-                                  i === topStoryIndex ? 'w-4 bg-gold-accent' : 'w-1.5 bg-outline-variant/50 hover:bg-outline'
+                                  i === topStoryIndex ? 'w-4 bg-rose-500' : 'w-1.5 bg-outline-variant/50 hover:bg-outline'
                                 }`}
                               />
                             ))}
@@ -310,8 +302,8 @@ export default function MentorDashboardStoriesPage() {
                   onClick={() => setStatusFilter(f.key)}
                   className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${
                     statusFilter === f.key
-                      ? 'bg-gold-accent/10 text-on-surface border-gold-accent/40'
-                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-gold-accent/40'
+                      ? 'bg-rose-500/10 text-on-surface border-rose-500/40'
+                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-rose-500/40'
                   }`}
                 >
                   {f.label}
@@ -382,7 +374,7 @@ export default function MentorDashboardStoriesPage() {
                             to={`/stories/${s._id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-10 w-10 shrink-0 rounded-lg border border-outline-variant/20 text-outline bg-white/80 dark:bg-surface-container hover:text-gold-accent hover:border-gold-accent/35 hover:bg-gold-accent/[0.06] transition-colors"
+                            className="inline-flex items-center justify-center h-10 w-10 shrink-0 rounded-lg border border-outline-variant/20 text-outline bg-white/80 dark:bg-surface-container hover:text-rose-500 hover:border-rose-500/35 hover:bg-rose-500/[0.06] transition-colors"
                             aria-label="Open story in new tab"
                             title="View story"
                           >
@@ -390,7 +382,7 @@ export default function MentorDashboardStoriesPage() {
                           </Link>
                           <Link
                             to={`/dashboard/stories/${s._id}/edit`}
-                            className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-outline-variant/35 bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:border-outline-variant/55 hover:bg-surface-container-high/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-accent/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
+                            className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-outline-variant/35 bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:border-outline-variant/55 hover:bg-surface-container-high/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-lowest transition-colors"
                           >
                             Edit
                           </Link>
@@ -406,7 +398,7 @@ export default function MentorDashboardStoriesPage() {
                               type="button"
                               disabled={publishingId === s._id}
                               onClick={() => publishDraft(s._id)}
-                              className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-gold-accent/35 text-gold-accent hover:bg-gold-accent/10 transition-colors disabled:opacity-50"
+                              className="inline-flex items-center justify-center min-h-10 px-5 sm:px-6 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] border border-rose-500/35 text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-50"
                             >
                               {publishingId === s._id ? 'Publishing…' : 'Publish'}
                             </button>

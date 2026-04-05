@@ -772,19 +772,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
 
       {/* Created events */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -795,8 +783,8 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Create Event
                 </button>
               }
@@ -966,19 +954,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* All events tab */}
       {tab === 'all' && (
-        <SectionCard
-          icon="dashboard"
-          title="All Platform Events"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="dashboard" title="All Platform Events">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {statusOpts.map(s => (
@@ -1058,19 +1034,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* My created tab */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -1136,7 +1100,7 @@ const EMPTY_FORM = {
 };
 
 const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
-const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/35 focus:border-rose-400/80 dark:focus:border-rose-500/60 transition-all';
 
 /* ── helpers for time math ───────────────────────────────────────────────── */
 function timeToMinutes(t) {
@@ -1338,7 +1302,7 @@ function CreateEventModal({ onClose, onCreated }) {
         <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-gold-accent text-[22px]">add_circle</span>
+              <span className="material-symbols-outlined text-rose-500 text-[22px] dark:text-rose-400">add_circle</span>
               Create New Event
             </h2>
             <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-1">
@@ -1356,7 +1320,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Basic Info ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">info</span>
               Basic Information
             </h3>
@@ -1440,7 +1404,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Schedule ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
               Schedule
             </h3>
@@ -1481,7 +1445,7 @@ function CreateEventModal({ onClose, onCreated }) {
                   <label className={lbl}>
                     Duration (min) <span className="text-red-400">*</span>
                     {durationLabel && (
-                      <span className="ml-1 normal-case text-gold-accent font-semibold tracking-normal">· {durationLabel}</span>
+                      <span className="ml-1 normal-case text-rose-600 dark:text-rose-400 font-semibold tracking-normal">· {durationLabel}</span>
                     )}
                   </label>
                   <input type="number" name="duration" value={form.duration}
@@ -1503,7 +1467,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Location ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">location_on</span>
               Location
             </h3>
@@ -1546,7 +1510,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Settings ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">tune</span>
               Settings
             </h3>
@@ -1578,7 +1542,7 @@ function CreateEventModal({ onClose, onCreated }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all"
+              className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
             >
               {saving ? (
                 <><Spinner size="sm" /> Creating…</>
@@ -1702,7 +1666,7 @@ export default function DashboardEventsPage() {
                   <button
                     type="button"
                     onClick={() => setCreateOpen(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-xl transition-all"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500 text-white text-sm font-bold rounded-xl shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500"
                   >
                     <span className="material-symbols-outlined text-[18px]">add_circle</span>
                     Create Event

@@ -265,7 +265,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                     <button
                       type="button"
-                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
+                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white dark:bg-surface-container"
                       onClick={() => navigate('/dashboard/settings')}
                     >
                       Open Settings
@@ -273,7 +273,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <button
                       type="button"
                       disabled={onboardSaving}
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 disabled:opacity-60 dark:bg-rose-600 dark:hover:bg-rose-500"
                       onClick={saveOnboarding}
                     >
                       {onboardSaving ? 'Saving…' : 'Save profile'}
@@ -291,7 +291,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             {/* Welcome banner */}
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
-              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
+              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
                 <div className="space-y-2">
@@ -299,20 +299,20 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     Welcome back, {firstName} 👋
                   </h1>
                   <p className="text-on-surface-variant text-sm max-w-md">
-                    Role: <span className="text-gold-accent font-bold">mentor</span> · {user?.email}
+                    Role: <span className="text-rose-600 font-bold dark:text-rose-400">mentor</span> · {user?.email}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
                     >
                       + New Event
                     </Link>
@@ -338,7 +338,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
-                      <span className="text-[10px] bg-gold-accent/10 text-gold-accent px-2 py-1 rounded">My events</span>
+                      <span className="text-[10px] bg-rose-500/10 text-rose-600 px-2 py-1 rounded dark:bg-rose-500/15 dark:text-rose-400">My events</span>
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
@@ -370,10 +370,10 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
+                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-rose-500/40 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
-                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
+                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
                               <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                             </Link>
                           </div>
@@ -397,7 +397,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
+                    <span className="material-symbols-outlined text-rose-600 dark:text-rose-400">calendar_today</span> Upcoming Events
                   </h3>
                   {myEvents.length === 0 ? (
                     <p className="text-outline text-sm">No registered events yet.</p>
@@ -407,7 +407,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                         <Link
                           key={e._id}
                           to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-rose-500/40 transition-colors rounded-lg"
                         >
                           <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
                           <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
@@ -422,13 +422,13 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="grid grid-cols-2 gap-3">
                     <Link
                       to="/stories/new"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
+                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">auto_stories</span> New Story
                     </Link>
                     <Link
                       to="/mentors"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
+                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">groups</span> Mentorship
                     </Link>

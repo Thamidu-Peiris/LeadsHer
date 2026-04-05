@@ -76,7 +76,7 @@ export default function MenteeDashboardForumPage() {
                   to="/forum"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-black border border-black hover:bg-black hover:text-white px-4 py-2.5 rounded-lg transition-all"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium bg-white text-black border border-black hover:bg-black hover:text-white px-4 py-2.5 rounded-lg transition-all shadow-sm dark:bg-surface-container-lowest dark:text-on-surface dark:border-outline-variant/40 dark:hover:bg-on-surface dark:hover:text-surface"
                 >
                   <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                   Browse Forum
