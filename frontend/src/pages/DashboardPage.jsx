@@ -25,7 +25,57 @@ import {
   enrichMentorship,
   enrichFeedbackRow,
 } from '../utils/mentorshipAdminMerge';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
 import toast from 'react-hot-toast';
+
+function menteeEventCoverUrl(e) {
+  const raw =
+    typeof e.coverImage === 'string'
+      ? e.coverImage
+      : typeof e.cover_image === 'string'
+        ? e.cover_image
+        : '';
+  return raw?.trim() ? absolutePhotoUrl(raw.trim()) : '';
+}
+
+function menteeEventLocationLine(e) {
+  if (e.type === 'virtual') return 'Virtual';
+  return e.location?.city || e.location?.venue || 'Online';
+}
+
+function menteeFormatEventDate(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function menteeFormatEventTimeDisplay(startTime) {
+  if (startTime == null || startTime === '') return '';
+  const s = String(startTime).trim();
+  if (!s) return '';
+  const parts = s.split(':').map((p) => Number(p));
+  if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+    const dt = new Date();
+    dt.setHours(parts[0], parts[1], parts[2] || 0, 0);
+    return dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return s;
+}
+
+function menteeEventDateTimeLine(e) {
+  const dateStr = menteeFormatEventDate(e.date);
+  const timeStr = menteeFormatEventTimeDisplay(e.startTime);
+  if (dateStr && timeStr) return `${dateStr} · ${timeStr}`;
+  if (dateStr) return dateStr;
+  if (timeStr) return timeStr;
+  return null;
+}
 
 function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
@@ -624,7 +674,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Recent Activity</h2>
-                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/events">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/dashboard/events">
                       View events <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
@@ -656,19 +706,60 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     <p className="text-outline text-sm">No registered events yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {myEvents.slice(0, 3).map((e) => (
-                        <Link
-                          key={e._id}
-                          to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
-                        >
-                          <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
-                        </Link>
-                      ))}
+                      {myEvents.slice(0, 3).map((e) => {
+                        const coverUrl = menteeEventCoverUrl(e);
+                        const whenLine = menteeEventDateTimeLine(e);
+                        return (
+                          <Link
+                            key={e._id}
+                            to={`/events/${e._id}`}
+                            className="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          >
+                            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-slate-100 dark:bg-slate-800">
+                              {coverUrl ? (
+                                <img
+                                  src={coverUrl}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-full items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+                                  aria-hidden
+                                >
+                                  <span className="material-symbols-outlined text-[26px] text-rose-200 dark:text-rose-800/70">
+                                    event
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
+                              {whenLine && (
+                                <p className="text-[10px] text-outline mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px] shrink-0 text-rose-600 dark:text-rose-400">
+                                    schedule
+                                  </span>
+                                  <span className="min-w-0 line-clamp-1">{whenLine}</span>
+                                </p>
+                              )}
+                              <p
+                                className={`text-[10px] text-outline flex items-center gap-1 ${whenLine ? 'mt-0.5' : 'mt-1'}`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] shrink-0 text-outline">
+                                  {e.type === 'virtual' ? 'videocam' : 'location_on'}
+                                </span>
+                                <span className="min-w-0 line-clamp-1">{menteeEventLocationLine(e)}</span>
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
-                  <Link to="/events" className="text-black dark:text-neutral-100 text-xs font-bold hover:underline uppercase tracking-wider flex items-center gap-1">
+                  <Link to="/dashboard/events" className="text-black dark:text-neutral-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                     Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </Link>
                 </div>
@@ -677,13 +768,13 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/mentors"
+                      to="/dashboard/mentors"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">groups</span> Find Mentors
                     </Link>
                     <Link
-                      to="/events"
+                      to="/dashboard/events"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">event</span> Events

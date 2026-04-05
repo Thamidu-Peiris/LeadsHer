@@ -446,15 +446,6 @@
   .dark .editorial-shadow {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
   }
-  /* Glass nav */
-  .glass-nav {
-    background: rgba(250, 249, 247, 0.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-  .dark .glass-nav {
-    background: rgba(16, 15, 22, 0.85);
-  }
   /* Marquee */
   .marquee { display: flex; overflow: hidden; user-select: none; gap: 2rem; }
   .marquee-content {
