@@ -25,6 +25,7 @@ import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MenteeProfilePage from './pages/MenteeProfilePage';
 import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import MentorProfilePage from './pages/MentorProfilePage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
@@ -118,6 +119,7 @@ export default function App() {
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/"            element={<HomePage />} />
             <Route path="/stories"     element={<StoriesPage />} />
             <Route path="/stories/:id" element={<StoryDetailPage />} />

@@ -59,6 +59,11 @@ export function AuthProvider({ children }) {
     clearSession();
   };
 
+  /** After password reset (or similar) when API returns token + user */
+  const applySession = useCallback((payload) => {
+    if (payload?.token && payload?.user) saveSession(payload.token, payload.user);
+  }, [saveSession]);
+
   const updateUser = (updated) => {
     const merged = { ...user, ...updated };
     setUser(merged);
@@ -75,7 +80,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, token, loading, isAuthenticated, isAdmin, isMentor, isMentee, canManageEvents,
-      login, register, logout, updateUser,
+      login, register, logout, updateUser, applySession,
     }}>
       {children}
     </AuthContext.Provider>

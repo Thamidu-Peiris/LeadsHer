@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { storyApi } from '../api/storyApi';
 import Pagination from '../components/common/Pagination';
@@ -26,6 +26,10 @@ const CARD_BG = [
   'from-tertiary/20 to-primary/15',
   'from-secondary/20 to-tertiary/15',
 ];
+
+/** Carousel: hero slides out (down / toward sidebar), then new hero + column slide in from above */
+const FEATURED_SWAP_OUT_MS = 480;
+const FEATURED_SWAP_IN_MS = 520;
 
 function stripHtmlToText(html) {
   return String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -56,6 +60,14 @@ export default function StoriesPage() {
   const [featuredStories, setFeaturedStories] = useState([]);
   /** Rotates which story is in the large featured card (4s interval when 2+ stories). */
   const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
+  /** Displayed hero + sidebar index; updates mid-transition after exit animation. */
+  const [featuredDisplayIndex, setFeaturedDisplayIndex] = useState(0);
+  /** idle → exiting → swap index → entering → idle */
+  const [featuredSwapPhase, setFeaturedSwapPhase] = useState('idle');
+  /** Alternates each tick: "swap" (vertical/diagonal) vs "glide" (smooth horizontal handoff). */
+  const [featuredAnimKind, setFeaturedAnimKind] = useState('swap');
+  const featuredFirstSyncRef = useRef(true);
+  const featuredDisplayRef = useRef(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading]     = useState(true);
   const [filters, setFilters]     = useState({ category: 'all', search: '', sort: '-createdAt', page: 1 });
@@ -102,28 +114,101 @@ export default function StoriesPage() {
     if (featuredStories.length <= 1) return undefined;
     const id = window.setInterval(() => {
       setFeaturedSlideIndex((idx) => (idx + 1) % featuredStories.length);
-    }, 4000);
+    }, 5000);
     return () => window.clearInterval(id);
   }, [featuredStories]);
 
-  /** Up to 7 from API; large card + sidebar rotate together every 4s. */
+  useEffect(() => {
+    featuredDisplayRef.current = featuredDisplayIndex;
+  }, [featuredDisplayIndex]);
+
+  /** When the list shrinks, keep display index in range without a flash. */
+  useEffect(() => {
+    if (!featuredStories.length) return;
+    const max = featuredStories.length - 1;
+    if (featuredDisplayRef.current > max) {
+      const next = Math.min(featuredSlideIndex, max);
+      setFeaturedDisplayIndex(next);
+      featuredDisplayRef.current = next;
+      setFeaturedSwapPhase('idle');
+    }
+  }, [featuredStories.length, featuredSlideIndex]);
+
+  /** Directional swap: animate out → change story index → animate in (no blank white frame). */
+  useEffect(() => {
+    if (!featuredStories.length) {
+      featuredFirstSyncRef.current = true;
+      return;
+    }
+    if (featuredStories.length <= 1) {
+      setFeaturedDisplayIndex(0);
+      featuredDisplayRef.current = 0;
+      setFeaturedSwapPhase('idle');
+      return;
+    }
+
+    if (featuredFirstSyncRef.current) {
+      featuredFirstSyncRef.current = false;
+      setFeaturedDisplayIndex(featuredSlideIndex);
+      featuredDisplayRef.current = featuredSlideIndex;
+      setFeaturedSwapPhase('idle');
+      return;
+    }
+
+    if (featuredSlideIndex === featuredDisplayRef.current) return;
+
+    setFeaturedAnimKind((featuredSlideIndex + 1) % 2 === 0 ? 'swap' : 'glide');
+    setFeaturedSwapPhase('exiting');
+    const idOut = window.setTimeout(() => {
+      setFeaturedDisplayIndex(featuredSlideIndex);
+      featuredDisplayRef.current = featuredSlideIndex;
+      setFeaturedSwapPhase('entering');
+    }, FEATURED_SWAP_OUT_MS);
+    const idIn = window.setTimeout(() => {
+      setFeaturedSwapPhase('idle');
+    }, FEATURED_SWAP_OUT_MS + FEATURED_SWAP_IN_MS);
+    return () => {
+      window.clearTimeout(idOut);
+      window.clearTimeout(idIn);
+    };
+  }, [featuredSlideIndex, featuredStories.length]);
+
+  /** Up to 7 from API; large card + sidebar rotate together (5s when 2+). */
   const activeFeatured = useMemo(() => {
     if (!featuredStories.length) return null;
-    return featuredStories[featuredSlideIndex] ?? featuredStories[0];
-  }, [featuredStories, featuredSlideIndex]);
+    return featuredStories[featuredDisplayIndex] ?? featuredStories[0];
+  }, [featuredStories, featuredDisplayIndex]);
 
   const sideFeatured = useMemo(() => {
     const len = featuredStories.length;
     if (len <= 1) return [];
     const maxSide = Math.min(MAX_FEATURED_STORIES - 1, len - 1);
     return Array.from({ length: maxSide }, (_, idx) =>
-      featuredStories[(featuredSlideIndex + idx + 1) % len]
+      featuredStories[(featuredDisplayIndex + idx + 1) % len]
     );
-  }, [featuredStories, featuredSlideIndex]);
+  }, [featuredStories, featuredDisplayIndex]);
 
   const heroFullWidth = featuredStories.length === 1;
   /** Spread cards only when the column is full-ish; otherwise stack from the top (avoids huge gaps). */
   const spreadSideCards = sideFeatured.length >= 5;
+
+  const featuredMotion = useMemo(
+    () =>
+      featuredAnimKind === 'glide'
+        ? {
+            heroOut: 'featuredHeroGlideOut',
+            heroIn: 'featuredHeroGlideIn',
+            sideOut: 'featuredSideColumnGlideOut',
+            sideIn: 'featuredSideColumnGlideIn',
+          }
+        : {
+            heroOut: 'featuredHeroSwapOut',
+            heroIn: 'featuredHeroSwapIn',
+            sideOut: 'featuredSideColumnSwapOut',
+            sideIn: 'featuredSideColumnSwapIn',
+          },
+    [featuredAnimKind]
+  );
 
   const setFilter = (key, value) =>
     setFilters((f) => ({ ...f, [key]: value, page: key !== 'page' ? 1 : value }));
@@ -282,20 +367,32 @@ export default function StoriesPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5">
+              <div
+                className={`grid grid-cols-1 lg:grid-cols-12 lg:items-stretch lg:content-stretch gap-4 lg:gap-5 ${
+                  featuredStories.length > 1 && featuredSwapPhase !== 'idle' ? 'pointer-events-none' : ''
+                }`}
+              >
                 <article
                   className={`group flex flex-col min-h-0 rounded-2xl overflow-hidden border border-pink-100/90 bg-white/92 dark:border-pink-500/20 dark:bg-neutral-950/95 backdrop-blur-sm shadow-[0_10px_24px_rgba(219,39,119,0.1)] lg:min-h-[min(640px,78vh)] ${heroFullWidth ? 'lg:col-span-12' : 'lg:col-span-8'}`}
-                  key={`${activeFeatured._id}-${featuredSlideIndex}`}
-                  style={{
-                    animation:
-                      featuredStories.length <= 1
-                        ? 'featuredHeroIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both'
-                        : 'featuredCarouselHero 0.55s cubic-bezier(0.22, 1, 0.36, 1) both',
-                  }}
+                  key={activeFeatured._id}
+                  style={
+                    featuredStories.length <= 1
+                      ? { animation: 'featuredHeroIn 0.85s cubic-bezier(0.4, 0, 0.2, 1) both' }
+                      : featuredSwapPhase === 'exiting'
+                        ? { animation: `${featuredMotion.heroOut} ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
+                        : featuredSwapPhase === 'entering'
+                          ? { animation: `${featuredMotion.heroIn} ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
+                          : undefined
+                  }
                 >
                   <div className="relative flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[min(480px,62vh)] bg-surface-container-low">
                     {activeFeatured.coverImage ? (
-                      <img src={activeFeatured.coverImage} alt={activeFeatured.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img
+                        src={activeFeatured.coverImage}
+                        alt={activeFeatured.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        decoding="async"
+                      />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-pink-400/45 to-rose-500/30 dark:from-pink-600/35 dark:to-rose-900/40" />
                     )}
@@ -320,12 +417,21 @@ export default function StoriesPage() {
                 </article>
 
                 {sideFeatured.length > 0 && (
-                <div className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full">
+                <div
+                  className="lg:col-span-4 flex min-h-0 flex-col lg:h-full lg:min-h-full"
+                  style={
+                    featuredStories.length > 1 && featuredSwapPhase === 'exiting'
+                      ? { animation: `${featuredMotion.sideOut} ${FEATURED_SWAP_OUT_MS}ms ease-in-out forwards` }
+                      : featuredStories.length > 1 && featuredSwapPhase === 'entering'
+                        ? { animation: `${featuredMotion.sideIn} ${FEATURED_SWAP_IN_MS}ms cubic-bezier(0.34, 1.02, 0.32, 1) both` }
+                        : undefined
+                  }
+                >
                   <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-pink-600 dark:text-pink-400 mb-1.5 shrink-0 hidden lg:block">
                     More featured
                   </p>
                   <div
-                    key={featuredSlideIndex}
+                    key={featuredDisplayIndex}
                     className={
                       spreadSideCards
                         ? 'flex flex-col gap-2 lg:flex-1 lg:min-h-0 lg:justify-between lg:gap-0'
@@ -334,13 +440,9 @@ export default function StoriesPage() {
                   >
                     {sideFeatured.map((s, idx) => (
                       <Link
-                        key={`${s._id}-${featuredSlideIndex}-${idx}`}
+                        key={`${s._id}-${featuredDisplayIndex}-${idx}`}
                         to={`/stories/${s._id}`}
                         className="group flex items-center gap-3 rounded-xl border border-pink-100/90 bg-white/95 dark:border-pink-500/25 dark:bg-neutral-950/90 backdrop-blur-sm px-3 py-2 sm:px-3.5 sm:py-2 hover:border-pink-400/60 dark:hover:border-pink-400/50 transition-all hover:translate-x-0.5 overflow-hidden shrink-0"
-                        style={{
-                          animation: `featuredSideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both`,
-                          animationDelay: `${60 + idx * 55}ms`,
-                        }}
                       >
                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-surface-container-low shrink-0">
                           {s.coverImage ? (
