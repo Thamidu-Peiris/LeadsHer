@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router-dom';
 
+/** Matches `w-[280px]` / `ml-[280px]` in DashboardLayout for admin. */
+export const ADMIN_SIDEBAR_WIDTH_PX = 280;
+
 const NAV_ITEMS = [
   { to: '/dashboard',                 icon: 'space_dashboard',  label: 'Admin Dashboard'   },
   { to: '/dashboard/manage-account',  icon: 'manage_accounts',  label: 'Manage Accounts'   },

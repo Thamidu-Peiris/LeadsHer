@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import DashboardTopBar from '../components/dashboard/DashboardTopBar';
+import AdminTopBar from '../components/dashboard/AdminTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
@@ -336,7 +336,7 @@ export default function AdminDashboardForumPage() {
 
   return (
     <>
-          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Forum' }]} showAvatar={false} />
+          <AdminTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Forum' }]} showAvatar={false} />
 
           <div className="flex-1 p-8">
             <div className="flex flex-wrap items-center gap-3 mb-6">
