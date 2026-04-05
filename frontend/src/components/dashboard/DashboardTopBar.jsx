@@ -39,14 +39,14 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
     <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white dark:bg-surface-container-lowest sticky top-0 z-30 px-8 flex items-center justify-between">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-        <Link className="hover:text-gold-accent transition-colors" to="/">
+        <Link className="transition-colors hover:text-[#f43f5e]" to="/">
           Home
         </Link>
         {crumbs.map((crumb, i) => (
           <Fragment key={i}>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             {crumb.to ? (
-              <Link className="hover:text-gold-accent transition-colors" to={crumb.to}>
+              <Link className="transition-colors hover:text-[#f43f5e]" to={crumb.to}>
                 {crumb.label}
               </Link>
             ) : (
@@ -66,7 +66,7 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
             type="button"
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            className="w-10 h-10 rounded-full flex items-center justify-center border border-outline-variant/25 hover:border-gold-accent text-outline hover:text-gold-accent transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/25 text-outline transition-colors hover:border-[#f43f5e] hover:text-[#f43f5e]"
           >
             <span className="material-symbols-outlined text-[20px]">
               {theme === 'dark' ? 'light_mode' : 'dark_mode'}
@@ -78,7 +78,7 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
               <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                className="h-10 w-10 overflow-hidden rounded-full border border-outline-variant/25 transition-colors hover:border-[#f43f5e] focus:outline-none focus:ring-2 focus:ring-[#f43f5e]/40"
                 aria-haspopup="menu"
                 aria-expanded={open}
               >

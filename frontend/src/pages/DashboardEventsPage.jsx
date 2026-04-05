@@ -73,17 +73,6 @@ function TabBar({ tabs, active, onChange }) {
         >
           <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
           {t.label}
-          {t.count !== undefined && (
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                active === t.key
-                  ? 'bg-white/25 text-white'
-                  : 'bg-slate-200 text-slate-600 dark:bg-surface-container-high dark:text-on-surface-variant'
-              }`}
-            >
-              {t.count}
-            </span>
-          )}
         </button>
       ))}
     </div>
@@ -692,8 +681,8 @@ function MentorView({ onNew, refreshKey = 0 }) {
   };
 
   const tabs = [
-    { key: 'created',    label: 'My Events',   icon: 'event',      count: created.length    },
-    { key: 'registered', label: 'Registered',  icon: 'how_to_reg', count: registered.length },
+    { key: 'created',    label: 'My Events',   icon: 'event' },
+    { key: 'registered', label: 'Registered',  icon: 'how_to_reg' },
   ];
 
   return (
@@ -886,8 +875,8 @@ function AdminView({ onNew, refreshKey = 0 }) {
   };
 
   const tabs = [
-    { key: 'all',     label: 'All Events',  icon: 'dashboard', count: allEvents.length },
-    { key: 'created', label: 'My Created',  icon: 'event',     count: created.length   },
+    { key: 'all',     label: 'All Events', icon: 'dashboard' },
+    { key: 'created', label: 'My Created', icon: 'event' },
   ];
 
   const statusOpts = ['all', 'upcoming', 'ongoing', 'completed', 'cancelled'];
@@ -906,21 +895,9 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* All events tab */}
       {tab === 'all' && (
-        <SectionCard
-          icon="dashboard"
-          title="All Platform Events"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="dashboard" title="All Platform Events">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="mb-4 flex w-full flex-wrap items-center gap-2">
             {statusOpts.map(s => (
               <button
                 key={s}
@@ -934,13 +911,13 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 {s === 'all' ? 'All' : label(s)}
               </button>
             ))}
-            <div className="relative ml-auto">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
+            <div className="relative ml-auto w-full min-w-0 sm:min-w-[18rem] md:min-w-[22rem] lg:max-w-2xl lg:flex-1">
+              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search events…"
-                className="min-h-[38px] rounded-lg border-2 border-outline-variant/30 bg-white py-2 pl-8 pr-3 text-xs text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
+                className="min-h-[40px] w-full rounded-lg border-2 border-outline-variant/30 bg-white py-2 pl-8 pr-3 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
               />
             </div>
           </div>
