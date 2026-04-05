@@ -35,7 +35,7 @@ function fmtDate(d) {
 
 /* ── Stat Card ───────────────────────────────────────────────────────────── */
 
-function StatCard({ icon, title, value, accent = 'text-gold-accent' }) {
+function StatCard({ icon, title, value, accent = 'text-rose-600 dark:text-rose-400' }) {
   return (
     <div className={`${CARD} p-5 flex items-center gap-4`}>
       <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-surface-container flex items-center justify-center shrink-0">
@@ -69,7 +69,7 @@ function TabBar({ tabs, active, onChange }) {
           {t.count !== undefined && (
             <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
               active === t.key
-                ? 'bg-gold-accent/15 text-gold-accent'
+                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
                 : 'bg-slate-200 dark:bg-surface-container-high text-slate-500 dark:text-on-surface-variant'
             }`}>
               {t.count}
@@ -89,14 +89,14 @@ function EventRow({ event, actions }) {
   const d = new Date(event.date);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest hover:border-gold-accent/30 transition-all">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest hover:border-rose-300/80 dark:hover:border-rose-500/40 transition-all">
       {/* Date block */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-gold-accent/10 dark:bg-gold-accent/5 shrink-0">
-          <span className="text-xl font-bold text-gold-accent leading-none">
+        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-rose-100 dark:bg-rose-950/40 shrink-0">
+          <span className="text-xl font-bold text-rose-700 dark:text-rose-300 leading-none">
             {d.toLocaleDateString('en-US', { day: '2-digit' })}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-gold-accent/70">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600/80 dark:text-rose-400/90">
             {d.toLocaleDateString('en-US', { month: 'short' })}
           </span>
           <span className="text-[9px] text-slate-400 dark:text-on-surface-variant">
@@ -141,7 +141,7 @@ function SectionCard({ icon, title, action, children }) {
     <div className={`${CARD} overflow-hidden`}>
       <div className="px-5 py-4 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between">
         <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-          <span className={`material-symbols-outlined text-gold-accent text-[18px]`}>{icon}</span>
+          <span className="material-symbols-outlined text-rose-600 dark:text-rose-400 text-[18px]">{icon}</span>
           {title}
         </h3>
         {action}
@@ -154,7 +154,7 @@ function SectionCard({ icon, title, action, children }) {
 function EmptyState({ icon, message, sub, cta }) {
   return (
     <div className="text-center py-12">
-      <span className="material-symbols-outlined text-[44px] text-slate-200 dark:text-outline mb-3 block">{icon}</span>
+      <span className="material-symbols-outlined text-[44px] text-rose-200 dark:text-rose-900/45 mb-3 block">{icon}</span>
       <p className="text-sm font-medium text-slate-500 dark:text-on-surface-variant mb-1">{message}</p>
       {sub && <p className="text-xs text-slate-400 dark:text-outline mb-5">{sub}</p>}
       {cta}
@@ -561,7 +561,7 @@ function MenteeView() {
             message="No registered events"
             sub="Browse upcoming events and register to get started."
             cta={
-              <Link to="/events" className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+              <Link to="/events" className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">
                 <span className="material-symbols-outlined text-[16px]">search</span>
                 Browse Events
               </Link>
@@ -774,7 +774,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
               icon="event_busy"
               message="No registered events"
               sub="Browse all events to find sessions you'd like to attend."
-              cta={<Link to="/events" className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">Browse Events</Link>}
+              cta={<Link to="/events" className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">Browse Events</Link>}
             />
           ) : (
             <div className="space-y-3">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
@@ -279,8 +280,8 @@ export default function MenteeDashboardMentorsPage() {
                     onClick={() => setTab(t.key)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                       tab === t.key
-                        ? 'border-gold-accent bg-gold-accent/10 text-on-surface'
-                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-gold-accent/40'
+                        ? 'border-rose-400 bg-rose-50 text-on-surface dark:border-rose-400 dark:bg-rose-950/35'
+                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-rose-300 dark:hover:border-rose-500/50'
                     }`}
                   >
                     {t.label} <span className="text-outline font-semibold">({t.count})</span>
@@ -339,7 +340,7 @@ export default function MenteeDashboardMentorsPage() {
                           <select
                             value={sortBy}
                             onChange={handleDirectorySortChange}
-                            className="w-full cursor-pointer appearance-none rounded-md border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-neutral-900 outline-none transition-colors hover:border-neutral-300 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-200 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                            className="w-full cursor-pointer appearance-none rounded-md border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-neutral-900 outline-none transition-colors hover:border-rose-300 focus:border-rose-400 focus:ring-1 focus:ring-rose-200 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
                             aria-label="Sort mentors"
                           >
                             {DIRECTORY_SORT_OPTIONS.map((opt) => (
@@ -348,7 +349,7 @@ export default function MenteeDashboardMentorsPage() {
                               </option>
                             ))}
                           </select>
-                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600">
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-rose-500 dark:text-rose-400">
                             <span className="material-symbols-outlined text-[20px] leading-none">expand_more</span>
                           </span>
                         </div>
@@ -474,7 +475,7 @@ export default function MenteeDashboardMentorsPage() {
                                           message: 'I would love to learn from your experience.',
                                         });
                                       }}
-                                      className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black transition-colors hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:hover:bg-rose-900/50"
+                                      className="rounded-md bg-rose-500 py-2 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-500 dark:text-white dark:hover:bg-rose-400"
                                     >
                                       Request
                                     </button>
@@ -595,7 +596,7 @@ export default function MenteeDashboardMentorsPage() {
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
                                 <div className="flex flex-wrap gap-2">
                                   {goals.length ? goals.map((g) => (
-                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                    <span key={g} className="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-900 dark:border-rose-500/30 dark:bg-rose-950/40 dark:text-rose-100">{g}</span>
                                   )) : <span className="text-sm text-on-surface-variant">No goals set yet.</span>}
                                 </div>
                               </div>
@@ -605,7 +606,7 @@ export default function MenteeDashboardMentorsPage() {
                                   <button
                                     type="button"
                                     onClick={() => setExpandedId(isExpanded ? null : m._id)}
-                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                    className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                                   >
                                     <span className="material-symbols-outlined text-[16px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
                                     {isExpanded ? 'Hide' : 'View'} sessions ({sessionCount})
@@ -631,7 +632,7 @@ export default function MenteeDashboardMentorsPage() {
                                 <button
                                   type="button"
                                   onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  className="rounded-lg bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 dark:hover:bg-rose-400"
                                 >
                                   Set goals
                                 </button>
@@ -679,7 +680,7 @@ export default function MenteeDashboardMentorsPage() {
                                   <button
                                     type="button"
                                     onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
-                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                    className="rounded-lg bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 dark:hover:bg-rose-400"
                                   >
                                     Submit feedback
                                   </button>
@@ -698,150 +699,190 @@ export default function MenteeDashboardMentorsPage() {
               </>
             )}
 
-            {/* Request modal */}
-            {requestingMentor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Request Mentorship</h3>
-                      <p className="text-xs text-outline">Mentor: {requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}</p>
+            {/* Request modal — portaled so backdrop covers sticky top bar (avoids parent stacking context) */}
+            {requestingMentor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setRequestingMentor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-xl rounded-2xl border border-outline-variant/20 bg-white p-6 shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.35),0_25px_50px_-12px_rgba(0,0,0,0.35),0_0_0_1px_rgba(0,0,0,0.06)] dark:bg-surface-container"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="request-mentorship-title"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 id="request-mentorship-title" className="font-serif-alt text-xl font-bold text-on-surface">
+                          Request Mentorship
+                        </h3>
+                        <p className="text-xs text-outline">
+                          Mentor: {requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setRequestingMentor(null)} className="text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setRequestingMentor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Preferred start date</label>
-                      <input
-                        type="date"
-                        value={requestForm.preferredStartDate}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Preferred start date</label>
+                        <input
+                          type="date"
+                          value={requestForm.preferredStartDate}
+                          onChange={(e) => setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Goals (comma-separated)</label>
+                        <input
+                          value={requestForm.goals}
+                          onChange={(e) => setRequestForm((f) => ({ ...f, goals: e.target.value }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Message</label>
+                      <textarea
+                        value={requestForm.message}
+                        onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
+                        className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        rows={4}
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Goals (comma-separated)</label>
-                      <input
-                        value={requestForm.goals}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, goals: e.target.value }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      />
+
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setRequestingMentor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={actuallySendRequest}
+                        className="rounded-md bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+                      >
+                        {submitting ? 'Sending…' : 'Send request'}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-3">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Message</label>
-                    <textarea
-                      value={requestForm.message}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
-                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setRequestingMentor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={actuallySendRequest}
-                      className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-60"
-                    >
-                      {submitting ? 'Sending…' : 'Send request'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
 
             {/* Goals modal */}
-            {goalsFor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
-                      <p className="text-xs text-outline">Mentor: {goalsFor?.mentor?.name || 'Mentor'}</p>
+            {goalsFor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setGoalsFor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-xl border border-outline-variant/20 bg-white p-6 dark:bg-surface-container"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
+                        <p className="text-xs text-outline">Mentor: {goalsFor?.mentor?.name || 'Mentor'}</p>
+                      </div>
+                      <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Goals (comma-separated)</label>
-                  <input
-                    value={goalsInput}
-                    onChange={(e) => setGoalsInput(e.target.value)}
-                    className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm"
-                    placeholder="Leadership, confidence, career growth…"
-                  />
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Goals (comma-separated)</label>
+                    <input
+                      value={goalsInput}
+                      onChange={(e) => setGoalsInput(e.target.value)}
+                      className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-3 text-sm text-on-surface dark:bg-surface-container"
+                      placeholder="Leadership, confidence, career growth…"
+                    />
 
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setGoalsFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button type="button" onClick={updateGoals} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
-                      Save goals
-                    </button>
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setGoalsFor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={updateGoals} className="bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-rose-600 dark:hover:bg-rose-400">
+                        Save goals
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
 
             {/* Feedback modal */}
-            {feedbackFor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
-                      <p className="text-xs text-outline">Mentor: {feedbackFor?.mentor?.name || 'Mentor'}</p>
+            {feedbackFor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setFeedbackFor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-lg border border-outline-variant/20 bg-white p-6 dark:bg-surface-container"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
+                        <p className="text-xs text-outline">Mentor: {feedbackFor?.mentor?.name || 'Mentor'}</p>
+                      </div>
+                      <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Rating (1-5)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={5}
-                        value={feedbackForm.rating}
-                        onChange={(e) => setFeedbackForm((f) => ({ ...f, rating: Number(e.target.value) }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Rating (1-5)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={5}
+                          value={feedbackForm.rating}
+                          onChange={(e) => setFeedbackForm((f) => ({ ...f, rating: Number(e.target.value) }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Comment</label>
+                      <textarea
+                        value={feedbackForm.comment}
+                        onChange={(e) => setFeedbackForm((f) => ({ ...f, comment: e.target.value }))}
+                        className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        rows={4}
                       />
                     </div>
-                  </div>
 
-                  <div className="mt-3">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Comment</label>
-                    <textarea
-                      value={feedbackForm.comment}
-                      onChange={(e) => setFeedbackForm((f) => ({ ...f, comment: e.target.value }))}
-                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      rows={4}
-                    />
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setFeedbackFor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={submitFeedback} className="bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-rose-600 dark:hover:bg-rose-400">
+                        Submit
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setFeedbackFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button type="button" onClick={submitFeedback} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
-                      Submit
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
               <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">

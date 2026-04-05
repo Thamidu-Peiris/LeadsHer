@@ -50,8 +50,6 @@ const DIFF_BADGE = {
 const fmt     = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0));
 const fmtDate = (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }); } catch { return ''; } };
 
-const SIDEBAR_W = 260;
-
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
 function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate, onPreview }) {
@@ -67,7 +65,7 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate,
   };
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-lg overflow-hidden hover:border-rose-500/50 transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -79,84 +77,82 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate,
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${cfg.thumb} flex items-center justify-center group-hover:scale-105 transition-transform duration-500`}>
-            <span className="material-symbols-outlined text-white/30 text-[64px]">{cfg.icon}</span>
+            <span className="material-symbols-outlined text-white/30 text-[48px]">{cfg.icon}</span>
           </div>
         )}
-
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          <span className={`px-2 py-1 ${cfg.badge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {cfg.label}
-          </span>
-          <span className={`px-2 py-1 ${diffBadge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {resource.difficulty}
-          </span>
-          {resource.isPremium && (
-            <span className="px-2 py-1 bg-gold-accent/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
-              Premium
-            </span>
-          )}
-        </div>
 
         {/* Bookmark button */}
         <button
           onClick={() => onBookmark(resource._id)}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
             isBookmarked
-              ? 'bg-gold-accent text-white'
-              : 'bg-black/20 text-white hover:bg-gold-accent hover:text-white'
+              ? 'bg-black text-white'
+              : 'bg-black/20 text-white hover:bg-black hover:text-white'
           }`}
           title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[16px]">
             {isBookmarked ? 'bookmark' : 'bookmark_border'}
           </span>
         </button>
       </div>
 
       {/* Card body */}
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 gap-2">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className={`px-1.5 py-0.5 ${cfg.badge} text-white text-[9px] uppercase font-bold tracking-wider rounded`}>
+            {cfg.label}
+          </span>
+          <span className={`px-1.5 py-0.5 ${diffBadge} text-white text-[9px] uppercase font-bold tracking-wider rounded`}>
+            {resource.difficulty}
+          </span>
+          {resource.isPremium && (
+            <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] uppercase font-bold tracking-wider rounded">
+              Premium
+            </span>
+          )}
+        </div>
+        <h3 className="text-sm font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-rose-500 transition-colors">
           {resource.title}
         </h3>
-        <p className="text-sm text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1">
+        <p className="text-xs text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1 leading-relaxed">
           {resource.description}
         </p>
 
-        {/* Author + date */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-outline">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">person</span>
-            {resource.author || resource.uploadedBy?.name || 'LeadsHer'}
-          </span>
-          <span>{fmtDate(resource.createdAt)}</span>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-outline-variant/20">
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 font-semibold text-gold-accent">
-              <span className="material-symbols-outlined text-[14px]">download</span>
+        {/* Downloads + rating (left) · date (right) */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-outline-variant/20 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+            <span className="flex items-center gap-1 shrink-0 text-xs font-bold text-blue-800 dark:text-blue-300 tabular-nums">
+              <span className="material-symbols-outlined text-[16px] leading-none">download</span>
               {fmt(resource.downloads)}
             </span>
-            <span className="flex items-center gap-1 font-semibold text-yellow-500">
-              <span className="material-symbols-outlined text-[14px]">star</span>
+            <span className="flex items-center gap-1 shrink-0 text-xs font-bold text-amber-500 dark:text-amber-400 tabular-nums">
+              <span
+                className="material-symbols-outlined text-[16px] leading-none"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                star
+              </span>
               {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
             </span>
+            <button
+              type="button"
+              onClick={() => onRate(resource)}
+              className="text-[10px] text-slate-400 dark:text-outline hover:text-rose-500 transition-colors flex items-center gap-0.5 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[12px]">star_border</span>
+              Rate
+            </button>
           </div>
-          <button
-            onClick={() => onRate(resource)}
-            className="text-[11px] text-slate-400 dark:text-outline hover:text-gold-accent transition-colors flex items-center gap-0.5"
-          >
-            <span className="material-symbols-outlined text-[13px]">star_border</span>
-            Rate
-          </button>
+          <span className="text-[10px] text-slate-400 dark:text-outline shrink-0 tabular-nums">
+            {fmtDate(resource.createdAt)}
+          </span>
         </div>
 
         {/* Access button */}
         <button
           onClick={handleAccess}
-          className="w-full py-2 rounded-lg border border-gold-accent/40 text-gold-accent text-sm font-bold hover:bg-gold-accent hover:text-white transition-all"
+          className="w-full py-1.5 rounded-md border border-rose-500/40 text-rose-500 text-xs font-bold hover:bg-rose-500 hover:text-white transition-all"
         >
           Access Resource
         </button>
@@ -165,78 +161,163 @@ function ResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate,
   );
 }
 
-/* ─── Bookmarks Drawer ───────────────────────────────────────────────────── */
+/* ─── Bookmarks (shared list + right rail) ───────────────────────────────── */
 
-function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove }) {
+function BookmarksList({ bookmarks, onRemove }) {
+  if (bookmarks.length === 0) {
+    return (
+      <p className="text-sm text-slate-400 dark:text-outline text-center py-6 px-2">
+        No bookmarks yet. Save resources to find them here.
+      </p>
+    );
+  }
+  return (
+    <ul className="flex flex-col gap-2 max-h-[min(60vh,28rem)] overflow-y-auto pr-1 -mr-1">
+      {bookmarks.map((r) => {
+        const cfg = TYPE_CFG[r.type] || TYPE_CFG.article;
+        return (
+          <li key={r._id}>
+            <div className="flex gap-3 p-3 rounded-xl bg-slate-50 dark:bg-surface-container border border-transparent hover:border-rose-500/30 transition-all">
+              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${cfg.thumb} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+                {r.thumbnail ? (
+                  <img src={r.thumbnail} alt={r.title} className="w-full h-full object-cover rounded-lg" />
+                ) : (
+                  <span className="material-symbols-outlined text-white/50 text-[20px]">{cfg.icon}</span>
+                )}
+              </div>
+              <div className="flex flex-col justify-center overflow-hidden flex-1 min-w-0">
+                <h4 className="text-xs font-bold line-clamp-2 text-on-surface">{r.title}</h4>
+                <span className="text-[10px] text-slate-400 dark:text-outline mt-0.5 uppercase font-bold tracking-widest">{cfg.label}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemove(r._id)}
+                className="self-start text-slate-300 dark:text-outline hover:text-red-500 transition-colors flex-shrink-0 p-0.5"
+                title="Remove bookmark"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function BookmarksPanelHeader({ bookmarkCount }) {
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="w-9 h-9 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
+        <span className="material-symbols-outlined text-[20px]">bookmarks</span>
+      </div>
+      <span className="text-sm font-bold text-on-surface truncate">Your Bookmarks</span>
+      {bookmarkCount > 0 && (
+        <span className="text-xs bg-rose-500 text-white px-2 py-0.5 rounded-full font-bold tabular-nums shrink-0">
+          {bookmarkCount}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** `verticalCollapse={false}` when nested in BookmarksRightRail (rail hides horizontally). */
+function BookmarksPanel({ bookmarks, bookmarkCount, onRemove, className = '', verticalCollapse = true }) {
   const [open, setOpen] = useState(false);
 
-  return (
-    <div className="fixed bottom-0 z-50" style={{ left: SIDEBAR_W, right: 0 }}>
-      <div className="mx-6">
-        <div className="bg-white dark:bg-surface-container border-x border-t border-slate-200 dark:border-outline-variant/40 rounded-t-2xl shadow-2xl overflow-hidden">
-
-          {/* Toggle bar */}
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-surface-container-high transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gold-accent/10 flex items-center justify-center text-gold-accent">
-                <span className="material-symbols-outlined text-[18px]">bookmarks</span>
-              </div>
-              <span className="text-sm font-bold text-on-surface">Your Bookmarks</span>
-              {bookmarkCount > 0 && (
-                <span className="text-xs bg-gold-accent text-white px-2 py-0.5 rounded-full font-bold">
-                  {bookmarkCount}
-                </span>
-              )}
-            </div>
-            <span className={`material-symbols-outlined text-slate-400 dark:text-outline transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
-              keyboard_arrow_up
-            </span>
-          </button>
-
-          {/* Drawer content */}
-          {open && (
-            <div className="border-t border-slate-100 dark:border-outline-variant/20 p-5 pt-3">
-              {bookmarks.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-outline text-center py-4">
-                  No bookmarks yet. Save resources to find them here.
-                </p>
-              ) : (
-                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                  {bookmarks.map((r) => {
-                    const cfg = TYPE_CFG[r.type] || TYPE_CFG.article;
-                    return (
-                      <div key={r._id} className="flex-shrink-0 w-56 flex gap-3 p-3 bg-slate-50 dark:bg-surface-container rounded-xl border border-transparent hover:border-gold-accent/30 transition-all cursor-pointer">
-                        <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${cfg.thumb} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
-                          {r.thumbnail ? (
-                            <img src={r.thumbnail} alt={r.title} className="w-full h-full object-cover rounded-lg" />
-                          ) : (
-                            <span className="material-symbols-outlined text-white/50 text-[22px]">{cfg.icon}</span>
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-center overflow-hidden flex-1 min-w-0">
-                          <h4 className="text-xs font-bold truncate text-on-surface">{r.title}</h4>
-                          <span className="text-[10px] text-slate-400 dark:text-outline mt-1 uppercase font-bold tracking-widest">{cfg.label}</span>
-                        </div>
-                        <button
-                          onClick={() => onRemove(r._id)}
-                          className="self-start text-slate-300 dark:text-outline hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
-                          title="Remove bookmark"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+  if (!verticalCollapse) {
+    return (
+      <div
+        className={`rounded-2xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container shadow-sm p-4 flex flex-col gap-3 min-w-0 ${className}`}
+      >
+        <BookmarksPanelHeader bookmarkCount={bookmarkCount} />
+        <BookmarksList bookmarks={bookmarks} onRemove={onRemove} />
       </div>
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-2xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container shadow-sm overflow-hidden flex flex-col ${className}`}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-slate-50 dark:hover:bg-surface-container-high transition-colors shrink-0"
+      >
+        <BookmarksPanelHeader bookmarkCount={bookmarkCount} />
+        <span
+          className={`material-symbols-outlined text-slate-400 dark:text-outline shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+          aria-hidden
+        >
+          keyboard_arrow_up
+        </span>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 pt-0 border-t border-slate-100 dark:border-outline-variant/20">
+          <BookmarksList bookmarks={bookmarks} onRemove={onRemove} />
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Right column: horizontal collapse to a slim strip; xl+ only. */
+function BookmarksRightRail({ bookmarks, bookmarkCount, onRemove }) {
+  const [railOpen, setRailOpen] = useState(true);
+
+  return (
+    <aside
+      className={`hidden xl:flex shrink-0 flex-col border-l border-slate-200/70 dark:border-outline-variant/30 bg-white/25 dark:bg-surface-container-low/20 transition-[width,min-width,padding] duration-300 ease-out overflow-hidden ${
+        railOpen
+          ? 'w-[300px] min-w-[300px] pl-4 pr-5 py-8 justify-center'
+          : 'w-[52px] min-w-[52px] px-0 py-8 items-center justify-center'
+      }`}
+    >
+      {!railOpen ? (
+        <button
+          type="button"
+          onClick={() => setRailOpen(true)}
+          className="group flex flex-col items-center justify-center gap-2 min-h-[140px] w-full rounded-l-xl border border-r-0 border-slate-200/80 dark:border-outline-variant/40 bg-white/90 dark:bg-surface-container shadow-sm hover:bg-rose-50/80 dark:hover:bg-surface-container-high transition-colors"
+          title="Show bookmarks"
+          aria-expanded={false}
+          aria-label="Expand bookmarks sidebar"
+        >
+          <span className="material-symbols-outlined text-rose-500 text-[22px]">bookmarks</span>
+          <span className="material-symbols-outlined text-slate-500 dark:text-outline text-[22px] transition-transform group-hover:-translate-x-0.5">
+            chevron_left
+          </span>
+          {bookmarkCount > 0 && (
+            <span className="text-[10px] font-bold tabular-nums bg-rose-500 text-white min-w-[1.25rem] h-5 px-1 rounded-full flex items-center justify-center">
+              {bookmarkCount > 99 ? '99+' : bookmarkCount}
+            </span>
+          )}
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2 w-full min-w-0 justify-center flex-1">
+          <div className="flex items-center justify-end shrink-0 -mt-1 -mr-1">
+            <button
+              type="button"
+              onClick={() => setRailOpen(false)}
+              className="p-2 rounded-lg text-slate-500 dark:text-outline hover:bg-slate-100 dark:hover:bg-surface-container-high transition-colors"
+              title="Hide bookmarks panel"
+              aria-expanded
+              aria-label="Collapse bookmarks sidebar"
+            >
+              <span className="material-symbols-outlined text-[22px] block transition-transform">chevron_right</span>
+            </button>
+          </div>
+          <BookmarksPanel
+            bookmarks={bookmarks}
+            bookmarkCount={bookmarkCount}
+            onRemove={onRemove}
+            verticalCollapse={false}
+            className="w-full"
+          />
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -272,7 +353,7 @@ function RateModal({ resource, onClose, onSave }) {
               <button key={star} type="button"
                 onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
                 onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
-                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline'}`}>
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-rose-500' : 'text-slate-200 dark:text-outline'}`}>
                   {star <= (hovered || rating) ? 'star' : 'star_border'}
                 </span>
               </button>
@@ -286,7 +367,7 @@ function RateModal({ resource, onClose, onSave }) {
               Review (optional)
             </label>
             <textarea
-              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/40"
               value={review}
               onChange={(e) => setReview(e.target.value)}
               placeholder="Share your thoughts..."
@@ -300,7 +381,7 @@ function RateModal({ resource, onClose, onSave }) {
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving || !rating}
-            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
+            className="px-6 py-2.5 text-sm font-bold bg-rose-500 text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
             {saving ? 'Submitting…' : 'Submit Rating'}
           </button>
         </div>
@@ -445,39 +526,22 @@ export default function MenteeDashboardResourcesPage() {
 
   /* ─── Render ─────────────────────────────────────────────────────────────── */
   return (
-    <>
-
+    <div className="flex flex-col flex-1 min-h-0 w-full">
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Resources' }]} />
 
-          {/* ── Page content ── */}
-          <div className="flex-1">
+          <div className="flex flex-1 min-h-0 items-stretch w-full">
+          {/* ── Main column ── */}
+          <div className="flex-1 min-w-0 flex flex-col min-h-0">
 
-            {/* Type pills */}
-            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-6 pb-6 px-6">
-              {typePills.map((pill) => (
-                <button
-                  key={pill.key}
-                  onClick={() => handleTypeChange(pill.key)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                    activeType === pill.key
-                      ? 'bg-gold-accent text-white'
-                      : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search — in page body, not top bar */}
-            <div className="w-full max-w-2xl mx-auto px-6 sm:px-8 pt-5 pb-1">
+            {/* Search — top of content */}
+            <div className="w-full max-w-2xl mx-auto px-6 sm:px-8 pt-6 pb-4">
               <form onSubmit={handleSearch}>
                 <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors text-[20px]">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-rose-500 transition-colors text-[20px]">
                     search
                   </span>
                   <input
-                    className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all"
+                    className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/40 transition-all"
                     placeholder="Search resources..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
@@ -486,11 +550,28 @@ export default function MenteeDashboardResourcesPage() {
               </form>
             </div>
 
+            {/* Type pills — below search */}
+            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-2 pb-6 px-6">
+              {typePills.map((pill) => (
+                <button
+                  key={pill.key}
+                  onClick={() => handleTypeChange(pill.key)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                    activeType === pill.key
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+
             {/* Recommended banner */}
             {activeType === 'recommended' && (
               <div className="px-8 pt-5 pb-1">
-                <div className="bg-gradient-to-r from-primary/10 to-gold-accent/10 border border-primary/20 rounded-xl p-4 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-[24px]">auto_awesome</span>
+                <div className="bg-gradient-to-r from-rose-50 to-rose-100/90 dark:from-rose-950/40 dark:to-rose-900/30 border border-rose-200/80 dark:border-rose-800/40 rounded-xl p-4 flex items-center gap-3">
+                  <span className="material-symbols-outlined text-rose-500 text-[24px]">auto_awesome</span>
                   <div>
                     <p className="text-sm font-bold text-on-surface">Personalized for You</p>
                     <p className="text-xs text-slate-500 dark:text-on-surface-variant">
@@ -511,7 +592,7 @@ export default function MenteeDashboardResourcesPage() {
                     <select
                       value={filterCategory}
                       onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
                     >
                       {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
@@ -521,7 +602,7 @@ export default function MenteeDashboardResourcesPage() {
                   </div>
 
                   {/* Difficulty segmented control */}
-                  <div className="flex bg-slate-100 dark:bg-surface-container-high p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40">
+                  <div className="flex bg-rose-50 dark:bg-surface-container-high p-1 rounded-lg border border-rose-200/70 dark:border-outline-variant/40">
                     <button
                       onClick={() => { setFilterDifficulty(''); setPage(1); }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
@@ -552,7 +633,7 @@ export default function MenteeDashboardResourcesPage() {
                     <select
                       value={sort}
                       onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
                     >
                       {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
@@ -592,7 +673,7 @@ export default function MenteeDashboardResourcesPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {resources.map((resource) => (
                     <ResourceCard
                       key={resource._id}
@@ -613,7 +694,7 @@ export default function MenteeDashboardResourcesPage() {
                   <button
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-rose-500/40 hover:text-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     ← Previous
                   </button>
@@ -623,7 +704,7 @@ export default function MenteeDashboardResourcesPage() {
                   <button
                     disabled={page >= pagination.totalPages}
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-rose-500/40 hover:text-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     Next →
                   </button>
@@ -631,16 +712,26 @@ export default function MenteeDashboardResourcesPage() {
               )}
             </div>
 
+            {/* Bookmarks — below grid on smaller screens */}
+            <div className="xl:hidden px-8 pb-6">
+              <BookmarksPanel
+                bookmarks={bookmarks}
+                bookmarkCount={bookmarkedIds.size}
+                onRemove={handleBookmark}
+              />
+            </div>
+
             <div className="text-center text-xs text-black dark:text-neutral-100 py-4">
               © 2026 LEADSHER. BUILT FOR BRILLIANCE.
             </div>
           </div>
-      {/* ── Bookmarks bottom drawer ──────────────────────────────────────── */}
-      <BookmarksDrawer
-        bookmarks={bookmarks}
-        bookmarkCount={bookmarkedIds.size}
-        onRemove={handleBookmark}
-      />
+
+          <BookmarksRightRail
+            bookmarks={bookmarks}
+            bookmarkCount={bookmarkedIds.size}
+            onRemove={handleBookmark}
+          />
+          </div>
 
       {/* ── Rate modal ───────────────────────────────────────────────────── */}
       {rateTarget && (
@@ -653,6 +744,6 @@ export default function MenteeDashboardResourcesPage() {
       {previewResource && (
         <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
       )}
-    </>
+    </div>
   );
 }

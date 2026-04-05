@@ -97,7 +97,7 @@ export default function MentorDashboardForumPage() {
                 </Link>
                 <Link
                   to="/forum/new"
-                  className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   New Discussion
@@ -134,7 +134,7 @@ export default function MentorDashboardForumPage() {
                 <span className="material-symbols-outlined text-5xl text-outline/40 mb-4 block">forum</span>
                 <p className="text-on-surface font-medium mb-1">No discussions yet</p>
                 <p className="text-outline text-sm mb-6">Start engaging with the LeadsHer community.</p>
-                <Link to="/forum/new" className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-5 py-2.5 rounded-lg transition-colors">
+                <Link to="/forum/new" className="inline-flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-bold px-5 py-2.5 rounded-lg transition-colors dark:bg-rose-600 dark:hover:bg-rose-500">
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Start a Discussion
                 </Link>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
 import Spinner from '../components/common/Spinner';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
@@ -52,9 +53,7 @@ const fmtCat = (c) =>
 
 function TopicCard({ topic, pinned }) {
   const catColor = CAT_COLORS[topic.category] || CAT_COLORS.general;
-  const avatarSrc =
-    topic.author?.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(topic.author?.name || 'U')}&background=c9a84c&color=fff&size=40`;
+  const avatarSrc = userDisplayPhoto(topic.author, { size: 40 });
 
   return (
     <Link
