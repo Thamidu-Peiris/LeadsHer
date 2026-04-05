@@ -104,9 +104,17 @@ export default function App() {
     <ThemeProvider>
     <BrowserRouter>
       <AuthProvider>
+        {/* Horizontally centered; starts below fixed Navbar (not inside the top bar) */}
         <Toaster
           position="top-center"
-          containerStyle={{ pointerEvents: 'none' }}
+          containerStyle={{
+            pointerEvents: 'none',
+            top: '5.5rem',
+            left: '0.75rem',
+            right: '0.75rem',
+            bottom: '0.75rem',
+            zIndex: 10000,
+          }}
           toastOptions={{
             duration: 2500,
             style: { pointerEvents: 'auto' },
