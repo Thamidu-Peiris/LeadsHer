@@ -39,20 +39,24 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
     <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white dark:bg-surface-container-lowest sticky top-0 z-30 px-8 flex items-center justify-between">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
+
         <Link
           className="rounded-sm transition-colors hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:hover:text-rose-400"
           to="/"
         >
+
           Home
         </Link>
         {crumbs.map((crumb, i) => (
           <Fragment key={i}>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             {crumb.to ? (
+
               <Link
                 className="rounded-sm transition-colors hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:hover:text-rose-400"
                 to={crumb.to}
               >
+
                 {crumb.label}
               </Link>
             ) : (
@@ -72,7 +76,9 @@ export default function DashboardTopBar({ crumbs = [], children, showAvatar = tr
             type="button"
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
+
             className="w-10 h-10 rounded-full flex items-center justify-center border border-outline-variant/25 hover:border-rose-500 text-outline hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+
           >
             <span className="material-symbols-outlined text-[20px]">
               {theme === 'dark' ? 'light_mode' : 'dark_mode'}
