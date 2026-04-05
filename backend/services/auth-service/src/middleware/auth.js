@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const AppSettings = require('../models/AppSettings');
 
 const protect = async (req, res, next) => {
   let token;
@@ -12,9 +13,29 @@ const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id)
-      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -googleId -linkedinId');
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -googleId -linkedinId -emailVerificationCodeExpires')
+      .select('+emailVerificationCodeHash');
     if (!user) {
       return res.status(401).json({ message: 'User not found.' });
+    }
+    try {
+      const settings = await AppSettings.getSingleton();
+      const pending =
+        settings.emailVerificationRequired !== false &&
+        !user.isEmailVerified &&
+        user.emailVerificationCodeHash;
+      if (pending) {
+        return res.status(403).json({
+          code: 'EMAIL_NOT_VERIFIED',
+          message: 'Verify your email to continue. Check your inbox for the code.',
+        });
+      }
+    } catch (e) {
+      return next(e);
+    }
+    if (!user.isEmailVerified && !user.emailVerificationCodeHash) {
+      user.isEmailVerified = true;
+      await user.save({ validateBeforeSave: false });
     }
     req.user = user;
     next();

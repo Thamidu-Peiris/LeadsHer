@@ -32,6 +32,12 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       navigate(from, { replace: true });
     } catch (err) {
+      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED' && form.email) {
+        toast.error('Verify your email first. Use the code we sent you.');
+        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
+        setError('');
+        return;
+      }
       setError(err.response?.data?.message || 'Invalid email or password.');
     } finally {
       setLoading(false);

@@ -64,9 +64,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await register({ name: form.name, email: form.email, password: form.password, role: form.role });
-      toast.success('Welcome to LeadsHer! 🎉');
-      navigate('/');
+      const payload = await register({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      });
+      if (payload.requiresVerification) {
+        toast.success('Check your email for your 6-digit verification code.');
+        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
+        return;
+      }
+      toast.success('Welcome to LeadsHer!');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
       setStep(1);

@@ -52,14 +52,30 @@ const sendEmail = async ({ to, subject, html, text }) => {
   return { sent: true };
 };
 
-const sendVerificationEmail = async (email, token) => {
-  const link = `${appUrl}/verify-email?token=${token}`;
-  const html = `Welcome to LeadsHer. Please verify your email: <a href="${link}">Verify Email</a>. Link expires in 24 hours.`;
+const sendVerificationEmail = async (email, token, sixDigitCode) => {
+  const link = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  const codeBlock = sixDigitCode
+    ? `<p style="margin:20px 0;font-size:28px;font-weight:700;letter-spacing:0.25em;color:#9d174d;text-align:center;font-family:monospace;">${sixDigitCode}</p>
+       <p style="margin:0 0 16px 0;font-size:14px;color:#6b7280;text-align:center;">Enter this code on the verification page to finish signing up.</p>`
+    : '';
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px 16px;background:#fdf2f8;font-family:system-ui,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border:1px solid #fbcfe8;padding:24px;">
+    <p style="margin:0 0 8px 0;font-size:20px;font-weight:700;color:#9d174d;">LeadsHer</p>
+    <p style="margin:0 0 16px 0;color:#374151;">Welcome! Verify your email to activate your account.</p>
+    ${codeBlock}
+    <p style="margin:16px 0 8px 0;font-size:13px;color:#6b7280;">Or open this link (expires in 24 hours):</p>
+    <p style="margin:0;word-break:break-all;"><a href="${link}" style="color:#db2777;">${link}</a></p>
+  </div>
+</body></html>`;
+  const text = sixDigitCode
+    ? `Your LeadsHer verification code: ${sixDigitCode}\n\nOr verify using this link (24h): ${link}`
+    : `Verify your LeadsHer email: ${link}`;
   return sendEmail({
     to: email,
-    subject: 'Verify your LeadsHer email',
+    subject: 'Your LeadsHer verification code',
     html,
-    text: `Verify your email: ${link}`,
+    text,
   });
 };
 
