@@ -150,39 +150,274 @@
   }
 }
 
-/** Featured Stories: main card enters from the left */
+/** Featured Stories: main card first paint — soft fade + gentle rise */
 @keyframes featuredHeroIn {
   from {
     opacity: 0;
-    transform: translate3d(-28px, 12px, 0) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-/** Featured Stories: big card swap every carousel tick (smooth crossfade + lift) */
-@keyframes featuredCarouselHero {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0) scale(0.992);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-/** Featured Stories: side list items enter from the right */
-@keyframes featuredSideIn {
-  from {
-    opacity: 0;
-    transform: translate3d(20px, 8px, 0);
+    transform: translate3d(0, 16px, 0);
   }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+
+/** Featured Stories: hero swap on carousel — crossfade-style (opacity + small motion, no scale snap) */
+@keyframes featuredCarouselHero {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/** Featured Stories: sidebar rows — light horizontal slide */
+@keyframes featuredSideIn {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/**
+ * Featured carousel swap (not a white flash): hero slides down / toward sidebar;
+ * next hero + column enter from above. Opacity stays > ~0.5 so background never “pops” white.
+ */
+@keyframes featuredHeroSwapOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0.62;
+    transform: translate3d(0, 48px, 0) scale(0.92);
+  }
+}
+
+@keyframes featuredHeroSwapIn {
+  from {
+    opacity: 0.82;
+    transform: translate3d(0, -40px, 0) scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (min-width: 1024px) {
+  @keyframes featuredHeroSwapOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0.65;
+      transform: translate3d(18%, 24px, 0) scale(0.9);
+    }
+  }
+
+  @keyframes featuredHeroSwapIn {
+    from {
+      opacity: 0.85;
+      transform: translate3d(-14%, -36px, 0) scale(1.07);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+@keyframes featuredSideColumnSwapOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.52;
+    transform: translate3d(0, 26px, 0);
+  }
+}
+
+@keyframes featuredSideColumnSwapIn {
+  from {
+    opacity: 0.55;
+    transform: translate3d(0, -40px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/**
+ * Featured carousel variant B — smooth “glide”: hero drifts left/down, next story glides in from the right;
+ * sidebar column drifts the opposite way for a gentle handoff (no harsh white cut).
+ */
+@keyframes featuredHeroGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0.6;
+    transform: translate3d(-36px, 14px, 0) scale(0.94);
+  }
+}
+
+@keyframes featuredHeroGlideIn {
+  from {
+    opacity: 0.78;
+    transform: translate3d(48px, -18px, 0) scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (min-width: 1024px) {
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0.62;
+      transform: translate3d(-14%, 18px, 0) scale(0.9);
+    }
+  }
+
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.84;
+      transform: translate3d(16%, -22px, 0) scale(1.06);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+@keyframes featuredSideColumnGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.48;
+    transform: translate3d(28px, 10px, 0);
+  }
+}
+
+@keyframes featuredSideColumnGlideIn {
+  from {
+    opacity: 0.52;
+    transform: translate3d(-32px, -14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes featuredHeroIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredCarouselHero {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredHeroSwapOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.4;
+    }
+  }
+  @keyframes featuredHeroSwapIn {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideColumnSwapOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.35;
+    }
+  }
+  @keyframes featuredSideColumnSwapIn {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.38;
+    }
+  }
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.38;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideColumnGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.32;
+    }
+  }
+  @keyframes featuredSideColumnGlideIn {
+    from {
+      opacity: 0.32;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 
