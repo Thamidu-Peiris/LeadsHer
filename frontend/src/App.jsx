@@ -25,6 +25,7 @@ import MenteeDashboardMentorsPage from './pages/MenteeDashboardMentorsPage';
 import MenteeProfilePage from './pages/MenteeProfilePage';
 import DashboardSettingsRouter from './pages/DashboardSettingsRouter';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import MentorsPage      from './pages/MentorsPage';
 import MentorProfilePage from './pages/MentorProfilePage';
 import MentorDashboardResourcesPage from './pages/MentorDashboardResourcesPage';
@@ -103,9 +104,17 @@ export default function App() {
     <ThemeProvider>
     <BrowserRouter>
       <AuthProvider>
+        {/* Horizontally centered; starts below fixed Navbar (not inside the top bar) */}
         <Toaster
           position="top-center"
-          containerStyle={{ pointerEvents: 'none' }}
+          containerStyle={{
+            pointerEvents: 'none',
+            top: '5.5rem',
+            left: '0.75rem',
+            right: '0.75rem',
+            bottom: '0.75rem',
+            zIndex: 10000,
+          }}
           toastOptions={{
             duration: 2500,
             style: { pointerEvents: 'auto' },
@@ -118,6 +127,7 @@ export default function App() {
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/"            element={<HomePage />} />
             <Route path="/stories"     element={<StoriesPage />} />
             <Route path="/stories/:id" element={<StoryDetailPage />} />
