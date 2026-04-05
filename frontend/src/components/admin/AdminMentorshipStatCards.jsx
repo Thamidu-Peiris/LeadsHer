@@ -4,7 +4,7 @@ function formatNum(n) {
 }
 
 /**
- * Compact dashboard stat row: white cards, label + gold icon, clear sans-serif metrics.
+ * Compact dashboard stat row: white cards, label + accent icon, clear sans-serif metrics.
  */
 export default function AdminMentorshipStatCards({
   totalRequests,
@@ -46,14 +46,14 @@ export default function AdminMentorshipStatCards({
       {cards.map((card) => (
         <div
           key={card.label}
-          className="bg-white border border-outline-variant/20 rounded-xl px-4 py-3 flex flex-col gap-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]"
+          className="flex min-h-[6.5rem] flex-col justify-between gap-2 rounded-xl border border-outline-variant/20 bg-white px-4 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)] sm:min-h-[7rem]"
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-outline font-sans-modern leading-tight">
+            <p className="font-sans-modern text-[11px] font-bold uppercase leading-tight tracking-widest text-outline">
               {card.label}
             </p>
             <span
-              className="material-symbols-outlined text-gold-accent text-[20px] shrink-0 -mt-0.5"
+              className="material-symbols-outlined -mt-0.5 shrink-0 text-[20px] text-[#f43f5e]"
               style={
                 card.iconFill ? { fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" } : undefined
               }
@@ -62,7 +62,7 @@ export default function AdminMentorshipStatCards({
               {card.icon}
             </span>
           </div>
-          <p className="text-[1.65rem] font-sans-modern font-bold text-on-surface tabular-nums leading-none tracking-tight">
+          <p className="font-sans-modern text-[1.65rem] font-bold tabular-nums leading-none tracking-tight text-on-surface sm:text-[1.7rem]">
             {card.value}
           </p>
         </div>

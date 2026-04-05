@@ -795,6 +795,73 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   );
 }
 
+const MANAGE_ACCOUNT_PAGE_SIZE = 20;
+
+function getManageAccountPageItems(current, total) {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total]);
+  for (let p = current - 1; p <= current + 1; p++) {
+    if (p >= 1 && p <= total) pages.add(p);
+  }
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push('ellipsis');
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+function ManageAccountPaginationBar({ page, totalPages, totalItems, onPageChange }) {
+  if (totalPages <= 1 || totalItems === 0) return null;
+  const items = getManageAccountPageItems(page, totalPages);
+  const start = (page - 1) * MANAGE_ACCOUNT_PAGE_SIZE + 1;
+  const end = Math.min(page * MANAGE_ACCOUNT_PAGE_SIZE, totalItems);
+  const btnBase =
+    'min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1';
+  const btnIdle = 'border-outline-variant/35 bg-white text-on-surface hover:border-[#f43f5e]/40 hover:bg-rose-50';
+  const btnActive = 'border-[#f43f5e] bg-[#f43f5e] text-white shadow-sm';
+  const navBtn = `${btnBase} px-3 ${btnIdle} disabled:opacity-40 disabled:pointer-events-none`;
+  return (
+    <div className="mt-6 border-t border-outline-variant/20 pt-4">
+      <p className="mb-3 text-center text-xs text-on-surface-variant">
+        Showing {start}–{end} of {totalItems} (page {page} of {totalPages})
+      </p>
+      <nav className="flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
+        <button type="button" className={navBtn} disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          Previous
+        </button>
+        {items.map((item, idx) =>
+          item === 'ellipsis' ? (
+            <span key={`ellipsis-${idx}`} className="px-1 text-on-surface-variant select-none" aria-hidden="true">
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              className={`${btnBase} ${page === item ? btnActive : btnIdle}`}
+              onClick={() => onPageChange(item)}
+              aria-current={page === item ? 'page' : undefined}
+            >
+              {item}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          className={navBtn}
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </button>
+      </nav>
+    </div>
+  );
+}
+
 function AdminDashboard({ user }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Admin';
   const location = useLocation();
@@ -820,6 +887,10 @@ function AdminDashboard({ user }) {
   const [reportData, setReportData] = useState(null);
   const [platformStoryTotal, setPlatformStoryTotal] = useState(0);
   const [platformEventTotal, setPlatformEventTotal] = useState(0);
+  const [manageAccountSearch, setManageAccountSearch] = useState('');
+  const [manageAccountFilterOpen, setManageAccountFilterOpen] = useState(false);
+  const [mentorAccountPage, setMentorAccountPage] = useState(1);
+  const [menteeAccountPage, setMenteeAccountPage] = useState(1);
 
   const loadAdminData = async () => {
     setLoadingAdmin(true);
@@ -988,6 +1059,97 @@ function AdminDashboard({ user }) {
     () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentee'),
     [mentorMenteeUsers]
   );
+
+  const filteredMentorUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return mentorUsers;
+    return mentorUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [mentorUsers, manageAccountSearch]);
+
+  const filteredMenteeUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return menteeUsers;
+    return menteeUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [menteeUsers, manageAccountSearch]);
+
+  useEffect(() => {
+    setMentorAccountPage(1);
+    setMenteeAccountPage(1);
+  }, [manageAccountSearch]);
+
+  const mentorTotalPages = Math.max(1, Math.ceil(filteredMentorUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+  const menteeTotalPages = Math.max(1, Math.ceil(filteredMenteeUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+
+  useEffect(() => {
+    setMentorAccountPage((p) => Math.min(p, mentorTotalPages));
+  }, [mentorTotalPages]);
+
+  useEffect(() => {
+    setMenteeAccountPage((p) => Math.min(p, menteeTotalPages));
+  }, [menteeTotalPages]);
+
+  const mentorPageSafe = Math.min(Math.max(1, mentorAccountPage), mentorTotalPages);
+  const menteePageSafe = Math.min(Math.max(1, menteeAccountPage), menteeTotalPages);
+
+  const paginatedMentorUsers = useMemo(() => {
+    const start = (mentorPageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMentorUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMentorUsers, mentorPageSafe]);
+
+  const paginatedMenteeUsers = useMemo(() => {
+    const start = (menteePageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMenteeUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMenteeUsers, menteePageSafe]);
+
+  const exportManageAccountCsv = () => {
+    const escape = (val) => {
+      const s = String(val ?? '');
+      if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    let headers;
+    const lines = [];
+    if (manageAccountTab === 'mentors') {
+      headers = ['Name', 'Email', 'Verified', 'Suspended', 'Has mentor profile'];
+      filteredMentorUsers.forEach((u) => {
+        const mp = mentorProfileByUser.get(String(u.id || u._id));
+        lines.push(
+          [
+            escape(u.name),
+            escape(u.email),
+            mp?.isVerified ? 'Yes' : 'No',
+            u.isSuspended ? 'Yes' : 'No',
+            mp ? 'Yes' : 'No',
+          ].join(',')
+        );
+      });
+    } else {
+      headers = ['Name', 'Email', 'Suspended'];
+      filteredMenteeUsers.forEach((u) => {
+        lines.push([escape(u.name), escape(u.email), u.isSuspended ? 'Yes' : 'No'].join(','));
+      });
+    }
+    const csv = [headers.join(','), ...lines].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leadsher-manage-account-${manageAccountTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded');
+  };
+
   const newestUnverifiedMentors = useMemo(() => (
     mentorProfiles
       .filter((p) => !p?.isVerified)
@@ -1083,47 +1245,84 @@ function AdminDashboard({ user }) {
                 )}
                 {isManageAccountRoute ? (
                   <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
-                    <p className="text-on-surface-variant text-sm mt-2 mb-6">
-                      Separate views for mentors and mentees with quick moderation actions.
-                    </p>
-
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 p-1">
+                      <div
+                        className="flex items-center gap-1 rounded-xl border-2 border-outline-variant/30 bg-slate-50/80 p-1 shadow-inner"
+                        role="tablist"
+                        aria-label="Account type"
+                      >
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentors'}
                         onClick={() => setManageAccountTab('mentors')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentors'
-                            ? 'bg-primary text-white'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentors
                       </button>
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentees'}
                         onClick={() => setManageAccountTab('mentees')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentees'
-                            ? 'bg-primary text-white'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentees
                       </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
-                          <span className="material-symbols-outlined text-[15px]">filter_list</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setManageAccountFilterOpen((v) => !v)}
+                          className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-bold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/40 focus-visible:ring-offset-2 ${
+                            manageAccountFilterOpen || manageAccountSearch.trim()
+                              ? 'border-[#f43f5e] bg-rose-50 text-[#f43f5e] ring-1 ring-[#f43f5e]/20'
+                              : 'border-outline-variant/40 bg-white text-on-surface hover:border-outline-variant/60 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">filter_list</span>
                           Filter
                         </button>
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
-                          <span className="material-symbols-outlined text-[15px]">download</span>
+                        <button
+                          type="button"
+                          onClick={exportManageAccountCsv}
+                          className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-slate-400 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+                        >
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">download</span>
                           Export
                         </button>
                       </div>
                     </div>
+
+                    {(manageAccountFilterOpen || manageAccountSearch.trim()) && (
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <input
+                          type="search"
+                          value={manageAccountSearch}
+                          onChange={(e) => setManageAccountSearch(e.target.value)}
+                          placeholder="Search by name or email…"
+                          className="min-w-[200px] flex-1 max-w-md rounded-lg border border-outline-variant/25 bg-white px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-[#f43f5e]/50 focus:outline-none focus:ring-1 focus:ring-[#f43f5e]/30"
+                          autoFocus={manageAccountFilterOpen}
+                        />
+                        {manageAccountSearch.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setManageAccountSearch('')}
+                            className="inline-flex min-h-[40px] items-center rounded-lg border-2 border-outline-variant/35 bg-white px-4 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 hover:text-[#f43f5e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     <div className="h-1" />
 
@@ -1135,15 +1334,20 @@ function AdminDashboard({ user }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentors</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-bold">
-                              {mentorUsers.length} mentors
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
+                              {manageAccountSearch.trim()
+                                ? `${filteredMentorUsers.length} of ${mentorUsers.length} mentors`
+                                : `${mentorUsers.length} mentors`}
                             </span>
                           </div>
                           {mentorUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentor accounts found.</p>
+                          ) : filteredMentorUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentors match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {mentorUsers.map((u) => {
+                              {paginatedMentorUsers.map((u) => {
                                 const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
                                 return (
                                   <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
@@ -1162,26 +1366,31 @@ function AdminDashboard({ user }) {
                                         </div>
                                       </div>
                                       <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentor</span>
+                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentor</span>
                                         <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                           mentorProfile?.isVerified
                                             ? 'border-green-300 bg-green-50 text-green-700'
-                                            : 'border-red-200 bg-red-50 text-red-600'
+                                            : 'border-amber-500/70 bg-amber-100 text-amber-900'
                                         }`}>
                                           {mentorProfile?.isVerified ? 'Verified' : 'Pending Verify'}
                                         </span>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-2 lg:w-[360px]">
-                                        <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                          <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                      <div className="grid grid-cols-3 gap-2 lg:w-[380px]">
+                                        <button
+                                          type="button"
+                                          onClick={() => editUserProfile(u)}
+                                          className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                          title="Edit profile"
+                                        >
+                                          <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             u.isSuspended
-                                              ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                              : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                              ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                              : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                           }`}
                                         >
                                           {u.isSuspended ? 'Reactivate' : 'Suspend'}
@@ -1190,11 +1399,11 @@ function AdminDashboard({ user }) {
                                           type="button"
                                           disabled={!mentorProfile}
                                           onClick={() => mentorProfile && toggleVerifyMentor(mentorProfile)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             mentorProfile?.isVerified
-                                              ? 'border-outline-variant/25 bg-surface-container-lowest text-outline hover:text-on-surface'
-                                              : 'border-primary/40 bg-primary text-white hover:bg-primary/90'
-                                          } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              ? 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400'
+                                              : 'border-[#f43f5e] bg-[#f43f5e] text-white hover:bg-[#e11d48] focus-visible:ring-[#f43f5e]'
+                                          } ${!mentorProfile ? 'cursor-not-allowed opacity-50' : ''}`}
                                         >
                                           {!mentorProfile ? 'No profile' : mentorProfile.isVerified ? 'Unverify' : 'Verify'}
                                         </button>
@@ -1204,6 +1413,13 @@ function AdminDashboard({ user }) {
                                 );
                               })}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={mentorPageSafe}
+                              totalPages={mentorTotalPages}
+                              totalItems={filteredMentorUsers.length}
+                              onPageChange={setMentorAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1212,15 +1428,20 @@ function AdminDashboard({ user }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentees</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary font-bold">
-                              {menteeUsers.length} mentees
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
+                              {manageAccountSearch.trim()
+                                ? `${filteredMenteeUsers.length} of ${menteeUsers.length} mentees`
+                                : `${menteeUsers.length} mentees`}
                             </span>
                           </div>
                           {menteeUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentee accounts found.</p>
+                          ) : filteredMenteeUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentees match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {menteeUsers.map((u) => (
+                              {paginatedMenteeUsers.map((u) => (
                                 <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
                                   <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -1237,24 +1458,29 @@ function AdminDashboard({ user }) {
                                       </div>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentee</span>
+                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentee</span>
                                       <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                         u.isSuspended ? 'border-red-300 bg-red-50 text-red-700' : 'border-green-300 bg-green-50 text-green-700'
                                       }`}>
                                         {u.isSuspended ? 'Suspended' : 'Active'}
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 lg:w-[240px]">
-                                      <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                        <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                    <div className="grid grid-cols-2 gap-2 lg:w-[260px]">
+                                      <button
+                                        type="button"
+                                        onClick={() => editUserProfile(u)}
+                                        className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                        title="Edit profile"
+                                      >
+                                        <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                        className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                        className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                           u.isSuspended
-                                            ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                            : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                            ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                            : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                         }`}
                                       >
                                         {u.isSuspended ? 'Reactivate' : 'Suspend'}
@@ -1264,6 +1490,13 @@ function AdminDashboard({ user }) {
                                 </div>
                               ))}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={menteePageSafe}
+                              totalPages={menteeTotalPages}
+                              totalItems={filteredMenteeUsers.length}
+                              onPageChange={setMenteeAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1324,7 +1557,7 @@ function AdminDashboard({ user }) {
                               <p className="text-xs text-outline line-clamp-1">{mentorUser?.email || ''}</p>
                             </div>
                           </div>
-                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-red-200 bg-red-50 text-red-600 font-bold">
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-amber-500/70 bg-amber-100 text-amber-900 font-bold">
                             Pending Verify
                           </span>
                         </div>
@@ -1421,7 +1654,7 @@ function AdminDashboard({ user }) {
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-[#f43f5e] text-white text-sm font-semibold hover:bg-[#e11d48] disabled:opacity-60"
                 >
                   {editSaving ? 'Saving…' : 'Save Changes'}
                 </button>
