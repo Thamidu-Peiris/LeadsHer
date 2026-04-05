@@ -999,7 +999,7 @@ function AdminDashboard({ user }) {
                         onClick={() => setManageAccountTab('mentors')}
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
                           manageAccountTab === 'mentors'
-                            ? 'bg-primary text-white'
+                            ? 'bg-[#f43f5e] text-white shadow-sm'
                             : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
@@ -1010,7 +1010,7 @@ function AdminDashboard({ user }) {
                         onClick={() => setManageAccountTab('mentees')}
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
                           manageAccountTab === 'mentees'
-                            ? 'bg-primary text-white'
+                            ? 'bg-[#f43f5e] text-white shadow-sm'
                             : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
@@ -1039,7 +1039,7 @@ function AdminDashboard({ user }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentors</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-bold">
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
                               {mentorUsers.length} mentors
                             </span>
                           </div>
@@ -1066,7 +1066,7 @@ function AdminDashboard({ user }) {
                                         </div>
                                       </div>
                                       <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentor</span>
+                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentor</span>
                                         <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                           mentorProfile?.isVerified
                                             ? 'border-green-300 bg-green-50 text-green-700'
@@ -1097,7 +1097,7 @@ function AdminDashboard({ user }) {
                                           className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
                                             mentorProfile?.isVerified
                                               ? 'border-outline-variant/25 bg-surface-container-lowest text-outline hover:text-on-surface'
-                                              : 'border-primary/40 bg-primary text-white hover:bg-primary/90'
+                                              : 'border-[#f43f5e]/50 bg-[#f43f5e] text-white hover:bg-[#e11d48]'
                                           } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                           {!mentorProfile ? 'No profile' : mentorProfile.isVerified ? 'Unverify' : 'Verify'}
@@ -1116,7 +1116,7 @@ function AdminDashboard({ user }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentees</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary font-bold">
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
                               {menteeUsers.length} mentees
                             </span>
                           </div>
@@ -1141,7 +1141,7 @@ function AdminDashboard({ user }) {
                                       </div>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentee</span>
+                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentee</span>
                                       <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                         u.isSuspended ? 'border-red-300 bg-red-50 text-red-700' : 'border-green-300 bg-green-50 text-green-700'
                                       }`}>
@@ -1325,7 +1325,7 @@ function AdminDashboard({ user }) {
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-[#f43f5e] text-white text-sm font-semibold hover:bg-[#e11d48] disabled:opacity-60"
                 >
                   {editSaving ? 'Saving…' : 'Save Changes'}
                 </button>
