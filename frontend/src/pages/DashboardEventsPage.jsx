@@ -24,7 +24,8 @@ const CAT_STYLE = {
   'panel-discussion': 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
 };
 
-const CARD = 'bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20';
+const CARD =
+  'bg-white dark:bg-white rounded-xl border border-outline-variant/20 shadow-sm dark:border-outline-variant/20';
 
 function label(val) {
   return (val || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -35,10 +36,10 @@ function fmtDate(d) {
 
 /* ── Stat Card ───────────────────────────────────────────────────────────── */
 
-function StatCard({ icon, title, value, accent = 'text-rose-600 dark:text-rose-400' }) {
+function StatCard({ icon, title, value, accent = 'text-[#f43f5e]' }) {
   return (
     <div className={`${CARD} p-5 flex items-center gap-4`}>
-      <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-surface-container flex items-center justify-center shrink-0">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800/40">
         <span className={`material-symbols-outlined text-[22px] ${accent}`}>{icon}</span>
       </div>
       <div>
@@ -53,25 +54,33 @@ function StatCard({ icon, title, value, accent = 'text-rose-600 dark:text-rose-4
 
 function TabBar({ tabs, active, onChange }) {
   return (
-    <div className="flex gap-1 p-1 bg-slate-100 dark:bg-surface-container rounded-xl w-fit flex-wrap">
+    <div
+      className="flex w-fit flex-wrap gap-1 rounded-xl border-2 border-outline-variant/30 bg-slate-50/80 p-1 shadow-inner dark:border-outline-variant/40 dark:bg-slate-900/40"
+      role="tablist"
+    >
       {tabs.map(t => (
         <button
           key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={active === t.key}
           onClick={() => onChange(t.key)}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+          className={`flex min-h-[40px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/40 focus-visible:ring-offset-2 ${
             active === t.key
-              ? 'bg-white dark:bg-surface-container-lowest text-on-surface'
-              : 'text-slate-400 dark:text-on-surface-variant hover:text-on-surface'
+              ? 'bg-[#f43f5e] text-white shadow-sm ring-1 ring-black/10'
+              : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 dark:bg-surface-container-lowest'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
           {t.label}
           {t.count !== undefined && (
-            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-              active === t.key
-                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                : 'bg-slate-200 dark:bg-surface-container-high text-slate-500 dark:text-on-surface-variant'
-            }`}>
+            <span
+              className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                active === t.key
+                  ? 'bg-white/25 text-white'
+                  : 'bg-slate-200 text-slate-600 dark:bg-surface-container-high dark:text-on-surface-variant'
+              }`}
+            >
               {t.count}
             </span>
           )}
@@ -89,14 +98,14 @@ function EventRow({ event, actions }) {
   const d = new Date(event.date);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest hover:border-rose-300/80 dark:hover:border-rose-500/40 transition-all">
+    <div className="flex flex-col gap-3 rounded-xl border border-outline-variant/20 bg-white p-4 transition-all hover:border-[#f43f5e]/30 dark:bg-white sm:flex-row sm:items-center">
       {/* Date block */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-rose-100 dark:bg-rose-950/40 shrink-0">
-          <span className="text-xl font-bold text-rose-700 dark:text-rose-300 leading-none">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-[#f43f5e]/15 bg-rose-50">
+          <span className="text-xl font-bold leading-none text-[#f43f5e]">
             {d.toLocaleDateString('en-US', { day: '2-digit' })}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600/80 dark:text-rose-400/90">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-[#f43f5e]/85">
             {d.toLocaleDateString('en-US', { month: 'short' })}
           </span>
           <span className="text-[9px] text-slate-400 dark:text-on-surface-variant">
@@ -139,9 +148,9 @@ function EventRow({ event, actions }) {
 function SectionCard({ icon, title, action, children }) {
   return (
     <div className={`${CARD} overflow-hidden`}>
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-          <span className="material-symbols-outlined text-rose-600 dark:text-rose-400 text-[18px]">{icon}</span>
+      <div className="flex items-center justify-between border-b border-outline-variant/20 px-5 py-4">
+        <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-on-surface">
+          <span className="material-symbols-outlined text-[18px] text-[#f43f5e]">{icon}</span>
           {title}
         </h3>
         {action}
@@ -154,7 +163,7 @@ function SectionCard({ icon, title, action, children }) {
 function EmptyState({ icon, message, sub, cta }) {
   return (
     <div className="text-center py-12">
-      <span className="material-symbols-outlined text-[44px] text-rose-200 dark:text-rose-900/45 mb-3 block">{icon}</span>
+      <span className="material-symbols-outlined mb-3 block text-[44px] text-[#f43f5e]/25">{icon}</span>
       <p className="text-sm font-medium text-slate-500 dark:text-on-surface-variant mb-1">{message}</p>
       {sub && <p className="text-xs text-slate-400 dark:text-outline mb-5">{sub}</p>}
       {cta}
@@ -214,14 +223,14 @@ function FeedbackModal({ event, onClose, onSave }) {
                   className="hover:scale-110 transition-transform"
                 >
                   <span
-                    className={`material-symbols-outlined text-[34px] transition-colors ${s <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline-variant/40'}`}
+                    className={`material-symbols-outlined text-[34px] transition-colors ${s <= (hovered || rating) ? 'text-[#f43f5e]' : 'text-slate-200 dark:text-outline-variant/40'}`}
                     style={{ fontVariationSettings: "'FILL' 1" }}
                   >star</span>
                 </button>
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-xs text-gold-accent font-semibold mt-2">
+              <p className="text-xs text-[#f43f5e] font-semibold mt-2">
                 {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
               </p>
             )}
@@ -235,7 +244,7 @@ function FeedbackModal({ event, onClose, onSave }) {
               rows={3}
               maxLength={500}
               placeholder="Share your experience with this event…"
-              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all resize-none"
+              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all resize-none"
             />
             <p className="text-[10px] text-slate-300 dark:text-outline text-right mt-1">{comment.length}/500</p>
           </div>
@@ -245,7 +254,7 @@ function FeedbackModal({ event, onClose, onSave }) {
           <button
             onClick={handleSubmit}
             disabled={saving || !rating}
-            className="flex-1 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
+            className="flex-1 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
           >
             {saving ? 'Submitting…' : 'Submit Feedback'}
           </button>
@@ -296,10 +305,10 @@ function AttendeesModal({ event, onClose }) {
                 const st = STATUS_STYLE[a.status] || STATUS_STYLE.upcoming;
                 return (
                   <div key={a._id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-surface-container border border-slate-100 dark:border-outline-variant/20">
-                    <div className="w-9 h-9 rounded-full bg-gold-accent/10 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 rounded-full bg-[#f43f5e]/10 flex items-center justify-center shrink-0 overflow-hidden">
                       {u.profilePicture
                         ? <img src={u.profilePicture} alt={u.name} className="w-full h-full object-cover" />
-                        : <span className="material-symbols-outlined text-gold-accent text-[18px]">person</span>
+                        : <span className="material-symbols-outlined text-[#f43f5e] text-[18px]">person</span>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
@@ -310,7 +319,7 @@ function AttendeesModal({ event, onClose }) {
                       {a.status}
                     </span>
                     {a.feedback?.rating && (
-                      <span className="flex items-center gap-0.5 text-xs text-gold-accent font-bold ml-1">
+                      <span className="flex items-center gap-0.5 text-xs text-[#f43f5e] font-bold ml-1">
                         <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                         {a.feedback.rating}
                       </span>
@@ -344,7 +353,7 @@ function RescheduleModal({ event, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
 
-  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all';
   const lbl = 'block text-[10px] font-bold text-slate-400 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
 
   const handleSubmit = async () => {
@@ -402,7 +411,7 @@ function RescheduleModal({ event, onClose, onSave }) {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
           >
             <span className="material-symbols-outlined text-[16px]">schedule_send</span>
             {saving ? 'Saving…' : 'Reschedule Event'}
@@ -450,7 +459,7 @@ function CertificatesModal({ event, onClose }) {
         <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between shrink-0">
           <div>
             <h3 className="font-serif-alt text-lg font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-gold-accent text-[20px]">workspace_premium</span>
+              <span className="material-symbols-outlined text-[#f43f5e] text-[20px]">workspace_premium</span>
               Certificates
             </h3>
             <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-0.5 truncate max-w-xs">{event.title}</p>
@@ -473,7 +482,7 @@ function CertificatesModal({ event, onClose }) {
             <div className="space-y-2">
               {certs.map(c => (
                 <div key={c._id} className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30">
-                  <span className="material-symbols-outlined text-gold-accent text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                  <span className="material-symbols-outlined text-[#f43f5e] text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-on-surface truncate">{c.user?.name || 'Unknown'}</p>
                     <p className="text-[10px] font-mono text-slate-400 dark:text-on-surface-variant tracking-wider">{c.certificateCode}</p>
@@ -491,7 +500,7 @@ function CertificatesModal({ event, onClose }) {
           <button
             onClick={handleIssue}
             disabled={issuing}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
           >
             <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
             {issuing ? 'Issuing…' : 'Issue Certificates'}
@@ -577,7 +586,7 @@ function MenteeView() {
                   <EventRow key={e._id} event={e} actions={
                     <>
                       <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                         View
                       </Link>
                       {e.status === 'upcoming' && (
@@ -600,12 +609,12 @@ function MenteeView() {
                   <EventRow key={e._id} event={e} actions={
                     <>
                       <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                         View
                       </Link>
                       {e.status === 'completed' && (
                         <button onClick={() => setFeedbackTarget(e)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gold-accent/10 border border-gold-accent/20 text-gold-accent hover:bg-gold-accent hover:text-white rounded-lg transition-all">
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white rounded-lg transition-all">
                           <span className="material-symbols-outlined text-[12px]">star</span>
                           Feedback
                         </button>
@@ -708,7 +717,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
             <button
               type="button"
               onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
             </button>
@@ -724,7 +733,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                  className="inline-flex items-center gap-2 bg-[#f43f5e] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   Create Event
                 </button>
@@ -736,12 +745,12 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <>
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -782,7 +791,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <>
                     <Link to={`/events/${e._id}`}
-                      className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       View
                     </Link>
                     {e.status === 'upcoming' && (
@@ -793,7 +802,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
                     )}
                     {e.status === 'completed' && (
                       <button onClick={() => setFeedbackTarget(e)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gold-accent/10 border border-gold-accent/20 text-gold-accent hover:bg-gold-accent hover:text-white rounded-lg transition-all">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white rounded-lg transition-all">
                         <span className="material-symbols-outlined text-[12px]">star</span>
                         Feedback
                       </button>
@@ -904,7 +913,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
             <button
               type="button"
               onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
             </button>
@@ -918,7 +927,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 onClick={() => setStatusFilter(s)}
                 className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${
                   statusFilter === s
-                    ? 'bg-gold-accent text-white border-gold-accent'
+                    ? 'bg-[#f43f5e] text-white border-[#f43f5e]'
                     : 'border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant'
                 }`}
               >
@@ -931,7 +940,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search events…"
-                className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg focus:outline-none focus:ring-1 focus:ring-gold-accent/30 text-on-surface"
+                className="min-h-[38px] rounded-lg border-2 border-outline-variant/30 bg-white py-2 pl-8 pr-3 text-xs text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
               />
             </div>
           </div>
@@ -946,12 +955,12 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <div className="flex flex-wrap gap-1.5">
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -996,7 +1005,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
             <button
               type="button"
               onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
               <span className="material-symbols-outlined text-[14px]">add</span>
               New Event
             </button>
@@ -1011,7 +1020,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                  className="inline-flex items-center gap-2 bg-[#f43f5e] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   Create Event
                 </button>
@@ -1023,7 +1032,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <>
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
@@ -1033,7 +1042,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                       Certs
                     </button>
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -1067,7 +1076,7 @@ const EMPTY_FORM = {
 };
 
 const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
-const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all';
 
 /* ── helpers for time math ───────────────────────────────────────────────── */
 function timeToMinutes(t) {
@@ -1234,7 +1243,7 @@ function CreateEventModal({ onClose, onCreated }) {
         <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-gold-accent text-[22px]">add_circle</span>
+              <span className="material-symbols-outlined text-[#f43f5e] text-[22px]">add_circle</span>
               Create New Event
             </h2>
             <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-1">
@@ -1252,7 +1261,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Basic Info ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">info</span>
               Basic Information
             </h3>
@@ -1297,7 +1306,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Schedule ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
               Schedule
             </h3>
@@ -1338,7 +1347,7 @@ function CreateEventModal({ onClose, onCreated }) {
                   <label className={lbl}>
                     Duration (min) <span className="text-red-400">*</span>
                     {durationLabel && (
-                      <span className="ml-1 normal-case text-gold-accent font-semibold tracking-normal">· {durationLabel}</span>
+                      <span className="ml-1 normal-case text-[#f43f5e] font-semibold tracking-normal">· {durationLabel}</span>
                     )}
                   </label>
                   <input type="number" name="duration" value={form.duration}
@@ -1360,7 +1369,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Location ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">location_on</span>
               Location
             </h3>
@@ -1403,7 +1412,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Settings ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">tune</span>
               Settings
             </h3>
@@ -1435,7 +1444,7 @@ function CreateEventModal({ onClose, onCreated }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all"
             >
               {saving ? (
                 <><Spinner size="sm" /> Creating…</>
@@ -1535,28 +1544,71 @@ export default function DashboardEventsPage() {
         {/* Page content */}
         <div className="flex-1 bg-transparent">
           {/* Page header */}
-          <div className="bg-transparent border-b border-outline-variant/20 px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
-              <p className="text-sm text-on-surface-variant mt-1">{pageSubtitle}</p>
+          {isAdmin ? (
+            <div className="mx-auto w-full max-w-[1400px] px-8 pt-8">
+              <section
+                className="rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm dark:border-outline-variant/20 dark:bg-white"
+                aria-labelledby="event-management-heading"
+              >
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+                  <div className="min-w-0">
+                    <h1
+                      id="event-management-heading"
+                      className="font-serif-alt text-2xl font-bold tracking-tight text-on-surface sm:text-3xl"
+                    >
+                      {pageTitle}
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">{pageSubtitle}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-3">
+                    <Link
+                      to="/events"
+                      className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-outline-variant/35 bg-white px-4 py-2 text-sm font-bold text-on-surface transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                      Browse All
+                    </Link>
+                    {canManageEvents && (
+                      <button
+                        type="button"
+                        onClick={() => setCreateOpen(true)}
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#f43f5e]/30 bg-[#f43f5e] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#e11d48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 active:scale-[0.99]"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                        Create Event
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </section>
             </div>
-            <div className="flex gap-3 shrink-0">
-              <Link to="/events"
-                className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-neutral-900 text-white text-sm font-bold rounded-lg transition-colors">
-                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                Browse All
-              </Link>
-              {canManageEvents && (
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-lg transition-all">
-                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                  Create Event
-                </button>
-              )}
+          ) : (
+            <div className="flex flex-col gap-4 border-b border-outline-variant/20 px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
+                <p className="mt-1 max-w-2xl text-sm text-on-surface-variant">{pageSubtitle}</p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-3">
+                <Link
+                  to="/events"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  Browse All
+                </Link>
+                {canManageEvents && (
+                  <button
+                    type="button"
+                    onClick={() => setCreateOpen(true)}
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#f43f5e]/30 bg-[#f43f5e] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#e11d48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 active:scale-[0.99]"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                    Create Event
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Role-based content */}
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
@@ -1568,7 +1620,7 @@ export default function DashboardEventsPage() {
                 <EmptyState
                   icon="lock"
                   message="Please log in to view your events"
-                  cta={<Link to="/login" className="inline-block bg-gold-accent text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">Log In</Link>}
+                  cta={<Link to="/login" className="inline-block bg-[#f43f5e] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">Log In</Link>}
                 />
               </div>
             )}
