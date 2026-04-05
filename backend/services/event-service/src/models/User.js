@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema(
         profilePicture: { type: String, default: '' }, // Auth service uses profilePicture
         resetPasswordToken: { type: String, select: false },
         resetPasswordExpires: { type: Date, select: false },
+        isEmailVerified: { type: Boolean, default: false },
+        emailVerificationCodeHash: { type: String, select: false },
     },
     { timestamps: true }
 );
