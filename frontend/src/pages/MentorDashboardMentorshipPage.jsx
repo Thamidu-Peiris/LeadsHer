@@ -317,8 +317,8 @@ export default function MentorDashboardMentorshipPage() {
                     onClick={() => setTab(t.key)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                       tab === t.key
-                        ? 'border-gold-accent bg-gold-accent/10 text-on-surface'
-                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-gold-accent/40'
+                        ? 'border-rose-500 bg-rose-500/10 text-on-surface'
+                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-rose-500/40'
                     }`}
                   >
                     {t.label} <span className="text-outline font-semibold">({t.count})</span>
@@ -342,7 +342,7 @@ export default function MentorDashboardMentorshipPage() {
                         value={responseMessage}
                         onChange={(e) => setResponseMessage(e.target.value)}
                         placeholder="Optional response message…"
-                        className="w-full md:w-[420px] bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-gold-accent/40"
+                        className="w-full md:w-[420px] bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-rose-500/40"
                         rows={2}
                       />
                     </div>
@@ -385,7 +385,7 @@ export default function MentorDashboardMentorshipPage() {
                                   type="button"
                                   disabled={respondingId === r._id}
                                   onClick={() => accept(r._id)}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 disabled:opacity-60"
+                                  className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 disabled:opacity-60"
                                 >
                                   {respondingId === r._id ? 'Working…' : 'Accept'}
                                 </button>
@@ -440,7 +440,7 @@ export default function MentorDashboardMentorshipPage() {
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
                                 <div className="flex flex-wrap gap-2">
                                   {goals.length ? goals.map((g) => (
-                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-rose-500/5 border border-rose-500/20 rounded-lg">{g}</span>
                                   )) : <span className="text-sm text-on-surface-variant">No goals set</span>}
                                 </div>
                               </div>
@@ -451,7 +451,7 @@ export default function MentorDashboardMentorshipPage() {
                                   <button
                                     type="button"
                                     onClick={() => setExpandedId(isExpanded ? null : m._id)}
-                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                    className="text-xs text-rose-500 font-bold uppercase tracking-wider flex items-center gap-1"
                                   >
                                     <span className="material-symbols-outlined text-[16px]">
                                       {isExpanded ? 'expand_less' : 'expand_more'}
@@ -491,21 +491,21 @@ export default function MentorDashboardMentorshipPage() {
                                       topics: '',
                                     });
                                   }}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white dark:bg-surface-container"
                                 >
                                   Schedule session
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white"
                                 >
                                   Set goals
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => complete(m._id)}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
                                 >
                                   Mark complete
                                 </button>
@@ -555,7 +555,7 @@ export default function MentorDashboardMentorshipPage() {
                                   <button
                                     type="button"
                                     onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
-                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                    className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
                                   >
                                     Submit feedback
                                   </button>
@@ -602,7 +602,7 @@ export default function MentorDashboardMentorshipPage() {
                     <button type="button" onClick={() => setGoalsFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
                       Cancel
                     </button>
-                    <button type="button" onClick={updateGoals} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
+                    <button type="button" onClick={updateGoals} className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
                       Save goals
                     </button>
                   </div>
@@ -685,7 +685,7 @@ export default function MentorDashboardMentorshipPage() {
                         sessionDateInvalid ||
                         Number(sessionForm.duration) < 15
                       }
-                      className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Schedule session
                     </button>
@@ -734,7 +734,7 @@ export default function MentorDashboardMentorshipPage() {
                     <button type="button" onClick={() => setFeedbackFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
                       Cancel
                     </button>
-                    <button type="button" onClick={submitFeedback} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
+                    <button type="button" onClick={submitFeedback} className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
                       Submit
                     </button>
                   </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { eventApi } from '../api/eventApi';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 
@@ -14,7 +15,7 @@ function fmtLabel(val) {
 const EMPTY_FORM = {
   title: '', description: '', category: 'webinar', type: 'virtual',
   date: '', startTime: '', endTime: '', duration: '', timezone: 'UTC',
-  capacity: '', status: 'upcoming', tags: '',
+  capacity: '', status: 'upcoming', tags: '', coverImage: '',
   location: { virtualLink: '', venue: '', address: '', city: '', country: '' },
 };
 
@@ -30,6 +31,8 @@ export default function CreateEventPage() {
   const [loading, setLoading] = useState(isEdit);  // load existing event if editing
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
 
   /* Load existing event for edit mode */
   useEffect(() => {
@@ -51,6 +54,7 @@ export default function CreateEventPage() {
           capacity:    String(e.capacity || ''),
           status:      e.status      || 'upcoming',
           tags:        (e.tags || []).join(', '),
+          coverImage:  e.coverImage  || '',
           location: {
             virtualLink: e.location?.virtualLink || '',
             venue:       e.location?.venue       || '',
@@ -59,6 +63,8 @@ export default function CreateEventPage() {
             country:     e.location?.country     || '',
           },
         });
+        setCoverFile(null);
+        setCoverPreview('');
       })
       .catch(() => { toast.error('Failed to load event'); navigate('/events'); })
       .finally(() => setLoading(false));
@@ -75,6 +81,21 @@ export default function CreateEventPage() {
     }
   };
 
+  const handleCoverFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(file);
+    setCoverPreview(file ? URL.createObjectURL(file) : '');
+    e.target.value = '';
+  };
+
+  const clearCover = () => {
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(null);
+    setCoverPreview('');
+    setForm((f) => ({ ...f, coverImage: '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.description || !form.date || !form.startTime || !form.duration || !form.capacity) {
@@ -82,11 +103,23 @@ export default function CreateEventPage() {
     }
     setSaving(true);
     try {
+      let coverImageVal = (form.coverImage || '').trim();
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('cover', coverFile);
+        const up = await eventApi.uploadCover(fd);
+        coverImageVal = (up.data?.url || coverImageVal).trim();
+        if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+        setCoverFile(null);
+        setCoverPreview('');
+      }
+
       const payload = {
         ...form,
         duration: Number(form.duration),
         capacity: Number(form.capacity),
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        coverImage: coverImageVal,
       };
       if (isEdit) {
         await eventApi.update(id, payload);
@@ -164,6 +197,40 @@ export default function CreateEventPage() {
                   <label className={lbl}>Description *</label>
                   <textarea name="description" value={form.description} onChange={handleChange}
                     className={`${inp} h-28 resize-y`} placeholder="Describe what attendees will gain…" required />
+                </div>
+                <div>
+                  <label className={lbl}>Hero background image</label>
+                  <p className="mb-3 text-xs text-slate-500 dark:text-on-surface-variant">
+                    Optional. Appears as a soft blurred backdrop on the event page. Images are uploaded to Cloudinary when your server is configured (same as stories).
+                  </p>
+                  <div className="flex flex-col items-start gap-4 sm:flex-row">
+                    <div className="aspect-video w-full max-w-[280px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-outline-variant/40 dark:bg-surface-container">
+                      {coverPreview || form.coverImage ? (
+                        <img
+                          alt=""
+                          src={coverPreview || absolutePhotoUrl(form.coverImage)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full min-h-[120px] items-center justify-center px-3 text-center text-xs text-slate-400 dark:text-outline">
+                          Preview
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:border-rose-400 hover:bg-rose-50 dark:border-outline-variant/40 dark:hover:bg-rose-950/30">
+                        <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+                        {coverFile || form.coverImage ? 'Change image' : 'Choose image'}
+                        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleCoverFile} />
+                      </label>
+                      {(form.coverImage || coverPreview) && (
+                        <button type="button" onClick={clearCover} className="text-left text-xs font-semibold text-red-600 hover:underline dark:text-red-400">
+                          Remove cover
+                        </button>
+                      )}
+                      <p className="text-[11px] text-slate-400 dark:text-outline">JPEG, PNG, WebP or GIF · max 8MB · uploaded when you save</p>
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

@@ -90,7 +90,7 @@ export default function MentorDashboardForumPage() {
                   to="/forum"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/40 px-4 py-2.5 rounded-lg transition-all"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium bg-white text-outline border border-outline-variant/30 hover:text-rose-500 hover:border-rose-500/40 hover:bg-slate-50/80 px-4 py-2.5 rounded-lg transition-all shadow-sm dark:bg-surface-container-lowest dark:hover:bg-surface-container"
                 >
                   <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                   Browse Forum
@@ -145,7 +145,7 @@ export default function MentorDashboardForumPage() {
                   {topics.map((topic) => (
                     <div
                       key={topic._id}
-                      className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-gold-accent/30 transition-all"
+                      className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-rose-500/30 transition-all"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -162,12 +162,12 @@ export default function MentorDashboardForumPage() {
                             </span>
                           )}
                           {topic.isPinned && (
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gold-accent bg-gold-accent/10 px-2 py-0.5 rounded-full">Pinned</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">Pinned</span>
                           )}
                         </div>
                         <Link
                           to={`/forum/${topic._id}`}
-                          className="block font-bold text-on-surface hover:text-gold-accent transition-colors line-clamp-1 mb-1"
+                          className="block font-bold text-on-surface hover:text-rose-500 transition-colors line-clamp-1 mb-1"
                         >
                           {topic.title}
                         </Link>
@@ -190,7 +190,7 @@ export default function MentorDashboardForumPage() {
                       <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                         <Link
                           to={`/forum/${topic._id}`}
-                          className="flex items-center gap-1 text-xs text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/30 px-3 py-1.5 rounded-lg transition-all"
+                          className="flex items-center gap-1 text-xs text-outline hover:text-rose-500 border border-outline-variant/30 hover:border-rose-500/30 px-3 py-1.5 rounded-lg transition-all"
                         >
                           <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                           View
@@ -209,7 +209,7 @@ export default function MentorDashboardForumPage() {
                         </button>
                         <Link
                           to={`/forum/${topic._id}/edit`}
-                          className="flex items-center gap-1 text-xs text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/30 px-3 py-1.5 rounded-lg transition-all"
+                          className="flex items-center gap-1 text-xs text-outline hover:text-rose-500 border border-outline-variant/30 hover:border-rose-500/30 px-3 py-1.5 rounded-lg transition-all"
                         >
                           <span className="material-symbols-outlined text-[14px]">edit</span>
                           Edit

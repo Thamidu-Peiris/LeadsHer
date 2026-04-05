@@ -353,7 +353,7 @@ export default function AdminDashboardForumPage() {
                 to="/forum"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/40 px-4 py-2.5 rounded-lg transition-all"
+                className="inline-flex items-center gap-1.5 text-sm font-medium bg-white text-outline border border-outline-variant/30 hover:text-gold-accent hover:border-gold-accent/40 hover:bg-slate-50/80 px-4 py-2.5 rounded-lg transition-all shadow-sm dark:bg-surface-container-lowest dark:hover:bg-surface-container"
               >
                 <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                 Browse Forum

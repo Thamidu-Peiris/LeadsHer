@@ -14,6 +14,11 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      // Event cover files (local fallback; longer match wins before /uploads)
+      '/uploads/events': {
+        target: 'http://localhost:5006',
+        changeOrigin: true,
+      },
       // Story-service static uploads (same path as api-gateway → story-service)
       '/uploads': {
         target: 'http://localhost:5000',
