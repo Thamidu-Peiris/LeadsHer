@@ -729,6 +729,8 @@ function AdminDashboard({ user }) {
   const [reportData, setReportData] = useState(null);
   const [platformStoryTotal, setPlatformStoryTotal] = useState(0);
   const [platformEventTotal, setPlatformEventTotal] = useState(0);
+  const [manageAccountSearch, setManageAccountSearch] = useState('');
+  const [manageAccountFilterOpen, setManageAccountFilterOpen] = useState(false);
 
   const loadAdminData = async () => {
     setLoadingAdmin(true);
@@ -897,6 +899,68 @@ function AdminDashboard({ user }) {
     () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentee'),
     [mentorMenteeUsers]
   );
+
+  const filteredMentorUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return mentorUsers;
+    return mentorUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [mentorUsers, manageAccountSearch]);
+
+  const filteredMenteeUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return menteeUsers;
+    return menteeUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [menteeUsers, manageAccountSearch]);
+
+  const exportManageAccountCsv = () => {
+    const escape = (val) => {
+      const s = String(val ?? '');
+      if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    let headers;
+    const lines = [];
+    if (manageAccountTab === 'mentors') {
+      headers = ['Name', 'Email', 'Verified', 'Suspended', 'Has mentor profile'];
+      filteredMentorUsers.forEach((u) => {
+        const mp = mentorProfileByUser.get(String(u.id || u._id));
+        lines.push(
+          [
+            escape(u.name),
+            escape(u.email),
+            mp?.isVerified ? 'Yes' : 'No',
+            u.isSuspended ? 'Yes' : 'No',
+            mp ? 'Yes' : 'No',
+          ].join(',')
+        );
+      });
+    } else {
+      headers = ['Name', 'Email', 'Suspended'];
+      filteredMenteeUsers.forEach((u) => {
+        lines.push([escape(u.name), escape(u.email), u.isSuspended ? 'Yes' : 'No'].join(','));
+      });
+    }
+    const csv = [headers.join(','), ...lines].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leadsher-manage-account-${manageAccountTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded');
+  };
+
   const newestUnverifiedMentors = useMemo(() => (
     mentorProfiles
       .filter((p) => !p?.isVerified)
@@ -1018,16 +1082,50 @@ function AdminDashboard({ user }) {
                       </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setManageAccountFilterOpen((v) => !v)}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border bg-white text-on-surface text-xs font-bold transition-colors ${
+                            manageAccountFilterOpen || manageAccountSearch.trim()
+                              ? 'border-[#f43f5e]/40 text-[#f43f5e]'
+                              : 'border-outline-variant/25'
+                          }`}
+                        >
                           <span className="material-symbols-outlined text-[15px]">filter_list</span>
                           Filter
                         </button>
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={exportManageAccountCsv}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold hover:border-[#f43f5e]/30 hover:text-[#f43f5e] transition-colors"
+                        >
                           <span className="material-symbols-outlined text-[15px]">download</span>
                           Export
                         </button>
                       </div>
                     </div>
+
+                    {(manageAccountFilterOpen || manageAccountSearch.trim()) && (
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <input
+                          type="search"
+                          value={manageAccountSearch}
+                          onChange={(e) => setManageAccountSearch(e.target.value)}
+                          placeholder="Search by name or email…"
+                          className="min-w-[200px] flex-1 max-w-md rounded-lg border border-outline-variant/25 bg-white px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-[#f43f5e]/50 focus:outline-none focus:ring-1 focus:ring-[#f43f5e]/30"
+                          autoFocus={manageAccountFilterOpen}
+                        />
+                        {manageAccountSearch.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setManageAccountSearch('')}
+                            className="text-xs font-bold text-on-surface-variant hover:text-[#f43f5e]"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     <div className="h-1" />
 
@@ -1040,14 +1138,18 @@ function AdminDashboard({ user }) {
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentors</h3>
                             <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
-                              {mentorUsers.length} mentors
+                              {manageAccountSearch.trim()
+                                ? `${filteredMentorUsers.length} of ${mentorUsers.length} mentors`
+                                : `${mentorUsers.length} mentors`}
                             </span>
                           </div>
                           {mentorUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentor accounts found.</p>
+                          ) : filteredMentorUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentors match your search.</p>
                           ) : (
                             <div className="space-y-3">
-                              {mentorUsers.map((u) => {
+                              {filteredMentorUsers.map((u) => {
                                 const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
                                 return (
                                   <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
@@ -1117,14 +1219,18 @@ function AdminDashboard({ user }) {
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentees</h3>
                             <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
-                              {menteeUsers.length} mentees
+                              {manageAccountSearch.trim()
+                                ? `${filteredMenteeUsers.length} of ${menteeUsers.length} mentees`
+                                : `${menteeUsers.length} mentees`}
                             </span>
                           </div>
                           {menteeUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentee accounts found.</p>
+                          ) : filteredMenteeUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentees match your search.</p>
                           ) : (
                             <div className="space-y-3">
-                              {menteeUsers.map((u) => (
+                              {filteredMenteeUsers.map((u) => (
                                 <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
                                   <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
