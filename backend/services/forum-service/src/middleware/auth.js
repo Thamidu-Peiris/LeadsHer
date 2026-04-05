@@ -44,9 +44,12 @@ const protect = async (req, res, next) => {
   }
 };
 
+const norm = (r) => String(r || '').toLowerCase();
+
 const role = (...allowed) => (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not authorized.' });
-  if (allowed.includes(req.user.role)) return next();
+  const userRole = norm(req.user.role);
+  if (allowed.some((a) => userRole === norm(a))) return next();
   return res.status(403).json({ message: 'Access denied for this role.' });
 };
 

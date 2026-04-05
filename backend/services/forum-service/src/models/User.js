@@ -6,12 +6,14 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
+    /** Matches auth-service values: admin, mentor, mentee (lowercase) */
     role: {
       type: String,
-      enum: ['Admin', 'Mentor', 'Mentee'],
-      default: 'Mentee',
+      default: 'mentee',
     },
     avatar: { type: String, default: '' },
+    /** Same field as auth-service — primary profile image URL */
+    profilePicture: { type: String, default: '' },
     bio: { type: String, default: '' },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },

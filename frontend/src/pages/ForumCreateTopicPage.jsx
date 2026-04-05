@@ -100,13 +100,13 @@ export default function ForumCreateTopicPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface py-10 px-4">
+    <div className="min-h-screen bg-surface px-4 pt-20 pb-10 sm:pt-24">
       <div className="max-w-2xl mx-auto">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-outline mb-6">
-          <Link to="/forum" className="hover:text-gold-accent transition-colors">Forum</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-on-surface">{isEdit ? 'Edit Topic' : 'New Discussion'}</span>
+        <nav className="flex items-center gap-2.5 text-sm sm:text-base text-outline mb-6">
+          <Link to="/forum" className="font-medium hover:text-gold-accent transition-colors">Forum</Link>
+          <span className="material-symbols-outlined text-[18px] sm:text-[22px] shrink-0">chevron_right</span>
+          <span className="text-on-surface font-semibold">{isEdit ? 'Edit Topic' : 'New Discussion'}</span>
         </nav>
 
         <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl p-8">
