@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import DashboardTopBar from '../components/dashboard/DashboardTopBar';
+import AdminDashboardTopBar from '../components/dashboard/AdminDashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
@@ -703,7 +704,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   );
 }
 
-function AdminDashboard({ user, myStories, myEvents }) {
+function AdminDashboard({ user }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Admin';
   const location = useLocation();
   const navigate = useNavigate();
@@ -726,16 +727,21 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const [activeMentorships, setActiveMentorships] = useState([]);
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [reportData, setReportData] = useState(null);
+  const [platformStoryTotal, setPlatformStoryTotal] = useState(0);
+  const [platformEventTotal, setPlatformEventTotal] = useState(0);
+
   const loadAdminData = async () => {
     setLoadingAdmin(true);
     try {
-      const [u, mp, rq, ac, fb, rp] = await Promise.allSettled([
+      const [u, mp, rq, ac, fb, rp, st, ev] = await Promise.allSettled([
         authApi.adminListUsers({ limit: 5000 }),
         mentorApi.getAll({ limit: 500 }),
         mentorshipApi.adminGetRequests(),
         mentorshipApi.adminGetActive(),
         mentorshipApi.adminGetFeedback(),
         mentorshipApi.adminGetReports(),
+        storyApi.getAll({ limit: 1, page: 1 }),
+        eventApi.getAll({ limit: 10000, page: 1 }),
       ]);
       let userList = [];
       if (u.status === 'fulfilled') {
@@ -747,11 +753,13 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
       if (mp.status === 'fulfilled') setMentorProfiles(mp.value.data?.data || mp.value.data?.mentors || []);
       if (rq.status === 'fulfilled') {
-        const raw = rq.value.data?.data || [];
+        const body = rq.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setRequests(raw.map((r) => enrichRequest(r, authIdx)));
       }
       if (ac.status === 'fulfilled') {
-        const raw = ac.value.data?.data || [];
+        const body = ac.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setActiveMentorships(raw.map((m) => enrichMentorship(m, authIdx)));
       }
       if (fb.status === 'fulfilled') {
@@ -759,6 +767,26 @@ function AdminDashboard({ user, myStories, myEvents }) {
         setFeedbackRows(raw.map((f) => enrichFeedbackRow(f, authIdx)));
       }
       if (rp.status === 'fulfilled') setReportData(rp.value.data?.data || null);
+
+      if (st.status === 'fulfilled') {
+        const d = st.value.data || {};
+        const total = d.pagination?.total;
+        setPlatformStoryTotal(
+          typeof total === 'number'
+            ? total
+            : (Array.isArray(d.stories) ? d.stories.length : 0)
+        );
+      } else {
+        setPlatformStoryTotal(0);
+      }
+
+      if (ev.status === 'fulfilled') {
+        const d = ev.value.data || {};
+        const events = d.data?.events || d.events || [];
+        setPlatformEventTotal(Array.isArray(events) ? events.length : 0);
+      } else {
+        setPlatformEventTotal(0);
+      }
     } finally {
       setLoadingAdmin(false);
     }
@@ -914,163 +942,16 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
   return (
     <>
-          {isManageMentorsRoute ? (
-            <header className="relative w-full h-16 min-h-[64px] sticky top-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 border-b border-outline-variant/20">
-              <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline shrink-0 min-w-0 font-sans-modern">
-                <Link className="hover:text-primary transition-colors" to="/">
-                  Home
-                </Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <Link className="hover:text-primary transition-colors" to="/dashboard">
-                  Dashboard
-                </Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                {isViewAllMentorshipRequests ? (
-                  <>
-                    <Link
-                      className="hover:text-primary transition-colors"
-                      to="/dashboard/manage-mentors"
-                    >
-                      Mentorship
-                    </Link>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">All Requests</span>
-                  </>
-                ) : isViewAllActiveMentorship ? (
-                  <>
-                    <Link
-                      className="hover:text-primary transition-colors"
-                      to="/dashboard/manage-mentors"
-                    >
-                      Mentorship
-                    </Link>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">All Active</span>
-                  </>
-                ) : (
-                  <span className="text-on-surface">Mentorship</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 sm:gap-4 ml-auto shrink-0">
-                <div className="flex items-center gap-3 pl-1 sm:pl-2">
-                  <div className="text-right hidden lg:block">
-                    <p className="text-xs font-bold text-on-surface font-sans-modern">{user?.name || 'Admin'}</p>
-                    <p className="text-[10px] text-on-surface-variant font-sans-modern">Global Admin</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setProfileOpen((v) => !v)}
-                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-gold-accent/30"
-                  >
-                    <img
-                      alt=""
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-gold-accent/20"
-                      src={
-                        user?.profilePicture ||
-                        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80'
-                      }
-                    />
-                  </button>
-                </div>
-              </div>
-              {profileOpen && (
-                <div className="absolute right-8 top-14 w-56 bg-white border border-outline-variant/20 z-[60] rounded-xl overflow-hidden">
-                  <div className="px-5 py-4 border-b border-outline-variant/15">
-                    <p className="text-sm font-semibold text-on-surface line-clamp-1 font-sans-modern">{user?.name || 'Admin'}</p>
-                    <p className="text-xs text-outline line-clamp-1 font-sans-modern">{user?.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await logout();
-                        toast.success('You have signed out.');
-                      } finally {
-                        setProfileOpen(false);
-                        navigate('/');
-                      }
-                    }}
-                    className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2 font-sans-modern"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </header>
-          ) : (
-            <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-              <div>
-                <div
-                  className={`flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline ${
-                    isManageMentorsRoute ? '' : 'mb-1'
-                  }`}
-                >
-                  <Link className="hover:text-gold-accent transition-colors" to="/">
-                    Home
-                  </Link>
-                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                  <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
-                    Dashboard
-                  </Link>
-                  {isManageAccountRoute && (
-                    <>
-                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                      <span className="text-on-surface">Manage Account</span>
-                    </>
-                  )}
-                </div>
-                {isManageAccountRoute ? (
-                  <>
-                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
-                    <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
-                  </>
-                ) : (
-                  <>
-                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Welcome, {firstName}</h1>
-                    <p className="text-xs text-outline uppercase tracking-widest">Role: Admin · {user?.email}</p>
-                  </>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
-                </button>
-                {profileOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
-                      <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </header>
-          )}
+          <AdminDashboardTopBar
+            user={user}
+            firstName={firstName}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+            isManageMentorsRoute={isManageMentorsRoute}
+            isManageAccountRoute={isManageAccountRoute}
+            isViewAllMentorshipRequests={isViewAllMentorshipRequests}
+            isViewAllActiveMentorship={isViewAllActiveMentorship}
+          />
 
           <div
             className="p-8 space-y-6 w-full flex-1 max-w-[1280px] mx-auto"
@@ -1079,15 +960,15 @@ function AdminDashboard({ user, myStories, myEvents }) {
             {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
-                { label: 'Total Events', value: myEvents.length, icon: 'event' },
+                { label: 'Total Stories', value: platformStoryTotal, icon: 'auto_stories' },
+                { label: 'Total Events', value: platformEventTotal, icon: 'event' },
                 { label: 'Active Mentorships', value: activeMentorships.length, icon: 'groups' },
                 { label: 'Requests', value: requests.length, icon: 'report' },
               ].map((card) => (
                 <div key={card.label} className="bg-white border border-outline-variant/20 rounded-xl p-5">
                   <div className="flex items-start justify-between">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">{card.label}</p>
-                    <span className="material-symbols-outlined text-gold-accent">{card.icon}</span>
+                    <span className="material-symbols-outlined text-[#f43f5e]">{card.icon}</span>
                   </div>
                   <p className="mt-4 text-3xl font-serif-alt font-bold text-on-surface">{card.value}</p>
                 </div>
@@ -1328,7 +1209,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
                 <Link
                   to="/dashboard/manage-account"
-                  className="text-xs uppercase tracking-widest font-bold text-primary hover:underline"
+                  className="text-xs uppercase tracking-widest font-bold text-[#f43f5e] hover:text-[#e11d48] hover:underline"
                 >
                   Manage verifications
                 </Link>
@@ -1525,11 +1406,7 @@ export default function DashboardPage() {
   }
   if (roleLc === 'admin') {
     return (
-      <AdminDashboard
-        user={user}
-        myStories={myStories}
-        myEvents={myEvents}
-      />
+      <AdminDashboard user={user} />
     );
   }
 
