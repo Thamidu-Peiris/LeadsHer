@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import DashboardTopBar from '../components/dashboard/DashboardTopBar';
+import { Link, useNavigate } from 'react-router-dom';
+import AdminTopBar from '../components/dashboard/AdminTopBar';
+import { ADMIN_SIDEBAR_WIDTH_PX } from '../components/dashboard/AdminSidebar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
@@ -52,72 +53,6 @@ const EMPTY_FORM = {
   tags: '', difficulty: 'beginner', externalLink: '', author: '',
   isPremium: false, fileMode: 'link',
 };
-
-const SIDEBAR_W = 280;
-
-/* ─── Admin Sidebar ──────────────────────────────────────────────────────── */
-
-function AdminSidebar({ user, onLogout }) {
-  const firstName = user?.name?.split(' ')?.[0] || 'Admin';
-  const adminNav = [
-    { to: '/dashboard',                   icon: 'space_dashboard',   label: 'Admin Dashboard'     },
-    { to: '/dashboard/manage-account',    icon: 'manage_accounts',   label: 'Manage Accounts'     },
-    { to: '/dashboard/manage-stories',    icon: 'auto_stories',      label: 'Manage Stories'      },
-    { to: '/dashboard/events',                      icon: 'event',             label: 'Manage Events'       },
-    { to: '/dashboard/manage-mentors',    icon: 'groups',            label: 'Manage Mentorship'   },
-    { to: '/dashboard/resources',         icon: 'library_books',     label: 'Manage Resources'    },
-    { to: '/dashboard/forum',             icon: 'forum',             label: 'Manage Forum'        },
-    { to: '/dashboard/settings',          icon: 'settings',          label: 'Admin Settings'      },
-  ];
-
-  return (
-    <aside className="fixed left-0 top-0 h-screen w-[280px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-      <div className="p-6 border-b border-outline-variant/20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-              <img alt="Admin avatar" className="w-full h-full object-cover"
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80" />
-            </div>
-            <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-          </div>
-          <div className="text-center">
-            <p className="text-on-surface font-bold text-lg leading-tight">{user?.name || 'Admin'}</p>
-            <span className="inline-flex mt-2 px-3 py-1 rounded-full bg-gold-accent/15 text-gold-accent text-[10px] font-bold tracking-widest uppercase border border-gold-accent/25">
-              Admin
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-        {adminNav.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                isActive
-                  ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                  : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-              }`
-            }>
-            <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-            <span className="text-sm font-medium">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="p-4 mt-auto border-t border-outline-variant/20">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-500 dark:text-outline hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
-        >
-          <span className="material-symbols-outlined text-[18px]">logout</span>
-          Sign out
-        </button>
-      </div>
-    </aside>
-  );
-}
 
 /* ─── Resource Card (Admin) ──────────────────────────────────────────────── */
 
@@ -288,7 +223,7 @@ function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-0 z-50 transition-all" style={{ left: SIDEBAR_W, right: 0 }}>
+    <div className="fixed bottom-0 z-50 transition-all" style={{ left: ADMIN_SIDEBAR_WIDTH_PX, right: 0 }}>
       <div className="mx-6">
         <div className="bg-white dark:bg-surface-container border-x border-t border-slate-200 dark:border-outline-variant/40 rounded-t-2xl shadow-2xl overflow-hidden">
           <button
@@ -738,7 +673,8 @@ const TABS = [
 ];
 
 export default function AdminDashboardResourcesPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
 
   /* ── Active tab ── */
@@ -946,35 +882,35 @@ export default function AdminDashboardResourcesPage() {
     setSort('-createdAt');
   };
 
-  const handleLogout = async () => {
-    try { await logout(); toast.success('Signed out'); }
-    finally { navigate('/'); }
-  };
-
   /* ─── RENDER ─────────────────────────────────────────────────────── */
   return (
     <>
 
-          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]} showAvatar={false}>
+          <AdminTopBar
+            crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]}
+            user={user}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+          >
             <button
+              type="button"
               onClick={() => setUploadModal(true)}
-              className="bg-gold-accent text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
+              className="bg-gold-accent text-white text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              Upload Resource
+              <span className="hidden sm:inline">Upload Resource</span>
+              <span className="sm:hidden">Upload</span>
             </button>
-          </DashboardTopBar>
+          </AdminTopBar>
+          <div className="px-4 sm:px-8 pt-3 pb-2">
+            <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
+            <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
+              Approve uploads, manage all resources, and view platform-wide analytics.
+            </p>
+          </div>
 
           {/* ── Content ── */}
           <div className="p-8 space-y-6 pb-32">
-
-            {/* Page title */}
-            <div>
-              <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
-              <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
-                Approve uploads, manage all resources, and view platform-wide analytics.
-              </p>
-            </div>
 
             {/* ── Tabs ── */}
             <div className="flex items-center gap-1 border-b border-slate-200 dark:border-outline-variant/30">
