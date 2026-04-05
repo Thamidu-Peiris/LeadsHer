@@ -53,11 +53,23 @@ export default function AdminDashboardTopBar({
         avatarSrc={user?.profilePicture}
       />
       {isManageMentorsRoute ? (
-        <div className="px-4 sm:px-8 pt-3 pb-2">
-          <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship</h1>
-          <p className="text-xs text-outline uppercase tracking-widest mt-1">
-            Requests, active mentorships, and mentor tools
-          </p>
+        <div className="mx-auto w-full max-w-[1280px] px-8 pb-2 pt-6">
+          <section
+            className="rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm ring-1 ring-[#f43f5e]/10 dark:border-outline-variant/20 dark:bg-white sm:p-8"
+            aria-labelledby="mentorship-heading"
+          >
+            <div className="min-w-0 space-y-2">
+              <h1
+                id="mentorship-heading"
+                className="font-serif-alt text-3xl font-bold tracking-tight text-on-surface sm:text-4xl"
+              >
+                Mentorship
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+                Requests, active mentorships, and mentor tools
+              </p>
+            </div>
+          </section>
         </div>
       ) : isManageAccountRoute ? (
         <div className="w-full max-w-[1280px] mx-auto px-8 pt-6 pb-2">

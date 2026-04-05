@@ -82,7 +82,7 @@ function statusUi(status) {
 function Stars({ value }) {
   const n = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
   return (
-    <div className="flex items-center gap-0.5 text-gold-accent" aria-label={`${n} of 5 stars`}>
+    <div className="flex items-center gap-0.5 text-[#f43f5e]" aria-label={`${n} of 5 stars`}>
       {[1, 2, 3, 4, 5].map((i) => (
         <span
           key={i}
@@ -145,7 +145,7 @@ function Avatar({ src, name }) {
     );
   }
   return (
-    <div className="w-8 h-8 rounded-full border-2 border-white bg-gold-accent/15 text-gold-accent flex items-center justify-center text-[10px] font-bold font-sans-modern">
+    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#f43f5e]/10 text-[10px] font-bold text-[#f43f5e] font-sans-modern">
       {initial}
     </div>
   );
@@ -403,7 +403,7 @@ export default function AdminMentorshipNexusPanel({
                 value={requestSearch}
                 onChange={(e) => setRequestSearch(e.target.value)}
                 placeholder="Search mentee, mentor, message, goals, ID…"
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl pl-11 pr-4 py-2.5 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern"
+                className="w-full rounded-xl border-2 border-outline-variant/30 bg-white dark:bg-surface-container-low pl-11 pr-4 py-2.5 text-sm text-on-surface placeholder:text-outline/60 focus:border-[#f43f5e] focus:outline-none focus:ring-0 font-sans-modern"
                 aria-label="Search mentorship requests"
               />
             </div>
@@ -418,7 +418,7 @@ export default function AdminMentorshipNexusPanel({
                 id="mentorship-requests-status-filter"
                 value={requestStatusFilter}
                 onChange={(e) => setRequestStatusFilter(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern cursor-pointer"
+                className="w-full rounded-xl border-2 border-outline-variant/30 bg-white dark:bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 font-sans-modern cursor-pointer"
                 aria-label="Filter requests by status"
               >
                 <option value="">All statuses</option>
@@ -440,7 +440,7 @@ export default function AdminMentorshipNexusPanel({
                 type="date"
                 value={requestDateFrom}
                 onChange={(e) => setRequestDateFrom(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern"
+                className="w-full rounded-xl border-2 border-outline-variant/30 bg-white dark:bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 font-sans-modern"
                 aria-label="Filter requests created on or after this date"
               />
             </div>
@@ -456,7 +456,7 @@ export default function AdminMentorshipNexusPanel({
                 type="date"
                 value={requestDateTo}
                 onChange={(e) => setRequestDateTo(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern"
+                className="w-full rounded-xl border-2 border-outline-variant/30 bg-white dark:bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 font-sans-modern"
                 aria-label="Filter requests created on or before this date"
               />
             </div>
@@ -479,34 +479,25 @@ export default function AdminMentorshipNexusPanel({
               value={activeSearch}
               onChange={(e) => setActiveSearch(e.target.value)}
               placeholder="Search mentor, mentee, goals, or ID…"
-              className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl pl-11 pr-4 py-2.5 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern"
+              className="w-full rounded-xl border-2 border-outline-variant/30 bg-white dark:bg-surface-container-low pl-11 pr-4 py-2.5 text-sm text-on-surface placeholder:text-outline/60 focus:border-[#f43f5e] focus:outline-none focus:ring-0 font-sans-modern"
               aria-label="Search active mentorships"
             />
           </div>
         </div>
-      ) : (
-        <div>
-          <h1 className="font-serif-alt text-3xl font-bold text-on-surface tracking-tight">
-            Mentorship Management
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">
-            Oversee active pairs, review pending requests, and track feedback loops.
-          </p>
-        </div>
-      )}
+      ) : null}
 
       {/* Requests */}
       {variant !== 'all-active' && (
       <section id="mentorship-requests" className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent">pending_actions</span>
+            <span className="material-symbols-outlined text-[#f43f5e]">pending_actions</span>
             {variant === 'all-requests' ? 'Requests' : 'Mentorship Requests'}
           </h2>
           {variant === 'overview' && (
             <Link
               to="/dashboard/manage-mentors/view-all-mentorship"
-              className="text-primary text-sm font-semibold hover:underline"
+              className="text-sm font-semibold text-[#f43f5e] transition-colors hover:text-[#e11d48] hover:underline"
             >
               View all
             </Link>
@@ -520,9 +511,9 @@ export default function AdminMentorshipNexusPanel({
               : 'No requests to display.'}
           </p>
         ) : (
-          <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20">
+          <div className="overflow-hidden rounded-xl border border-outline-variant/20 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[900px]">
+              <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead className="bg-surface-container-high/50">
                   <tr>
                     <th className="px-4 sm:px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-outline w-[100px]">
@@ -594,7 +585,7 @@ export default function AdminMentorshipNexusPanel({
                             {goals.slice(0, 5).map((g) => (
                               <span
                                 key={g}
-                                className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                                className="rounded-full bg-[#f43f5e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#f43f5e]"
                               >
                                 {g}
                               </span>
@@ -648,7 +639,7 @@ export default function AdminMentorshipNexusPanel({
                         setRequestRowsPerPage(Number(e.target.value));
                         setRequestPage(1);
                       }}
-                      className="bg-surface-container-low border border-outline-variant/30 rounded-lg px-2.5 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern cursor-pointer tabular-nums"
+                      className="cursor-pointer rounded-lg border-2 border-outline-variant/30 bg-white px-2.5 py-1.5 font-sans-modern text-sm tabular-nums text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
                       aria-label="Rows per page"
                     >
                       <option value={10}>10</option>
@@ -659,7 +650,7 @@ export default function AdminMentorshipNexusPanel({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="rounded-lg border border-outline-variant/40 px-3 py-1.5 text-sm font-medium text-on-surface hover:bg-surface-container-high/80 disabled:opacity-40 disabled:pointer-events-none"
+                      className="min-h-[38px] rounded-lg border-2 border-outline-variant/35 bg-white px-3 py-1.5 text-sm font-semibold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30 disabled:pointer-events-none disabled:opacity-40 dark:bg-surface-container-low"
                       disabled={requestPageEffective <= 1}
                       onClick={() => setRequestPage((p) => Math.max(1, p - 1))}
                     >
@@ -670,7 +661,7 @@ export default function AdminMentorshipNexusPanel({
                     </span>
                     <button
                       type="button"
-                      className="rounded-lg border border-outline-variant/40 px-3 py-1.5 text-sm font-medium text-on-surface hover:bg-surface-container-high/80 disabled:opacity-40 disabled:pointer-events-none"
+                      className="min-h-[38px] rounded-lg border-2 border-outline-variant/35 bg-white px-3 py-1.5 text-sm font-semibold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30 disabled:pointer-events-none disabled:opacity-40 dark:bg-surface-container-low"
                       disabled={requestPageEffective >= requestTotalPages}
                       onClick={() => setRequestPage((p) => p + 1)}
                     >
@@ -691,22 +682,22 @@ export default function AdminMentorshipNexusPanel({
       <section id="active-mentorships" className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent">hub</span>
+            <span className="material-symbols-outlined text-[#f43f5e]">hub</span>
             Active Mentorships
           </h2>
           {variant === 'overview' && (
             <Link
               to="/dashboard/manage-mentors/view-all-active-mentorship"
-              className="text-primary text-sm font-semibold hover:underline"
+              className="text-sm font-semibold text-[#f43f5e] transition-colors hover:text-[#e11d48] hover:underline"
             >
               View all
             </Link>
           )}
         </div>
 
-        <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20">
+        <div className="overflow-hidden rounded-xl border border-outline-variant/20 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left">
               <thead className="bg-surface-container-high/50">
                 <tr>
                   <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-outline">
@@ -765,7 +756,7 @@ export default function AdminMentorshipNexusPanel({
                           <button
                             type="button"
                             onClick={() => onTerminate(m._id)}
-                            className="border border-error/40 text-error hover:bg-error hover:text-on-error px-4 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95"
+                            className="rounded-lg border-2 border-red-400 bg-white px-4 py-1.5 text-xs font-bold text-red-700 shadow-sm transition-all hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 active:scale-95"
                           >
                             Terminate
                           </button>
@@ -799,7 +790,7 @@ export default function AdminMentorshipNexusPanel({
                       setActiveRowsPerPage(Number(e.target.value));
                       setActivePage(1);
                     }}
-                    className="bg-surface-container-low border border-outline-variant/30 rounded-lg px-2.5 py-1.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/35 font-sans-modern cursor-pointer tabular-nums"
+                    className="cursor-pointer rounded-lg border-2 border-outline-variant/30 bg-white px-2.5 py-1.5 font-sans-modern text-sm tabular-nums text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
                     aria-label="Rows per page"
                   >
                     <option value={10}>10</option>
@@ -810,7 +801,7 @@ export default function AdminMentorshipNexusPanel({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded-lg border border-outline-variant/40 px-3 py-1.5 text-sm font-medium text-on-surface hover:bg-surface-container-high/80 disabled:opacity-40 disabled:pointer-events-none"
+                    className="min-h-[38px] rounded-lg border-2 border-outline-variant/35 bg-white px-3 py-1.5 text-sm font-semibold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30 disabled:pointer-events-none disabled:opacity-40 dark:bg-surface-container-low"
                     disabled={activePageEffective <= 1}
                     onClick={() => setActivePage((p) => Math.max(1, p - 1))}
                   >
@@ -821,7 +812,7 @@ export default function AdminMentorshipNexusPanel({
                   </span>
                   <button
                     type="button"
-                    className="rounded-lg border border-outline-variant/40 px-3 py-1.5 text-sm font-medium text-on-surface hover:bg-surface-container-high/80 disabled:opacity-40 disabled:pointer-events-none"
+                    className="min-h-[38px] rounded-lg border-2 border-outline-variant/35 bg-white px-3 py-1.5 text-sm font-semibold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/30 disabled:pointer-events-none disabled:opacity-40 dark:bg-surface-container-low"
                     disabled={activePageEffective >= activeTotalPages}
                     onClick={() => setActivePage((p) => p + 1)}
                   >
@@ -840,7 +831,7 @@ export default function AdminMentorshipNexusPanel({
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent">reviews</span>
+            <span className="material-symbols-outlined text-[#f43f5e]">reviews</span>
             Recent Feedback
           </h2>
         </div>
