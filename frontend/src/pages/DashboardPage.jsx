@@ -704,6 +704,73 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   );
 }
 
+const MANAGE_ACCOUNT_PAGE_SIZE = 20;
+
+function getManageAccountPageItems(current, total) {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total]);
+  for (let p = current - 1; p <= current + 1; p++) {
+    if (p >= 1 && p <= total) pages.add(p);
+  }
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push('ellipsis');
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+function ManageAccountPaginationBar({ page, totalPages, totalItems, onPageChange }) {
+  if (totalPages <= 1 || totalItems === 0) return null;
+  const items = getManageAccountPageItems(page, totalPages);
+  const start = (page - 1) * MANAGE_ACCOUNT_PAGE_SIZE + 1;
+  const end = Math.min(page * MANAGE_ACCOUNT_PAGE_SIZE, totalItems);
+  const btnBase =
+    'min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1';
+  const btnIdle = 'border-outline-variant/35 bg-white text-on-surface hover:border-[#f43f5e]/40 hover:bg-rose-50';
+  const btnActive = 'border-[#f43f5e] bg-[#f43f5e] text-white shadow-sm';
+  const navBtn = `${btnBase} px-3 ${btnIdle} disabled:opacity-40 disabled:pointer-events-none`;
+  return (
+    <div className="mt-6 border-t border-outline-variant/20 pt-4">
+      <p className="mb-3 text-center text-xs text-on-surface-variant">
+        Showing {start}–{end} of {totalItems} (page {page} of {totalPages})
+      </p>
+      <nav className="flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
+        <button type="button" className={navBtn} disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          Previous
+        </button>
+        {items.map((item, idx) =>
+          item === 'ellipsis' ? (
+            <span key={`ellipsis-${idx}`} className="px-1 text-on-surface-variant select-none" aria-hidden="true">
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              className={`${btnBase} ${page === item ? btnActive : btnIdle}`}
+              onClick={() => onPageChange(item)}
+              aria-current={page === item ? 'page' : undefined}
+            >
+              {item}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          className={navBtn}
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </button>
+      </nav>
+    </div>
+  );
+}
+
 function AdminDashboard({ user }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Admin';
   const location = useLocation();
@@ -731,6 +798,8 @@ function AdminDashboard({ user }) {
   const [platformEventTotal, setPlatformEventTotal] = useState(0);
   const [manageAccountSearch, setManageAccountSearch] = useState('');
   const [manageAccountFilterOpen, setManageAccountFilterOpen] = useState(false);
+  const [mentorAccountPage, setMentorAccountPage] = useState(1);
+  const [menteeAccountPage, setMenteeAccountPage] = useState(1);
 
   const loadAdminData = async () => {
     setLoadingAdmin(true);
@@ -919,6 +988,35 @@ function AdminDashboard({ user }) {
       return name.includes(q) || email.includes(q);
     });
   }, [menteeUsers, manageAccountSearch]);
+
+  useEffect(() => {
+    setMentorAccountPage(1);
+    setMenteeAccountPage(1);
+  }, [manageAccountSearch]);
+
+  const mentorTotalPages = Math.max(1, Math.ceil(filteredMentorUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+  const menteeTotalPages = Math.max(1, Math.ceil(filteredMenteeUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+
+  useEffect(() => {
+    setMentorAccountPage((p) => Math.min(p, mentorTotalPages));
+  }, [mentorTotalPages]);
+
+  useEffect(() => {
+    setMenteeAccountPage((p) => Math.min(p, menteeTotalPages));
+  }, [menteeTotalPages]);
+
+  const mentorPageSafe = Math.min(Math.max(1, mentorAccountPage), mentorTotalPages);
+  const menteePageSafe = Math.min(Math.max(1, menteeAccountPage), menteeTotalPages);
+
+  const paginatedMentorUsers = useMemo(() => {
+    const start = (mentorPageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMentorUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMentorUsers, mentorPageSafe]);
+
+  const paginatedMenteeUsers = useMemo(() => {
+    const start = (menteePageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMenteeUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMenteeUsers, menteePageSafe]);
 
   const exportManageAccountCsv = () => {
     const escape = (val) => {
@@ -1156,8 +1254,9 @@ function AdminDashboard({ user }) {
                           ) : filteredMentorUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentors match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {filteredMentorUsers.map((u) => {
+                              {paginatedMentorUsers.map((u) => {
                                 const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
                                 return (
                                   <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
@@ -1180,7 +1279,7 @@ function AdminDashboard({ user }) {
                                         <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                           mentorProfile?.isVerified
                                             ? 'border-green-300 bg-green-50 text-green-700'
-                                            : 'border-red-200 bg-red-50 text-red-600'
+                                            : 'border-amber-500/70 bg-amber-100 text-amber-900'
                                         }`}>
                                           {mentorProfile?.isVerified ? 'Verified' : 'Pending Verify'}
                                         </span>
@@ -1223,6 +1322,13 @@ function AdminDashboard({ user }) {
                                 );
                               })}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={mentorPageSafe}
+                              totalPages={mentorTotalPages}
+                              totalItems={filteredMentorUsers.length}
+                              onPageChange={setMentorAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1242,8 +1348,9 @@ function AdminDashboard({ user }) {
                           ) : filteredMenteeUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentees match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {filteredMenteeUsers.map((u) => (
+                              {paginatedMenteeUsers.map((u) => (
                                 <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
                                   <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -1292,6 +1399,13 @@ function AdminDashboard({ user }) {
                                 </div>
                               ))}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={menteePageSafe}
+                              totalPages={menteeTotalPages}
+                              totalItems={filteredMenteeUsers.length}
+                              onPageChange={setMenteeAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1352,7 +1466,7 @@ function AdminDashboard({ user }) {
                               <p className="text-xs text-outline line-clamp-1">{mentorUser?.email || ''}</p>
                             </div>
                           </div>
-                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-red-200 bg-red-50 text-red-600 font-bold">
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-amber-500/70 bg-amber-100 text-amber-900 font-bold">
                             Pending Verify
                           </span>
                         </div>
