@@ -1057,49 +1057,57 @@ function AdminDashboard({ user }) {
                 {isManageAccountRoute ? (
                   <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 p-1">
+                      <div
+                        className="flex items-center gap-1 rounded-xl border-2 border-outline-variant/30 bg-slate-50/80 p-1 shadow-inner"
+                        role="tablist"
+                        aria-label="Account type"
+                      >
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentors'}
                         onClick={() => setManageAccountTab('mentors')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentors'
-                            ? 'bg-[#f43f5e] text-white shadow-sm'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentors
                       </button>
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentees'}
                         onClick={() => setManageAccountTab('mentees')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentees'
-                            ? 'bg-[#f43f5e] text-white shadow-sm'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentees
                       </button>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setManageAccountFilterOpen((v) => !v)}
-                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border bg-white text-on-surface text-xs font-bold transition-colors ${
+                          className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-bold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/40 focus-visible:ring-offset-2 ${
                             manageAccountFilterOpen || manageAccountSearch.trim()
-                              ? 'border-[#f43f5e]/40 text-[#f43f5e]'
-                              : 'border-outline-variant/25'
+                              ? 'border-[#f43f5e] bg-rose-50 text-[#f43f5e] ring-1 ring-[#f43f5e]/20'
+                              : 'border-outline-variant/40 bg-white text-on-surface hover:border-outline-variant/60 hover:bg-slate-50'
                           }`}
                         >
-                          <span className="material-symbols-outlined text-[15px]">filter_list</span>
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">filter_list</span>
                           Filter
                         </button>
                         <button
                           type="button"
                           onClick={exportManageAccountCsv}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold hover:border-[#f43f5e]/30 hover:text-[#f43f5e] transition-colors"
+                          className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-slate-400 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98]"
                         >
-                          <span className="material-symbols-outlined text-[15px]">download</span>
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">download</span>
                           Export
                         </button>
                       </div>
@@ -1119,7 +1127,7 @@ function AdminDashboard({ user }) {
                           <button
                             type="button"
                             onClick={() => setManageAccountSearch('')}
-                            className="text-xs font-bold text-on-surface-variant hover:text-[#f43f5e]"
+                            className="inline-flex min-h-[40px] items-center rounded-lg border-2 border-outline-variant/35 bg-white px-4 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 hover:text-[#f43f5e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
                           >
                             Clear
                           </button>
@@ -1177,17 +1185,22 @@ function AdminDashboard({ user }) {
                                           {mentorProfile?.isVerified ? 'Verified' : 'Pending Verify'}
                                         </span>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-2 lg:w-[360px]">
-                                        <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                          <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                      <div className="grid grid-cols-3 gap-2 lg:w-[380px]">
+                                        <button
+                                          type="button"
+                                          onClick={() => editUserProfile(u)}
+                                          className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                          title="Edit profile"
+                                        >
+                                          <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             u.isSuspended
-                                              ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                              : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                              ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                              : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                           }`}
                                         >
                                           {u.isSuspended ? 'Reactivate' : 'Suspend'}
@@ -1196,11 +1209,11 @@ function AdminDashboard({ user }) {
                                           type="button"
                                           disabled={!mentorProfile}
                                           onClick={() => mentorProfile && toggleVerifyMentor(mentorProfile)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             mentorProfile?.isVerified
-                                              ? 'border-outline-variant/25 bg-surface-container-lowest text-outline hover:text-on-surface'
-                                              : 'border-[#f43f5e]/50 bg-[#f43f5e] text-white hover:bg-[#e11d48]'
-                                          } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              ? 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400'
+                                              : 'border-[#f43f5e] bg-[#f43f5e] text-white hover:bg-[#e11d48] focus-visible:ring-[#f43f5e]'
+                                          } ${!mentorProfile ? 'cursor-not-allowed opacity-50' : ''}`}
                                         >
                                           {!mentorProfile ? 'No profile' : mentorProfile.isVerified ? 'Unverify' : 'Verify'}
                                         </button>
@@ -1254,17 +1267,22 @@ function AdminDashboard({ user }) {
                                         {u.isSuspended ? 'Suspended' : 'Active'}
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 lg:w-[240px]">
-                                      <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                        <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                    <div className="grid grid-cols-2 gap-2 lg:w-[260px]">
+                                      <button
+                                        type="button"
+                                        onClick={() => editUserProfile(u)}
+                                        className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                        title="Edit profile"
+                                      >
+                                        <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                        className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                        className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                           u.isSuspended
-                                            ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                            : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                            ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                            : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                         }`}
                                       >
                                         {u.isSuspended ? 'Reactivate' : 'Suspend'}
