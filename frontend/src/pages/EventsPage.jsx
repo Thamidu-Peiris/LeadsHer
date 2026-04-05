@@ -22,6 +22,9 @@ const STATUSES = [
   { value: 'completed', label: 'Completed' },
 ];
 
+/** Hero image (public/images — add events-hero.png or reuse a suitable asset) */
+const EVENTS_HERO_IMAGE = '/images/events-hero.png';
+
 export default function EventsPage() {
   const { canManageEvents } = useAuth();
   const [events, setEvents]       = useState([]);
@@ -58,35 +61,47 @@ export default function EventsPage() {
   const handleSearch = () => setFilter('search', searchInput.trim());
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-surface">
-
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28 pb-16 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-            <div>
-              <p className="text-gold-accent text-xs font-bold uppercase tracking-[0.2em] mb-2">LeadsHer</p>
-              <h1 className="font-serif-alt text-4xl sm:text-5xl font-bold text-white leading-tight">
-                Events & Gatherings
-              </h1>
-              <p className="text-slate-400 mt-3 text-sm max-w-lg">
-                Webinars, workshops, and networking sessions for women leaders and mentors.
-              </p>
-            </div>
-            {canManageEvents && (
-              <Link
-                to="/events/new"
-                className="inline-flex items-center gap-2 bg-gold-accent hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0 shadow-lg shadow-gold-accent/20"
-              >
-                <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                Create Event
-              </Link>
-            )}
+    <div className="min-h-screen bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgb(237_233_254/0.85),rgb(255_255_255)_42%,rgb(249_250_251))] text-neutral-900 dark:bg-none dark:bg-surface dark:text-on-surface">
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+        {/* Hero — same boxed + image pattern as /mentors */}
+        <section
+          className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100 dark:border-outline-variant/25 dark:bg-surface-container-lowest"
+          aria-labelledby="events-hero-heading"
+        >
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
+            <div
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[80%_center] sm:bg-[78%_22%] dark:opacity-40"
+              style={{ backgroundImage: `url(${EVENTS_HERO_IMAGE})` }}
+            />
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-6 pb-16">
+          <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
+            <header className="mb-0 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-3xl text-left">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400 [text-shadow:0_0_16px_rgba(255,255,255,0.95)] dark:[text-shadow:none]">
+                  LeadsHer
+                </p>
+                <h1
+                  id="events-hero-heading"
+                  className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface [text-shadow:0_0_20px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.9)] dark:[text-shadow:none]"
+                >
+                  Events &amp; Gatherings
+                </h1>
+                <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600 dark:text-on-surface-variant [text-shadow:0_0_12px_rgba(255,255,255,0.9)] dark:[text-shadow:none]">
+                  Webinars, workshops, and networking sessions for women leaders and mentors.
+                </p>
+              </div>
+              {canManageEvents && (
+                <Link
+                  to="/events/new"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-3.5 text-xs font-bold uppercase tracking-[0.14em] text-white shadow-[0_2px_12px_rgba(0,0,0,0.15)] transition-colors hover:bg-neutral-800 dark:bg-rose-600 dark:text-white dark:shadow-md dark:shadow-rose-600/25 dark:hover:bg-rose-700 sm:px-8"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  Create Event
+                </Link>
+              )}
+            </header>
+          </div>
+        </section>
 
         {/* Filter card */}
         <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-md p-5 mb-8 space-y-4">
@@ -101,28 +116,32 @@ export default function EventsPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl pl-9 pr-4 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all"
+                className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl pl-9 pr-4 py-2.5 text-sm text-on-surface transition-all focus:outline-none focus:ring-2 focus:ring-rose-200/80 focus:border-rose-300 dark:focus:border-rose-400/50 dark:focus:ring-rose-900/40"
               />
             </div>
             <button
+              type="button"
               onClick={handleSearch}
-              className="px-5 py-2.5 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-xl transition-all"
+              className="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/30 transition-colors hover:bg-rose-700 dark:bg-rose-500 dark:shadow-rose-500/25 dark:hover:bg-rose-600"
             >
               Search
             </button>
           </div>
 
           {/* Category chips */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-on-surface-variant uppercase tracking-widest shrink-0">Category</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-rose-600/90 dark:text-rose-400/90">
+              Category
+            </span>
             {CATEGORIES.map((c) => (
               <button
                 key={c.value}
+                type="button"
                 onClick={() => setFilter('category', c.value)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                   filters.category === c.value
-                    ? 'bg-gold-accent text-white border-gold-accent shadow-sm'
-                    : 'bg-white dark:bg-surface-container border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/40'
+                    ? 'border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-600/35 hover:bg-rose-700 dark:border-rose-500 dark:bg-rose-500 dark:hover:bg-rose-600'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-900 dark:border-outline-variant/40 dark:bg-surface-container dark:text-on-surface-variant dark:hover:border-rose-400/40 dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                 }`}
               >
                 {c.label}
@@ -131,16 +150,19 @@ export default function EventsPage() {
           </div>
 
           {/* Status chips */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-on-surface-variant uppercase tracking-widest shrink-0">Status</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-rose-600/90 dark:text-rose-400/90">
+              Status
+            </span>
             {STATUSES.map((s) => (
               <button
                 key={s.value}
+                type="button"
                 onClick={() => setFilter('status', s.value)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                   filters.status === s.value
-                    ? 'bg-slate-800 dark:bg-on-surface text-white border-slate-800 shadow-sm'
-                    : 'bg-white dark:bg-surface-container border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-slate-400'
+                    ? 'border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-600/35 hover:bg-rose-700 dark:border-rose-500 dark:bg-rose-500 dark:hover:bg-rose-600'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-900 dark:border-outline-variant/40 dark:bg-surface-container dark:text-on-surface-variant dark:hover:border-rose-400/40 dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                 }`}
               >
                 {s.label}
@@ -161,7 +183,7 @@ export default function EventsPage() {
             <p className="text-slate-500 dark:text-on-surface-variant text-lg font-medium">No events found</p>
             <p className="text-slate-400 dark:text-outline text-sm mt-1">Try adjusting your filters or search query</p>
             {canManageEvents && (
-              <Link to="/events/new" className="inline-block mt-6 bg-gold-accent text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+              <Link to="/events/new" className="mt-6 inline-block rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/25 transition-colors hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600">
                 Create the first event
               </Link>
             )}

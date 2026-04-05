@@ -247,7 +247,7 @@ export default function MentorDashboardCreateStoryPage() {
                 <button
                   type="button"
                   onClick={() => navigate(storiesListPath)}
-                  className="flex shrink-0 items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 text-outline hover:bg-surface-container-low hover:text-gold-accent transition-colors"
+                  className="flex shrink-0 items-center justify-center w-9 h-9 rounded-lg border border-outline-variant/20 text-outline hover:bg-surface-container-low hover:text-rose-500 transition-colors"
                   aria-label="Back to stories"
                 >
                   <span className="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -257,7 +257,7 @@ export default function MentorDashboardCreateStoryPage() {
                     {isEditMode ? 'Edit story' : 'New story'}
                   </h1>
                   <p className="text-[10px] uppercase tracking-widest text-outline truncate">
-                    <Link to="/dashboard/stories" className="hover:text-gold-accent transition-colors">
+                    <Link to="/dashboard/stories" className="hover:text-rose-500 transition-colors">
                       Stories
                     </Link>
                     <span className="mx-1.5 opacity-50">/</span>
@@ -276,7 +276,7 @@ export default function MentorDashboardCreateStoryPage() {
                   <button
                     type="button"
                     onClick={() => setProfileOpen((v) => !v)}
-                    className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
+                    className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/25 hover:border-rose-500 transition-colors"
                     aria-haspopup="menu"
                     aria-expanded={profileOpen ? 'true' : 'false'}
                   >
@@ -345,7 +345,7 @@ export default function MentorDashboardCreateStoryPage() {
                       </span>
                     )}
                   </label>
-                  <div className="group relative w-full h-[168px] sm:h-[188px] border border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-surface-container-lowest/90 hover:border-gold-accent/35 transition-all overflow-hidden">
+                  <div className="group relative w-full h-[168px] sm:h-[188px] border border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-2 bg-surface-container-lowest/90 hover:border-rose-500/35 transition-all overflow-hidden">
                     {coverDisplayUrl ? (
                       <>
                         <img
@@ -379,7 +379,7 @@ export default function MentorDashboardCreateStoryPage() {
                         </div>
                       </>
                     ) : (
-                      <label className="flex flex-col items-center justify-center gap-1 text-outline group-hover:text-gold-accent transition-colors cursor-pointer py-2">
+                      <label className="flex flex-col items-center justify-center gap-1 text-outline group-hover:text-rose-500 transition-colors cursor-pointer py-2">
                         <span className="material-symbols-outlined text-3xl">add_photo_alternate</span>
                         <p className="font-sans-modern text-sm font-medium">Upload cover</p>
                         <p className="text-[10px] opacity-60">JPG / PNG · 16:9</p>
@@ -427,11 +427,11 @@ export default function MentorDashboardCreateStoryPage() {
                   <div className="mt-1.5 flex items-center gap-2">
                     <div className="h-1.5 flex-1 rounded-full bg-outline-variant/20 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${wordCount >= publishWordTarget ? 'bg-green-500' : 'bg-gold-accent'}`}
+                        className={`h-full rounded-full transition-all duration-300 ${wordCount >= publishWordTarget ? 'bg-green-500' : 'bg-rose-500'}`}
                         style={{ width: `${publishWordProgress}%` }}
                       />
                     </div>
-                    <span className={`text-[10px] font-semibold tabular-nums ${wordCount >= publishWordTarget ? 'text-green-600 dark:text-green-500' : 'text-gold-accent'}`}>
+                    <span className={`text-[10px] font-semibold tabular-nums ${wordCount >= publishWordTarget ? 'text-green-600 dark:text-green-500' : 'text-rose-500'}`}>
                       {publishWordProgress}%
                     </span>
                   </div>
@@ -449,7 +449,7 @@ export default function MentorDashboardCreateStoryPage() {
               <div className="p-5 sm:p-6 space-y-6">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-serif-alt text-xl font-bold text-on-surface leading-tight">Details</h2>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-gold-accent/35 text-gold-accent shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-rose-500/35 text-rose-500 shrink-0">
                     {status === 'published' ? 'Live' : 'Draft'}
                   </span>
                 </div>
@@ -474,11 +474,11 @@ export default function MentorDashboardCreateStoryPage() {
                           onClick={() => setField('category', c.value)}
                           className={`h-[86px] rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
                             active
-                              ? 'border-gold-accent/55 bg-gold-accent/10 text-on-surface'
+                              ? 'border-rose-500/55 bg-rose-500/10 text-on-surface'
                               : 'border-outline-variant/20 bg-white dark:bg-surface-container hover:border-outline-variant/40 hover:bg-surface-container-lowest'
                           }`}
                         >
-                          <span className={`material-symbols-outlined text-[20px] ${active ? 'text-gold-accent' : 'opacity-45'}`}>
+                          <span className={`material-symbols-outlined text-[20px] ${active ? 'text-rose-500' : 'opacity-45'}`}>
                             {c.icon}
                           </span>
                           <span className={`text-[11px] font-semibold leading-tight text-center ${active ? '' : 'opacity-80'}`}>{c.label}</span>
@@ -522,7 +522,7 @@ export default function MentorDashboardCreateStoryPage() {
                       }
                     }}
                     onBlur={() => addTag(tagInput)}
-                    className="w-full bg-transparent border border-outline-variant/20 text-on-surface rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold-accent/40 focus:border-gold-accent/40 outline-none transition-all"
+                    className="w-full bg-transparent border border-outline-variant/20 text-on-surface rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-rose-500/40 focus:border-rose-500/40 outline-none transition-all"
                     placeholder="Add tag and press Enter"
                   />
                   <p className="mt-2 text-[10px] text-outline">Up to 5 tags</p>

@@ -26,7 +26,7 @@ export default function MentorSidebar({ user, mentorProfile, avatarSrc }) {
       {/* ── Profile ── */}
       <div className="flex flex-col items-center gap-3 border-b border-outline-variant/20 p-6">
         <div className="relative">
-          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-gold-accent p-0.5">
+          <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-rose-500 p-0.5 dark:border-rose-400">
             <img
               alt="User avatar"
               className="h-full w-full rounded-full object-cover"
@@ -43,7 +43,7 @@ export default function MentorSidebar({ user, mentorProfile, avatarSrc }) {
         <div className="text-center">
           <h3 className="font-bold text-lg text-on-surface">{firstName}</h3>
           <div className="mt-1 flex justify-center">
-            <span className="rounded-full border border-gold-accent/20 bg-gold-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gold-accent">
+            <span className="rounded-full border border-rose-200 bg-rose-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:border-rose-800/50 dark:bg-rose-500/15 dark:text-rose-400">
               Mentor
             </span>
           </div>
@@ -60,7 +60,7 @@ export default function MentorSidebar({ user, mentorProfile, avatarSrc }) {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 text-sm font-medium transition-all ${
                 isActive
-                  ? 'border-gold-accent bg-gold-accent/5 text-gold-accent'
+                  ? 'border-rose-500 bg-rose-500/5 text-rose-600 dark:border-rose-400 dark:bg-rose-500/10 dark:text-rose-400'
                   : 'border-transparent text-outline hover:bg-surface-container-low hover:text-on-surface'
               }`
             }

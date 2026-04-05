@@ -31,7 +31,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 glass-nav border-b border-outline-variant/10 shadow-none">
+    <nav className="fixed top-0 z-50 w-full border-b border-outline-variant/10 bg-white shadow-none dark:bg-surface-container-lowest">
       <div className="flex justify-between items-center px-8 md:px-12 py-5">
         {/* Logo */}
         <Link to="/" className="font-headline text-3xl font-bold tracking-tighter text-on-surface">

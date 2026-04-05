@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const AppSettings = require('../models/AppSettings');
 
 const protect = async (req, res, next) => {
     let token;
@@ -12,16 +13,30 @@ const protect = async (req, res, next) => {
     }
 
     try {
-        // Verification
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Check if user still exists
-        const currentUser = await User.findById(decoded.id);
+        const currentUser = await User.findById(decoded.id).select('+emailVerificationCodeHash');
         if (!currentUser) {
             return res.status(401).json({ status: 'fail', message: 'The user belonging to this token no longer exists.' });
         }
 
-        // Grant access
+        const settings = await AppSettings.getSingleton();
+        const pending =
+            settings.emailVerificationRequired !== false &&
+            !currentUser.isEmailVerified &&
+            currentUser.emailVerificationCodeHash;
+        if (pending) {
+            return res.status(403).json({
+                status: 'fail',
+                code: 'EMAIL_NOT_VERIFIED',
+                message: 'Verify your email to continue.',
+            });
+        }
+
+        if (!currentUser.isEmailVerified && !currentUser.emailVerificationCodeHash) {
+            currentUser.isEmailVerified = true;
+            await currentUser.save({ validateBeforeSave: false });
+        }
+
         req.user = currentUser;
         next();
     } catch (err) {

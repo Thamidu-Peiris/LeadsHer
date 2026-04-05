@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import DashboardTopBar from '../components/dashboard/DashboardTopBar';
+import AdminTopBar from '../components/dashboard/AdminTopBar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
@@ -205,8 +205,8 @@ function ReportRow({ report, onResolve }) {
 /* ─── Admin Dashboard Forum Page ─────────────────────────────────────────── */
 
 export default function AdminDashboardForumPage() {
-  const { user, logout } = useAuth();
-  const firstName = user?.name?.split(' ')?.[0] || 'Admin';
+  const { user } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState('topics'); // 'topics' | 'reports'
 
@@ -336,7 +336,16 @@ export default function AdminDashboardForumPage() {
 
   return (
     <>
-          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Forum' }]} showAvatar={false} />
+          <AdminTopBar
+            crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Forum' }]}
+            user={user}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+          />
+          <div className="px-4 sm:px-8 pt-3 pb-2">
+            <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Forum moderation</h1>
+            <p className="text-sm text-outline mt-1">Pin topics, close threads, and review reports.</p>
+          </div>
 
           <div className="flex-1 p-8">
             <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -344,7 +353,7 @@ export default function AdminDashboardForumPage() {
                 to="/forum"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/40 px-4 py-2.5 rounded-lg transition-all"
+                className="inline-flex items-center gap-1.5 text-sm font-medium bg-white text-outline border border-outline-variant/30 hover:text-gold-accent hover:border-gold-accent/40 hover:bg-slate-50/80 px-4 py-2.5 rounded-lg transition-all shadow-sm dark:bg-surface-container-lowest dark:hover:bg-surface-container"
               >
                 <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                 Browse Forum

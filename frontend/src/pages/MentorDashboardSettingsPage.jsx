@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
 import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
@@ -30,8 +29,11 @@ function isProfileComplete(p) {
 }
 
 export default function MentorDashboardSettingsPage() {
-  const { user, logout, updateUser } = useAuth();
-  const navigate = useNavigate();
+  const { user, updateUser, isAdmin } = useAuth();
+
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -88,6 +90,28 @@ export default function MentorDashboardSettingsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    setSettingsLoading(true);
+    authApi
+      .getRegistrationConfig()
+      .then((res) => setEmailVerificationRequired(!!res.data?.emailVerificationRequired))
+      .catch(() => {})
+      .finally(() => setSettingsLoading(false));
+  }, [isAdmin]);
+
+  const savePlatformSettings = async () => {
+    setSettingsSaving(true);
+    try {
+      await authApi.adminUpdateAppSettings({ emailVerificationRequired });
+      toast.success('Platform settings saved');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to save settings');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const handlePictureFile = (e) => {
     const file = e.target.files?.[0] || null;
@@ -167,6 +191,51 @@ export default function MentorDashboardSettingsPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} />
 
           <div className="p-8 space-y-6 max-w-[1000px] mx-auto w-full">
+            {isAdmin && (
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-rose-500">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h2 className="font-serif-alt text-xl font-bold text-on-surface">Platform: email verification</h2>
+                    <p className="text-sm text-on-surface-variant mt-1 max-w-xl">
+                      When enabled, new users must enter a 6-digit code sent by email (Brevo SMTP) before they can sign
+                      in or use the dashboard. When disabled, accounts are activated immediately on registration.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Off</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={emailVerificationRequired}
+                      disabled={settingsLoading || settingsSaving}
+                      onClick={() => setEmailVerificationRequired((v) => !v)}
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors disabled:opacity-60 ${
+                        emailVerificationRequired
+                          ? 'bg-rose-500/30 border-rose-500/50'
+                          : 'bg-outline-variant/25 border-outline-variant/40'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition-transform ${
+                          emailVerificationRequired ? 'translate-x-7' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Required</span>
+                    <button
+                      type="button"
+                      disabled={settingsSaving || settingsLoading}
+                      onClick={savePlatformSettings}
+                      className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-60"
+                    >
+                      {settingsSaving ? 'Saving…' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+                {settingsLoading && <p className="text-xs text-outline mt-3">Loading current setting…</p>}
+              </section>
+            )}
+
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
               <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
                 <div>
@@ -222,7 +291,7 @@ export default function MentorDashboardSettingsPage() {
                     type="button"
                     disabled={saving}
                     onClick={save}
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </button>
@@ -241,7 +310,7 @@ export default function MentorDashboardSettingsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer">
                             Choose image
                             <input type="file" accept="image/*" onChange={handlePictureFile} className="hidden" />
                           </label>
@@ -249,7 +318,7 @@ export default function MentorDashboardSettingsPage() {
                             type="button"
                             disabled={pictureSaving}
                             onClick={saveProfilePicture}
-                            className="bg-gold-accent text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
+                            className="bg-rose-500 text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
                           >
                             {pictureSaving ? 'Uploading…' : 'Upload'}
                           </button>
@@ -310,7 +379,7 @@ export default function MentorDashboardSettingsPage() {
 
             <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 max-w-[900px]">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
+                  <span className="material-symbols-outlined text-rose-500 text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-on-surface text-lg">Forgot / reset password</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
@@ -323,13 +392,13 @@ export default function MentorDashboardSettingsPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         autoComplete="email"
-                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-rose-500 outline-none"
                         placeholder="you@example.com"
                       />
                       <button
                         type="submit"
                         disabled={sendingReset}
-                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 disabled:opacity-50"
+                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-rose-500 hover:bg-rose-500/5 disabled:opacity-50"
                       >
                         {sendingReset ? 'Sending…' : 'Send reset link'}
                       </button>

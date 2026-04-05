@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
-const { role } = require('../middleware/auth');
+const { protect, role } = require('../middleware/auth');
 const { validateRegister, validatePassword, validateBio } = require('../middleware/validation');
 const { uploadProfilePicture } = require('../middleware/upload');
 
@@ -19,9 +18,11 @@ const optionalProfilePicture = (req, res, next) => {
 };
 
 // Public
+router.get('/registration-config', authController.registrationConfig);
 router.post('/register', validateRegister, authController.register);
 router.post('/login', authController.login);
 router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-verification', authController.resendVerification);
 router.post('/google', authController.google);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', validatePassword, authController.resetPassword);
@@ -39,5 +40,6 @@ router.get('/admin/users', protect, role('admin'), authController.adminListUsers
 router.put('/admin/users/:id/profile', protect, role('admin'), authController.adminUpdateUserProfile);
 router.put('/admin/users/:id/role', protect, role('admin'), authController.adminSetUserRole);
 router.put('/admin/users/:id/suspension', protect, role('admin'), authController.adminSetSuspension);
+router.put('/admin/settings', protect, role('admin'), authController.adminUpdateSettings);
 
 module.exports = router;
