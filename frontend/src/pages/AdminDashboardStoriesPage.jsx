@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import AdminPageHeader from '../components/dashboard/AdminPageHeader';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -36,8 +36,7 @@ function StoryThumb({ story }) {
 }
 
 export default function AdminDashboardStoriesPage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState([]);
   const [deletingId, setDeletingId] = useState('');
@@ -185,12 +184,10 @@ export default function AdminDashboardStoriesPage() {
   return (
     <>
           <AdminPageHeader
+            crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Stories' }]}
             user={user}
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
-            logout={logout}
-            navigate={navigate}
-            breadcrumbCurrent="Manage Stories"
             title="Manage Stories"
           >
             <>

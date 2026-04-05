@@ -920,8 +920,6 @@ function AdminDashboard({ user, myStories, myEvents }) {
             firstName={firstName}
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
-            logout={logout}
-            navigate={navigate}
             isManageMentorsRoute={isManageMentorsRoute}
             isManageAccountRoute={isManageAccountRoute}
             isViewAllMentorshipRequests={isViewAllMentorshipRequests}

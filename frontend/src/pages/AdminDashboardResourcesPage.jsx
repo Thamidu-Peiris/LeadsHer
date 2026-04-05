@@ -673,7 +673,8 @@ const TABS = [
 ];
 
 export default function AdminDashboardResourcesPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
 
   /* ── Active tab ── */
@@ -881,35 +882,35 @@ export default function AdminDashboardResourcesPage() {
     setSort('-createdAt');
   };
 
-  const handleLogout = async () => {
-    try { await logout(); toast.success('Signed out'); }
-    finally { navigate('/'); }
-  };
-
   /* ─── RENDER ─────────────────────────────────────────────────────── */
   return (
     <>
 
-          <AdminTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]} showAvatar={false}>
+          <AdminTopBar
+            crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Resources' }]}
+            user={user}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+          >
             <button
+              type="button"
               onClick={() => setUploadModal(true)}
-              className="bg-gold-accent text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
+              className="bg-gold-accent text-white text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              Upload Resource
+              <span className="hidden sm:inline">Upload Resource</span>
+              <span className="sm:hidden">Upload</span>
             </button>
           </AdminTopBar>
+          <div className="px-4 sm:px-8 pt-3 pb-2">
+            <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
+            <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
+              Approve uploads, manage all resources, and view platform-wide analytics.
+            </p>
+          </div>
 
           {/* ── Content ── */}
           <div className="p-8 space-y-6 pb-32">
-
-            {/* Page title */}
-            <div>
-              <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
-              <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
-                Approve uploads, manage all resources, and view platform-wide analytics.
-              </p>
-            </div>
 
             {/* ── Tabs ── */}
             <div className="flex items-center gap-1 border-b border-slate-200 dark:border-outline-variant/30">
