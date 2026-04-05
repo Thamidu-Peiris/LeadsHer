@@ -739,7 +739,7 @@ export default function AdminMentorshipNexusPanel({
                             {goals.slice(0, 4).map((g) => (
                               <span
                                 key={g}
-                                className="bg-secondary-container/80 text-on-secondary-container text-[10px] px-2 py-0.5 rounded-full"
+                                className="rounded-full border border-[#f43f5e]/25 bg-rose-50 px-2.5 py-0.5 text-[10px] font-semibold text-[#9f1239]"
                               >
                                 {g}
                               </span>

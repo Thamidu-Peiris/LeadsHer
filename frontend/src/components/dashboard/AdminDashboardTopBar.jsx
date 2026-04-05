@@ -10,12 +10,12 @@ function buildCrumbs({
   if (isManageMentorsRoute) {
     const base = [{ label: 'Dashboard', to: '/dashboard' }];
     if (isViewAllMentorshipRequests) {
-      return [...base, { label: 'Mentorship', to: '/dashboard/manage-mentors' }, { label: 'All Requests' }];
+      return [...base, { label: 'Manage Mentors', to: '/dashboard/manage-mentors' }, { label: 'All Requests' }];
     }
     if (isViewAllActiveMentorship) {
-      return [...base, { label: 'Mentorship', to: '/dashboard/manage-mentors' }, { label: 'All Active' }];
+      return [...base, { label: 'Manage Mentors', to: '/dashboard/manage-mentors' }, { label: 'All Active' }];
     }
-    return [...base, { label: 'Mentorship' }];
+    return [...base, { label: 'Manage Mentors' }];
   }
   if (isManageAccountRoute) {
     return [{ label: 'Dashboard', to: '/dashboard' }, { label: 'Manage Account' }];
@@ -56,14 +56,14 @@ export default function AdminDashboardTopBar({
         <div className="mx-auto w-full max-w-[1280px] px-8 pb-2 pt-6">
           <section
             className="rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm ring-1 ring-[#f43f5e]/10 dark:border-outline-variant/20 dark:bg-white sm:p-8"
-            aria-labelledby="mentorship-heading"
+            aria-labelledby="manage-mentors-heading"
           >
             <div className="min-w-0 space-y-2">
               <h1
-                id="mentorship-heading"
+                id="manage-mentors-heading"
                 className="font-serif-alt text-3xl font-bold tracking-tight text-on-surface sm:text-4xl"
               >
-                Mentorship
+                Manage Mentors
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
                 Requests, active mentorships, and mentor tools
