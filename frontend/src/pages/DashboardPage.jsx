@@ -992,11 +992,6 @@ function AdminDashboard({ user }) {
                 )}
                 {isManageAccountRoute ? (
                   <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
-                    <p className="text-on-surface-variant text-sm mt-2 mb-6">
-                      Separate views for mentors and mentees with quick moderation actions.
-                    </p>
-
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 p-1">
                       <button

@@ -60,9 +60,25 @@ export default function AdminDashboardTopBar({
           </p>
         </div>
       ) : isManageAccountRoute ? (
-        <div className="px-4 sm:px-8 pt-3 pb-2">
-          <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
-          <p className="text-xs text-outline uppercase tracking-widest mt-1">Mentor & mentee profile management</p>
+        <div className="w-full max-w-[1280px] mx-auto px-8 pt-6 pb-2">
+          <section className="relative overflow-hidden rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm dark:border-outline-variant/20 dark:bg-surface-container-lowest sm:p-8">
+            <div
+              className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#f43f5e]/15 blur-3xl dark:bg-[#f43f5e]/10"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -bottom-24 right-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl opacity-70 dark:opacity-50"
+              aria-hidden
+            />
+            <div className="relative z-10 min-w-0 space-y-2">
+              <h1 className="font-serif-alt text-3xl font-bold tracking-tight text-on-surface sm:text-4xl">
+                Manage User Account
+              </h1>
+              <p className="max-w-2xl text-sm text-on-surface-variant">
+                Mentor & mentee profile management
+              </p>
+            </div>
+          </section>
         </div>
       ) : (
         <div className="w-full max-w-[1280px] mx-auto px-8 pt-6 pb-2">
