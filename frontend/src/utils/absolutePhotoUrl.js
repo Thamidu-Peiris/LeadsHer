@@ -22,3 +22,16 @@ export function absolutePhotoUrl(url) {
   if (!origin) return t;
   return t.startsWith('/') ? `${origin}${t}` : `${origin}/${t}`;
 }
+
+/**
+ * Avatar URL for API user objects (profilePicture / avatar) with ui-avatars fallback.
+ */
+export function userDisplayPhoto(user, { size = 40 } = {}) {
+  const raw = (user?.profilePicture || user?.avatar || '').trim();
+  if (raw) {
+    const abs = absolutePhotoUrl(raw);
+    if (abs) return abs;
+  }
+  const name = user?.name || 'U';
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c9a84c&color=fff&size=${size}`;
+}

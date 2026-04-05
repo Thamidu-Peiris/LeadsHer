@@ -10,6 +10,7 @@ const navLinks = [
   { to: '/events',     label: 'Events' },
   { to: '/mentors',    label: 'Mentors' },
   { to: '/resources',  label: 'Resources' },
+  { to: '/forum',      label: 'Discussion' },
 ];
 
 export default function Navbar() {
@@ -55,22 +56,6 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
-          {isAuthenticated && (
-            <li>
-              <NavLink
-                to="/forum"
-                className={({ isActive }) =>
-                  `font-sans-modern text-base font-normal tracking-wide transition-colors duration-200 ${
-                    isActive
-                      ? 'text-primary border-b border-primary/30'
-                      : 'text-on-surface-variant hover:text-primary'
-                  }`
-                }
-              >
-                Discussion
-              </NavLink>
-            </li>
-          )}
         </ul>
 
         {/* Right actions */}
@@ -157,13 +142,6 @@ export default function Navbar() {
               }
             >{label}</NavLink>
           ))}
-          {isAuthenticated && (
-            <NavLink to="/forum" onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `block font-sans-modern text-base font-medium tracking-wide ${isActive ? 'text-primary' : 'text-on-surface-variant'}`
-              }
-            >Discussion</NavLink>
-          )}
           <hr className="border-outline-variant/20 my-4" />
           {/* Theme toggle (mobile) */}
           <button

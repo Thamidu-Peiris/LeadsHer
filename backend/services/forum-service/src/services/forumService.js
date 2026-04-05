@@ -2,6 +2,8 @@ const ForumTopic = require('../models/ForumTopic');
 const ForumReply = require('../models/ForumReply');
 const Report = require('../models/Report');
 
+const isAdminRole = (r) => String(r || '').toLowerCase() === 'admin';
+
 const createTopic = async ({ title, content, category, tags, authorId }) => {
   const topic = await ForumTopic.create({
     title,
@@ -10,7 +12,7 @@ const createTopic = async ({ title, content, category, tags, authorId }) => {
     tags: Array.isArray(tags) ? tags.slice(0, 10) : [],
     author: authorId,
   });
-  await topic.populate('author', 'name avatar');
+  await topic.populate('author', 'name avatar profilePicture');
   return topic;
 };
 
@@ -45,13 +47,13 @@ const getTopicsPaginated = async ({ page = 1, limit = 10, category, tag, search,
   const [pinned, topics, total] = await Promise.all([
     ForumTopic.find({ ...query, isPinned: true })
       .sort(sortOption)
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar profilePicture')
       .lean(),
     ForumTopic.find({ ...query, isPinned: { $ne: true } })
       .sort(sortOption)
       .skip(skip)
       .limit(limit)
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar profilePicture')
       .lean(),
     ForumTopic.countDocuments({ ...query, isPinned: { $ne: true } }),
   ]);
@@ -81,7 +83,7 @@ const getTopicByIdWithReplies = async (topicId, userId, { page = 1, limit = 20 }
     { $inc: { views: 1 } },
     { new: true }
   )
-    .populate('author', 'name email avatar bio')
+    .populate('author', 'name email avatar profilePicture bio')
     .lean();
 
   if (!topic) {
@@ -95,7 +97,7 @@ const getTopicByIdWithReplies = async (topicId, userId, { page = 1, limit = 20 }
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit)
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar profilePicture')
       .lean(),
     ForumReply.countDocuments({ topic: topicId }),
   ]);
@@ -145,7 +147,7 @@ const updateTopic = async (topicId, userId, userRole, updates) => {
     err.status = 404;
     throw err;
   }
-  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (topic.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Not authorized to update this topic.');
     err.status = 403;
     throw err;
@@ -158,13 +160,13 @@ const updateTopic = async (topicId, userId, userRole, updates) => {
   if (tags) topic.tags = tags.slice(0, 10);
 
   // Admin-only fields
-  if (userRole === 'Admin') {
+  if (isAdminRole(userRole)) {
     if (updates.isPinned !== undefined) topic.isPinned = updates.isPinned;
     if (updates.isClosed !== undefined) topic.isClosed = updates.isClosed;
   }
 
   await topic.save();
-  await topic.populate('author', 'name avatar');
+  await topic.populate('author', 'name avatar profilePicture');
   return topic;
 };
 
@@ -175,7 +177,7 @@ const deleteTopic = async (topicId, userId, userRole) => {
     err.status = 404;
     throw err;
   }
-  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (topic.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Not authorized to delete this topic.');
     err.status = 403;
     throw err;
@@ -223,7 +225,7 @@ const createReply = async ({ topicId, content, authorId, parentReplyId }) => {
   topic.lastActivity = new Date();
   await topic.save();
 
-  await reply.populate('author', 'name avatar');
+  await reply.populate('author', 'name avatar profilePicture');
   return reply;
 };
 
@@ -234,7 +236,7 @@ const updateReply = async (replyId, userId, userRole, { content }) => {
     err.status = 404;
     throw err;
   }
-  if (reply.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (reply.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Not authorized to update this reply.');
     err.status = 403;
     throw err;
@@ -242,7 +244,7 @@ const updateReply = async (replyId, userId, userRole, { content }) => {
 
   reply.content = content;
   await reply.save();
-  await reply.populate('author', 'name avatar');
+  await reply.populate('author', 'name avatar profilePicture');
   return reply;
 };
 
@@ -253,7 +255,7 @@ const deleteReply = async (replyId, userId, userRole) => {
     err.status = 404;
     throw err;
   }
-  if (reply.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (reply.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Not authorized to delete this reply.');
     err.status = 403;
     throw err;
@@ -338,7 +340,7 @@ const getMyTopics = async (userId, { page = 1, limit = 10 } = {}) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar profilePicture')
       .lean(),
     ForumTopic.countDocuments({ author: userId }),
   ]);
@@ -370,7 +372,7 @@ const markAcceptedAnswer = async (replyId, userId, userRole) => {
     err.status = 404;
     throw err;
   }
-  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (topic.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Only the topic author can mark an accepted answer.');
     err.status = 403;
     throw err;
@@ -381,12 +383,12 @@ const markAcceptedAnswer = async (replyId, userId, userRole) => {
     reply.isAcceptedAnswer = true;
     await reply.save();
   }
-  await reply.populate('author', 'name avatar');
+  await reply.populate('author', 'name avatar profilePicture');
   return reply;
 };
 
 const togglePin = async (topicId, userRole) => {
-  if (userRole !== 'Admin') {
+  if (!isAdminRole(userRole)) {
     const err = new Error('Only admins can pin/unpin topics.');
     err.status = 403;
     throw err;
@@ -399,7 +401,7 @@ const togglePin = async (topicId, userRole) => {
   }
   topic.isPinned = !topic.isPinned;
   await topic.save();
-  await topic.populate('author', 'name avatar');
+  await topic.populate('author', 'name avatar profilePicture');
   return topic;
 };
 
@@ -410,14 +412,14 @@ const toggleClose = async (topicId, userId, userRole) => {
     err.status = 404;
     throw err;
   }
-  if (topic.author.toString() !== userId.toString() && userRole !== 'Admin') {
+  if (topic.author.toString() !== userId.toString() && !isAdminRole(userRole)) {
     const err = new Error('Not authorized to close/reopen this topic.');
     err.status = 403;
     throw err;
   }
   topic.isClosed = !topic.isClosed;
   await topic.save();
-  await topic.populate('author', 'name avatar');
+  await topic.populate('author', 'name avatar profilePicture');
   return topic;
 };
 
@@ -434,7 +436,7 @@ const getReports = async ({ page = 1, limit = 20, status } = {}) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('reporter', 'name email avatar')
+      .populate('reporter', 'name email avatar profilePicture')
       .populate('reviewedBy', 'name email')
       .lean(),
     Report.countDocuments(query),
@@ -462,7 +464,7 @@ const resolveReport = async (reportId, userId, action) => {
   report.reviewedBy = userId;
   report.reviewedAt = new Date();
   await report.save();
-  await report.populate('reporter', 'name email avatar');
+  await report.populate('reporter', 'name email avatar profilePicture');
   await report.populate('reviewedBy', 'name email');
   return report;
 };
