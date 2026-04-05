@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { eventApi } from '../api/eventApi';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
 import { authApi } from '../api/authApi';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
@@ -27,11 +28,41 @@ const CAT_STYLE = {
 const CARD =
   'bg-white dark:bg-white rounded-xl border border-outline-variant/20 shadow-sm dark:border-outline-variant/20';
 
+/** Event row: solid rose (View) + rose outline + gold ring (Unregister) */
+const EVENT_ROW_BTN_VIEW =
+  'px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white border border-rose-500 hover:bg-rose-600 hover:border-rose-600 dark:bg-rose-600 dark:border-rose-600 dark:hover:bg-rose-500 dark:hover:border-rose-500 transition-colors';
+const EVENT_ROW_BTN_UNREGISTER =
+  'px-3 py-1.5 text-xs font-bold rounded-lg border border-rose-400 text-rose-600 bg-white dark:border-rose-500/50 dark:text-rose-400 dark:bg-transparent ring-1 ring-gold-accent/30 ring-offset-0 hover:bg-rose-50 hover:border-rose-500 hover:ring-gold-accent/50 dark:hover:bg-rose-950/25 dark:hover:border-rose-400 transition-all';
+
 function label(val) {
   return (val || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** Sort key: event date + startTime (soonest first). Invalid dates sort last. */
+function eventStartTimestamp(e) {
+  const d = new Date(e?.date);
+  if (Number.isNaN(d.getTime())) return Number.POSITIVE_INFINITY;
+  let ms = d.getTime();
+  if (e?.startTime && typeof e.startTime === 'string') {
+    const parts = e.startTime.trim().split(':').map((p) => Number(p));
+    if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+      ms += ((parts[0] * 60 + parts[1]) * 60 + (parts[2] || 0)) * 1000;
+    }
+  }
+  return ms;
+}
+
+function eventRowCoverUrl(e) {
+  const raw =
+    typeof e.coverImage === 'string'
+      ? e.coverImage
+      : typeof e.cover_image === 'string'
+        ? e.cover_image
+        : '';
+  return raw?.trim() ? absolutePhotoUrl(raw.trim()) : '';
 }
 
 /* ── Stat Card ───────────────────────────────────────────────────────────── */
@@ -85,46 +116,83 @@ function EventRow({ event, actions }) {
   const st = STATUS_STYLE[event.status] || STATUS_STYLE.upcoming;
   const registered = event.registeredAttendees?.length || 0;
   const d = new Date(event.date);
+  const coverUrl = eventRowCoverUrl(event);
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-outline-variant/20 bg-white p-4 transition-all hover:border-[#f43f5e]/30 dark:bg-white sm:flex-row sm:items-center">
-      {/* Date block */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-[#f43f5e]/15 bg-rose-50">
-          <span className="text-xl font-bold leading-none text-[#f43f5e]">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white transition-all hover:border-rose-300/80 dark:border-outline-variant/20 dark:bg-surface-container-lowest dark:hover:border-rose-500/40 sm:flex-row sm:items-stretch">
+      {/* Left rail: date column + square cover (cover height follows row, width = height) */}
+      <div className="flex min-h-[92px] shrink-0 border-b border-slate-100 dark:border-outline-variant/20 sm:min-h-[100px] sm:border-b-0">
+        <div className="flex w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 border-r border-rose-200/50 bg-rose-100/95 px-1 py-3 dark:border-rose-900/35 dark:bg-rose-950/45 sm:w-[4.25rem]">
+          <span className="text-2xl font-bold leading-none text-rose-700 dark:text-rose-300">
             {d.toLocaleDateString('en-US', { day: '2-digit' })}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-[#f43f5e]/85">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600/90 dark:text-rose-400/95">
             {d.toLocaleDateString('en-US', { month: 'short' })}
           </span>
-          <span className="text-[9px] text-slate-400 dark:text-on-surface-variant">
+          <span className="text-[9px] text-slate-500 dark:text-on-surface-variant">
             {d.getFullYear()}
           </span>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${st.bg} ${st.text}`}>
-              <span className={`w-1 h-1 rounded-full ${st.dot}`} />
-              {event.status}
-            </span>
-            {event.category && (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${CAT_STYLE[event.category] || 'bg-slate-100 text-slate-600'}`}>
-                {label(event.category)}
+        <div className="relative min-h-[92px] min-w-[92px] shrink-0 self-stretch border-r border-slate-100 bg-slate-100 dark:border-outline-variant/20 dark:bg-slate-800 sm:min-h-[100px] sm:min-w-[100px] sm:aspect-square sm:w-auto">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+              aria-hidden
+            >
+              <span className="material-symbols-outlined text-[32px] text-rose-200 dark:text-rose-800/70 sm:text-[36px]">
+                event
               </span>
-            )}
-          </div>
-          <h4 className="font-semibold text-on-surface text-sm leading-snug truncate">{event.title}</h4>
-          <p className="text-[11px] text-slate-400 dark:text-on-surface-variant mt-0.5 flex items-center gap-2 flex-wrap">
-            {event.startTime && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span>{event.startTime}</span>}
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">{event.type === 'virtual' ? 'videocam' : 'location_on'}</span>{label(event.type)}</span>
-            {event.capacity && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">group</span>{registered}/{event.capacity}</span>}
-          </p>
+            </div>
+          )}
         </div>
       </div>
 
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-4 py-3 sm:py-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${st.bg} ${st.text}`}>
+            <span className={`h-1 w-1 rounded-full ${st.dot}`} />
+            {event.status}
+          </span>
+          {event.category && (
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${CAT_STYLE[event.category] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+              {label(event.category)}
+            </span>
+          )}
+        </div>
+        <h4 className="text-sm font-bold leading-snug text-on-surface line-clamp-2">{event.title}</h4>
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-on-surface-variant">
+          {event.startTime && (
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">schedule</span>
+              {event.startTime}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">
+              {event.type === 'virtual' ? 'videocam' : 'location_on'}
+            </span>
+            {label(event.type)}
+          </span>
+          {event.capacity != null && (
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">group</span>
+              {registered}/{event.capacity}
+            </span>
+          )}
+        </p>
+      </div>
+
       {actions && (
-        <div className="flex flex-wrap items-center gap-1.5 shrink-0 ml-1">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 dark:border-outline-variant/20 sm:border-t-0 sm:border-l sm:px-4 sm:pl-4 sm:pr-5">
           {actions}
         </div>
       )}
@@ -538,8 +606,14 @@ function MenteeView() {
     }
   };
 
-  const upcoming = events.filter(e => e.status === 'upcoming' || e.status === 'ongoing');
-  const past     = events.filter(e => e.status === 'completed' || e.status === 'cancelled');
+  const upcoming = useMemo(
+    () =>
+      events
+        .filter((e) => e.status === 'upcoming' || e.status === 'ongoing')
+        .sort((a, b) => eventStartTimestamp(a) - eventStartTimestamp(b)),
+    [events]
+  );
+  const past = events.filter(e => e.status === 'completed' || e.status === 'cancelled');
 
   return (
     <div className="space-y-6">
@@ -574,13 +648,11 @@ function MenteeView() {
                 {upcoming.map(e => (
                   <EventRow key={e._id} event={e} actions={
                     <>
-                      <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
+                      <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                         View
                       </Link>
                       {e.status === 'upcoming' && (
-                        <button onClick={() => handleUnregister(e)}
-                          className="px-3 py-1.5 text-xs font-bold border border-red-200 dark:border-red-800/40 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <button type="button" onClick={() => handleUnregister(e)} className={EVENT_ROW_BTN_UNREGISTER}>
                           Unregister
                         </button>
                       )}
@@ -597,8 +669,7 @@ function MenteeView() {
                 {past.map(e => (
                   <EventRow key={e._id} event={e} actions={
                     <>
-                      <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
+                      <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                         View
                       </Link>
                       {e.status === 'completed' && (
@@ -699,19 +770,7 @@ function MentorView({ onNew, refreshKey = 0 }) {
 
       {/* Created events */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -722,8 +781,8 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-[#f43f5e] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Create Event
                 </button>
               }
@@ -779,13 +838,11 @@ function MentorView({ onNew, refreshKey = 0 }) {
               {registered.map(e => (
                 <EventRow key={e._id} event={e} actions={
                   <>
-                    <Link to={`/events/${e._id}`}
-                      className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
+                    <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                       View
                     </Link>
                     {e.status === 'upcoming' && (
-                      <button onClick={() => handleUnregister(e)}
-                        className="px-3 py-1.5 text-xs font-bold border border-red-200 dark:border-red-800/40 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                      <button type="button" onClick={() => handleUnregister(e)} className={EVENT_ROW_BTN_UNREGISTER}>
                         Unregister
                       </button>
                     )}
@@ -975,19 +1032,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* My created tab */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f43f5e] hover:bg-[#e11d48] text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -1048,12 +1093,12 @@ const TYPES      = ['virtual', 'physical', 'hybrid'];
 const EMPTY_FORM = {
   title: '', description: '', category: 'webinar', type: 'virtual',
   date: '', startTime: '', endTime: '', duration: '', timezone: 'UTC',
-  capacity: '', status: 'upcoming', tags: '',
+  capacity: '', status: 'upcoming', tags: '', coverImage: '',
   location: { virtualLink: '', venue: '', address: '', city: '', country: '' },
 };
 
 const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
-const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all';
+const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/35 focus:border-rose-400/80 dark:focus:border-rose-500/60 transition-all';
 
 /* ── helpers for time math ───────────────────────────────────────────────── */
 function timeToMinutes(t) {
@@ -1070,6 +1115,14 @@ function CreateEventModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState({});   // tracks which fields the user has interacted with
   const [fieldErr, setFieldErr] = useState({}); // per-field error messages
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    };
+  }, [coverPreview]);
 
   /* ── auto-compute duration whenever startTime or endTime changes ── */
   const computeDuration = (start, end) => {
@@ -1153,6 +1206,21 @@ function CreateEventModal({ onClose, onCreated }) {
     setFieldErr(prev => ({ ...prev, [name]: validateField(name, value, form) }));
   };
 
+  const handleCoverFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(file);
+    setCoverPreview(file ? URL.createObjectURL(file) : '');
+    e.target.value = '';
+  };
+
+  const clearCover = () => {
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(null);
+    setCoverPreview('');
+    setForm((f) => ({ ...f, coverImage: '' }));
+  };
+
   const inpClass = (name) => {
     const hasErr = touched[name] && fieldErr[name];
     const isOk   = touched[name] && !fieldErr[name] && form[name];
@@ -1187,11 +1255,23 @@ function CreateEventModal({ onClose, onCreated }) {
 
     setSaving(true);
     try {
+      let coverImageVal = (form.coverImage || '').trim();
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('cover', coverFile);
+        const up = await eventApi.uploadCover(fd);
+        coverImageVal = (up.data?.url || coverImageVal).trim();
+        if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+        setCoverFile(null);
+        setCoverPreview('');
+      }
+
       const payload = {
         ...form,
         duration: Number(form.duration),
         capacity: Number(form.capacity),
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+        coverImage: coverImageVal,
       };
       await eventApi.create(payload);
       toast.success('Event created successfully!');
@@ -1220,7 +1300,7 @@ function CreateEventModal({ onClose, onCreated }) {
         <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#f43f5e] text-[22px]">add_circle</span>
+              <span className="material-symbols-outlined text-rose-500 text-[22px] dark:text-rose-400">add_circle</span>
               Create New Event
             </h2>
             <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-1">
@@ -1238,7 +1318,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Basic Info ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">info</span>
               Basic Information
             </h3>
@@ -1257,6 +1337,45 @@ function CreateEventModal({ onClose, onCreated }) {
                   className={`${inpClass('description')} h-24 resize-y`}
                   placeholder="Describe what attendees will gain…" />
                 <FieldError name="description" />
+              </div>
+              <div>
+                <label className={lbl}>Hero background image</label>
+                <p className="mb-2 text-[11px] text-slate-500 dark:text-on-surface-variant">
+                  Optional. Blurred backdrop on the public event page. Uploaded via Cloudinary when configured (same as full create form).
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <div className="aspect-video w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-outline-variant/40 dark:bg-surface-container">
+                    {coverPreview || form.coverImage ? (
+                      <img
+                        alt=""
+                        src={coverPreview || absolutePhotoUrl(form.coverImage)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex min-h-[100px] items-center justify-center px-2 text-center text-[10px] text-slate-400 dark:text-outline">
+                        Preview
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-on-surface transition-colors hover:border-rose-400 hover:bg-rose-50 dark:border-outline-variant/40 dark:hover:bg-rose-950/30">
+                      <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+                      {coverFile || form.coverImage ? 'Change image' : 'Choose image'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleCoverFile}
+                      />
+                    </label>
+                    {(form.coverImage || coverPreview) && (
+                      <button type="button" onClick={clearCover} className="w-fit text-left text-[11px] font-semibold text-red-600 hover:underline dark:text-red-400">
+                        Remove cover
+                      </button>
+                    )}
+                    <p className="text-[10px] text-slate-400 dark:text-outline">Max 8MB · saved when you create the event</p>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1283,7 +1402,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Schedule ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
               Schedule
             </h3>
@@ -1324,7 +1443,7 @@ function CreateEventModal({ onClose, onCreated }) {
                   <label className={lbl}>
                     Duration (min) <span className="text-red-400">*</span>
                     {durationLabel && (
-                      <span className="ml-1 normal-case text-[#f43f5e] font-semibold tracking-normal">· {durationLabel}</span>
+                      <span className="ml-1 normal-case text-rose-600 dark:text-rose-400 font-semibold tracking-normal">· {durationLabel}</span>
                     )}
                   </label>
                   <input type="number" name="duration" value={form.duration}
@@ -1346,7 +1465,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Location ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">location_on</span>
               Location
             </h3>
@@ -1389,7 +1508,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Settings ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#f43f5e] mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">tune</span>
               Settings
             </h3>
@@ -1421,7 +1540,7 @@ function CreateEventModal({ onClose, onCreated }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all"
+              className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
             >
               {saving ? (
                 <><Spinner size="sm" /> Creating…</>
@@ -1520,75 +1639,41 @@ export default function DashboardEventsPage() {
 
         {/* Page content */}
         <div className="flex-1 bg-transparent">
-          {/* Page header */}
-          {isAdmin ? (
-            <div className="mx-auto w-full max-w-[1400px] px-8 pt-8">
-              <section
-                className="rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm dark:border-outline-variant/20 dark:bg-white"
-                aria-labelledby="event-management-heading"
-              >
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-                  <div className="min-w-0">
-                    <h1
-                      id="event-management-heading"
-                      className="font-serif-alt text-2xl font-bold tracking-tight text-on-surface sm:text-3xl"
-                    >
-                      {pageTitle}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">{pageSubtitle}</p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap gap-3">
-                    <Link
-                      to="/events"
-                      className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-outline-variant/35 bg-white px-4 py-2 text-sm font-bold text-on-surface transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                      Browse All
-                    </Link>
-                    {canManageEvents && (
-                      <button
-                        type="button"
-                        onClick={() => setCreateOpen(true)}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#f43f5e]/30 bg-[#f43f5e] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#e11d48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 active:scale-[0.99]"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                        Create Event
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 border-b border-outline-variant/20 px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+            {/* Page header — same white card shell as stats / sections */}
+            <div
+              className={`${CARD} px-5 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`}
+            >
               <div>
                 <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
-                <p className="mt-1 max-w-2xl text-sm text-on-surface-variant">{pageSubtitle}</p>
+                <p className="text-sm text-on-surface-variant mt-1">{pageSubtitle}</p>
               </div>
-              <div className="flex shrink-0 flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 shrink-0">
                 <Link
                   to="/events"
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
+                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${
+                    isMentee
+                      ? 'bg-rose-500 text-white shadow-sm hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500'
+                      : 'bg-black text-white hover:bg-neutral-900 dark:hover:bg-neutral-800'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                   Browse All
                 </Link>
                 {canManageEvents && (
                   <button
                     type="button"
                     onClick={() => setCreateOpen(true)}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#f43f5e]/30 bg-[#f43f5e] px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#e11d48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 active:scale-[0.99]"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500 text-white text-sm font-bold rounded-xl shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500"
                   >
-                    <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
                     Create Event
                   </button>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Role-based content */}
-          <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+            {/* Role-based content */}
             {isAdmin              && <AdminView  onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
             {isMentor && !isAdmin && <MentorView onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
             {isMentee             && <MenteeView />}

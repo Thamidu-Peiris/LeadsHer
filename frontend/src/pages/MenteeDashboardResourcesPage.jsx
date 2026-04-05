@@ -602,25 +602,27 @@ export default function MenteeDashboardResourcesPage() {
                   </div>
 
                   {/* Difficulty segmented control */}
-                  <div className="flex bg-rose-50 dark:bg-surface-container-high p-1 rounded-lg border border-rose-200/70 dark:border-outline-variant/40">
+                  <div className="flex flex-wrap sm:flex-nowrap bg-white dark:bg-surface-container-lowest p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40 shadow-sm">
                     <button
+                      type="button"
                       onClick={() => { setFilterDifficulty(''); setPage(1); }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
                         !filterDifficulty
-                          ? 'bg-white dark:bg-surface-container-low text-on-surface'
-                          : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
+                          ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
+                          : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
                       }`}
                     >
                       All
                     </button>
                     {DIFFICULTIES.map((d) => (
                       <button
+                        type="button"
                         key={d}
                         onClick={() => { setFilterDifficulty(d); setPage(1); }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
                           filterDifficulty === d
-                            ? 'bg-white dark:bg-surface-container-low text-on-surface'
-                            : 'text-slate-500 dark:text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
+                            : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
                         }`}
                       >
                         {d.charAt(0).toUpperCase() + d.slice(1)}

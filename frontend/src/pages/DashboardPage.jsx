@@ -26,7 +26,57 @@ import {
   enrichMentorship,
   enrichFeedbackRow,
 } from '../utils/mentorshipAdminMerge';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
 import toast from 'react-hot-toast';
+
+function menteeEventCoverUrl(e) {
+  const raw =
+    typeof e.coverImage === 'string'
+      ? e.coverImage
+      : typeof e.cover_image === 'string'
+        ? e.cover_image
+        : '';
+  return raw?.trim() ? absolutePhotoUrl(raw.trim()) : '';
+}
+
+function menteeEventLocationLine(e) {
+  if (e.type === 'virtual') return 'Virtual';
+  return e.location?.city || e.location?.venue || 'Online';
+}
+
+function menteeFormatEventDate(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function menteeFormatEventTimeDisplay(startTime) {
+  if (startTime == null || startTime === '') return '';
+  const s = String(startTime).trim();
+  if (!s) return '';
+  const parts = s.split(':').map((p) => Number(p));
+  if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+    const dt = new Date();
+    dt.setHours(parts[0], parts[1], parts[2] || 0, 0);
+    return dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return s;
+}
+
+function menteeEventDateTimeLine(e) {
+  const dateStr = menteeFormatEventDate(e.date);
+  const timeStr = menteeFormatEventTimeDisplay(e.startTime);
+  if (dateStr && timeStr) return `${dateStr} · ${timeStr}`;
+  if (dateStr) return dateStr;
+  if (timeStr) return timeStr;
+  return null;
+}
 
 function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
@@ -216,7 +266,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                     <button
                       type="button"
-                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
+                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white dark:bg-surface-container"
                       onClick={() => navigate('/dashboard/settings')}
                     >
                       Open Settings
@@ -224,7 +274,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <button
                       type="button"
                       disabled={onboardSaving}
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 disabled:opacity-60 dark:bg-rose-600 dark:hover:bg-rose-500"
                       onClick={saveOnboarding}
                     >
                       {onboardSaving ? 'Saving…' : 'Save profile'}
@@ -242,7 +292,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             {/* Welcome banner */}
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
-              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
+              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
                 <div className="space-y-2">
@@ -250,20 +300,20 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     Welcome back, {firstName} 👋
                   </h1>
                   <p className="text-on-surface-variant text-sm max-w-md">
-                    Role: <span className="text-gold-accent font-bold">mentor</span> · {user?.email}
+                    Role: <span className="text-rose-600 font-bold dark:text-rose-400">mentor</span> · {user?.email}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
                     >
                       + New Event
                     </Link>
@@ -289,7 +339,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
-                      <span className="text-[10px] bg-gold-accent/10 text-gold-accent px-2 py-1 rounded">My events</span>
+                      <span className="text-[10px] bg-rose-500/10 text-rose-600 px-2 py-1 rounded dark:bg-rose-500/15 dark:text-rose-400">My events</span>
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
@@ -321,10 +371,10 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
+                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-rose-500/40 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
-                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
+                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
                               <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                             </Link>
                           </div>
@@ -348,7 +398,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
+                    <span className="material-symbols-outlined text-rose-600 dark:text-rose-400">calendar_today</span> Upcoming Events
                   </h3>
                   {myEvents.length === 0 ? (
                     <p className="text-outline text-sm">No registered events yet.</p>
@@ -358,7 +408,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                         <Link
                           key={e._id}
                           to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-rose-500/40 transition-colors rounded-lg"
                         >
                           <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
                           <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
@@ -373,13 +423,13 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="grid grid-cols-2 gap-3">
                     <Link
                       to="/stories/new"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
+                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">auto_stories</span> New Story
                     </Link>
                     <Link
                       to="/mentors"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
+                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">groups</span> Mentorship
                     </Link>
@@ -625,7 +675,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Recent Activity</h2>
-                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/events">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/dashboard/events">
                       View events <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
@@ -657,19 +707,60 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     <p className="text-outline text-sm">No registered events yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {myEvents.slice(0, 3).map((e) => (
-                        <Link
-                          key={e._id}
-                          to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
-                        >
-                          <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
-                        </Link>
-                      ))}
+                      {myEvents.slice(0, 3).map((e) => {
+                        const coverUrl = menteeEventCoverUrl(e);
+                        const whenLine = menteeEventDateTimeLine(e);
+                        return (
+                          <Link
+                            key={e._id}
+                            to={`/events/${e._id}`}
+                            className="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          >
+                            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-slate-100 dark:bg-slate-800">
+                              {coverUrl ? (
+                                <img
+                                  src={coverUrl}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-full items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+                                  aria-hidden
+                                >
+                                  <span className="material-symbols-outlined text-[26px] text-rose-200 dark:text-rose-800/70">
+                                    event
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
+                              {whenLine && (
+                                <p className="text-[10px] text-outline mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px] shrink-0 text-rose-600 dark:text-rose-400">
+                                    schedule
+                                  </span>
+                                  <span className="min-w-0 line-clamp-1">{whenLine}</span>
+                                </p>
+                              )}
+                              <p
+                                className={`text-[10px] text-outline flex items-center gap-1 ${whenLine ? 'mt-0.5' : 'mt-1'}`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] shrink-0 text-outline">
+                                  {e.type === 'virtual' ? 'videocam' : 'location_on'}
+                                </span>
+                                <span className="min-w-0 line-clamp-1">{menteeEventLocationLine(e)}</span>
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
-                  <Link to="/events" className="text-black dark:text-neutral-100 text-xs font-bold hover:underline uppercase tracking-wider flex items-center gap-1">
+                  <Link to="/dashboard/events" className="text-black dark:text-neutral-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                     Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </Link>
                 </div>
@@ -678,13 +769,13 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/mentors"
+                      to="/dashboard/mentors"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">groups</span> Find Mentors
                     </Link>
                     <Link
-                      to="/events"
+                      to="/dashboard/events"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">event</span> Events

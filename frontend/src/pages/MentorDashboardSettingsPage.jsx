@@ -192,7 +192,7 @@ export default function MentorDashboardSettingsPage() {
 
           <div className="p-8 space-y-6 max-w-[1000px] mx-auto w-full">
             {isAdmin && (
-              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-gold-accent">
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-rose-500">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <h2 className="font-serif-alt text-xl font-bold text-on-surface">Platform: email verification</h2>
@@ -211,7 +211,7 @@ export default function MentorDashboardSettingsPage() {
                       onClick={() => setEmailVerificationRequired((v) => !v)}
                       className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors disabled:opacity-60 ${
                         emailVerificationRequired
-                          ? 'bg-gold-accent/30 border-gold-accent/50'
+                          ? 'bg-rose-500/30 border-rose-500/50'
                           : 'bg-outline-variant/25 border-outline-variant/40'
                       }`}
                     >
@@ -226,7 +226,7 @@ export default function MentorDashboardSettingsPage() {
                       type="button"
                       disabled={settingsSaving || settingsLoading}
                       onClick={savePlatformSettings}
-                      className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-60"
+                      className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-60"
                     >
                       {settingsSaving ? 'Saving…' : 'Save'}
                     </button>
@@ -291,7 +291,7 @@ export default function MentorDashboardSettingsPage() {
                     type="button"
                     disabled={saving}
                     onClick={save}
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </button>
@@ -310,7 +310,7 @@ export default function MentorDashboardSettingsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer">
                             Choose image
                             <input type="file" accept="image/*" onChange={handlePictureFile} className="hidden" />
                           </label>
@@ -318,7 +318,7 @@ export default function MentorDashboardSettingsPage() {
                             type="button"
                             disabled={pictureSaving}
                             onClick={saveProfilePicture}
-                            className="bg-gold-accent text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
+                            className="bg-rose-500 text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
                           >
                             {pictureSaving ? 'Uploading…' : 'Upload'}
                           </button>
@@ -379,7 +379,7 @@ export default function MentorDashboardSettingsPage() {
 
             <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 max-w-[900px]">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
+                  <span className="material-symbols-outlined text-rose-500 text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-on-surface text-lg">Forgot / reset password</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
@@ -392,13 +392,13 @@ export default function MentorDashboardSettingsPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         autoComplete="email"
-                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-rose-500 outline-none"
                         placeholder="you@example.com"
                       />
                       <button
                         type="submit"
                         disabled={sendingReset}
-                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 disabled:opacity-50"
+                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-rose-500 hover:bg-rose-500/5 disabled:opacity-50"
                       >
                         {sendingReset ? 'Sending…' : 'Send reset link'}
                       </button>

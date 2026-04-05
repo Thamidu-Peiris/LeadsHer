@@ -1,5 +1,7 @@
+const fs = require('fs');
 const crypto = require('crypto');
 const Event = require('../models/Event');
+const { getCloudinary } = require('../config/cloudinary');
 const EventRegistration = require('../models/EventRegistration');
 const Certificate = require('../models/Certificate');
 
@@ -217,3 +219,29 @@ exports.getEventCertificates = catchAsync(async (req, res, next) => {
 
     res.status(200).json({ status: 'success', results: certificates.length, data: { certificates } });
 });
+
+/* ── UPLOAD COVER (mentor / admin) — Cloudinary or local fallback ──────── */
+
+exports.uploadEventCover = async (req, res) => {
+    try {
+        if (!req.file?.filename) {
+            return res.status(400).json({ message: 'No image file provided.' });
+        }
+
+        const cloudinary = getCloudinary();
+        if (cloudinary && req.file.path) {
+            const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'leadsher/events/covers',
+                resource_type: 'image',
+            });
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch {}
+            return res.status(201).json({ url: uploadRes.secure_url, provider: 'cloudinary' });
+        }
+
+        res.status(201).json({ url: `/uploads/events/${req.file.filename}`, provider: 'local' });
+    } catch (err) {
+        res.status(500).json({ message: err.message || 'Cover upload failed.' });
+    }
+};
