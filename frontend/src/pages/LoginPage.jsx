@@ -54,10 +54,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex w-full bg-[#fff7fb] dark:bg-[#120d1a] min-h-[calc(100vh-4rem)]">
+    <div className="flex w-full bg-[#FFE6F5] dark:bg-[#120d1a] min-h-screen min-h-[100dvh]">
 
       {/* ─── LEFT PANEL ─────────────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-end sticky top-16 self-start h-[calc(100vh-4rem)]">
+      <aside className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-end self-start min-h-screen min-h-[100dvh]">
         <img
           src={leftPanelImage}
           alt="Women leadership inspiration"
