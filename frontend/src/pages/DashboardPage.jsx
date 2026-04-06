@@ -187,13 +187,132 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
   const totalLikes = useMemo(
-    () => myStories.reduce((a, s) => a + (s.likeCount || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0),
     [myStories]
   );
+  const monthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
+  const monthLabel = useMemo(
+    () => new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    []
+  );
+  const storiesThisMonth = useMemo(
+    () =>
+      myStories.filter((s) => {
+        const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myStories, monthStart]
+  );
+  const sessionsThisMonth = useMemo(
+    () =>
+      myEvents.filter((e) => {
+        const t = new Date(e?.date || e?.startDate || e?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myEvents, monthStart]
+  );
+  const repliesThisMonth = useMemo(
+    () =>
+      myStories
+        .filter((s) => {
+          const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+          return Number.isFinite(t) && t >= monthStart.getTime();
+        })
+        .reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0),
+    [myStories, monthStart]
+  );
+  const goals = useMemo(() => ([
+    { key: 'stories', label: 'Stories', icon: 'auto_stories', value: storiesThisMonth, target: 4 },
+    { key: 'sessions', label: 'Sessions', icon: 'event', value: sessionsThisMonth, target: 3 },
+    { key: 'replies', label: 'Replies', icon: 'chat', value: repliesThisMonth, target: 20 },
+  ]), [storiesThisMonth, sessionsThisMonth, repliesThisMonth]);
+  const recentActivity = useMemo(() => {
+    const items = [];
+    const sortedStories = [...myStories].sort(
+      (a, b) => new Date(b?.updatedAt || b?.createdAt || 0) - new Date(a?.updatedAt || a?.createdAt || 0)
+    );
+    sortedStories.slice(0, 2).forEach((s) => {
+      const likes = Number(s?.likeCount ?? s?.likes?.length ?? 0);
+      const comments = Number(s?.commentCount ?? 0);
+      items.push({
+        icon: 'auto_stories',
+        title: s?.title || 'Story update',
+        meta: `${likes} likes · ${comments} comments`,
+      });
+    });
+    const nextEvent = [...myEvents]
+      .filter((e) => new Date(e?.date || e?.startDate || 0).getTime() >= Date.now())
+      .sort((a, b) => new Date(a?.date || a?.startDate || 0) - new Date(b?.date || b?.startDate || 0))[0];
+    if (nextEvent) {
+      items.push({
+        icon: 'event_upcoming',
+        title: `Upcoming: ${nextEvent.title || 'Event'}`,
+        meta: new Date(nextEvent?.date || nextEvent?.startDate || Date.now()).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+      });
+    }
+    if (mentorProfile) {
+      items.push({
+        icon: mentorProfile?.isAvailable ? 'toggle_on' : 'toggle_off',
+        title: `Mentorship ${mentorProfile?.isAvailable ? 'availability on' : 'availability off'}`,
+        meta: 'From your mentor profile settings',
+      });
+    }
+    if (items.length === 0) {
+      items.push({
+        icon: 'notifications',
+        title: 'No new activity yet',
+        meta: 'Your latest likes, comments, and updates will appear here',
+      });
+    }
+    return items.slice(0, 4);
+  }, [myStories, myEvents, mentorProfile]);
+  const monthlyTrend = useMemo(() => {
+    const now = new Date();
+    const buckets = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: d.toLocaleDateString('en-US', { month: 'short' }),
+        stories: 0,
+        sessions: 0,
+      };
+    });
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    myStories.forEach((s) => {
+      const t = new Date(s?.publishedAt || s?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].stories += 1;
+    });
+    myEvents.forEach((e) => {
+      const t = new Date(e?.date || e?.startDate || e?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].sessions += 1;
+    });
+    const maxValue = Math.max(1, ...buckets.map((b) => Math.max(b.stories, b.sessions)));
+    return { buckets, maxValue };
+  }, [myStories, myEvents]);
+  const engagement = useMemo(() => {
+    const comments = myStories.reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0);
+    const likes = totalLikes;
+    const views = totalViews;
+    const total = Math.max(1, likes + comments + views);
+    const likesPct = Math.round((likes / total) * 100);
+    const commentsPct = Math.round((comments / total) * 100);
+    const viewsPct = 100 - likesPct - commentsPct;
+    return { likes, comments, views, likesPct, commentsPct, viewsPct };
+  }, [myStories, totalLikes, totalViews]);
 
   return (
     <>
@@ -306,14 +425,14 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
+                    className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
+                      className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
                     >
                       + New Event
                     </Link>
@@ -331,7 +450,9 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Published</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myStories.length}</h4>
-                      <div className="h-8 w-20 bg-primary/10 rounded-md" />
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        auto_stories
+                      </span>
                     </div>
                     <p className="text-[10px] text-outline">Your published stories</p>
                   </div>
@@ -347,51 +468,129 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Community Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews + totalLikes}</h4>
-                      <div className="text-tertiary">
-                        <span className="material-symbols-outlined">stars</span>
-                      </div>
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        stars
+                      </span>
                     </div>
                     <p className="text-[10px] text-tertiary">Views + likes combined</p>
                   </div>
                 </div>
 
-                {/* Recent stories (your stories) */}
-                <section className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Latest Stories</h2>
-                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/stories">
-                      View all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Monthly Trend</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Last 6 months
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2 items-end h-40">
+                      {monthlyTrend.buckets.map((b) => {
+                        const storiesH = Math.max(6, Math.round((b.stories / monthlyTrend.maxValue) * 92));
+                        const sessionsH = Math.max(6, Math.round((b.sessions / monthlyTrend.maxValue) * 92));
+                        return (
+                          <div key={b.key} className="flex flex-col items-center gap-1">
+                            <div className="flex items-end gap-1 h-28">
+                              <span
+                                className="w-3 rounded-md bg-[#f43f5e]"
+                                style={{ height: `${storiesH}%` }}
+                                title={`Stories: ${b.stories}`}
+                              />
+                              <span
+                                className="w-3 rounded-md border border-[#f43f5e]/40 bg-rose-100"
+                                style={{ height: `${sessionsH}%` }}
+                                title={`Sessions: ${b.sessions}`}
+                              />
+                            </div>
+                            <span className="text-[10px] font-semibold text-outline">{b.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex items-center gap-4 text-[11px] text-outline">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm bg-[#f43f5e]" /> Stories
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm border border-[#f43f5e]/50 bg-rose-100" /> Sessions
+                      </span>
+                    </div>
                   </div>
 
-                  {myStories.length === 0 ? (
-                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 text-on-surface-variant">
-                      You haven&apos;t written any stories yet.
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Engagement Mix</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Likes / Comments / Views
+                      </span>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-rose-500/40 transition-colors">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
-                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
-                              <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                            </Link>
+                    <div className="flex items-center gap-5">
+                      <div
+                        className="h-28 w-28 rounded-full border border-outline-variant/20"
+                        style={{
+                          background: `conic-gradient(#f43f5e 0% ${engagement.likesPct}%, #fb7185 ${engagement.likesPct}% ${engagement.likesPct + engagement.commentsPct}%, #ffd1e7 ${engagement.likesPct + engagement.commentsPct}% 100%)`,
+                        }}
+                      />
+                      <div className="space-y-2 text-xs">
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#f43f5e]" /> Likes: {engagement.likes}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#fb7185]" /> Comments: {engagement.comments}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#ffd1e7] border border-[#f43f5e]/20" /> Views: {engagement.views}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mini Goals / Progress</h3>
+                      <span className="text-[10px] px-2 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold uppercase tracking-wider">
+                        {monthLabel}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {goals.map((g) => {
+                        const pct = Math.min(100, Math.round((g.value / g.target) * 100));
+                        return (
+                          <div key={g.key} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <p className="font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-[#f43f5e]">{g.icon}</span>
+                                {g.label}
+                              </p>
+                              <p className="text-outline tabular-nums">{g.value}/{g.target}</p>
+                            </div>
+                            <div className="h-2 rounded-full bg-outline-variant/20 overflow-hidden">
+                              <div className="h-2 rounded-full bg-[#f43f5e]" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                          {s.excerpt && <p className="text-on-surface-variant text-sm mt-2 line-clamp-2">{s.excerpt}</p>}
-                          <div className="mt-4 flex items-center justify-between text-xs text-outline">
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">visibility</span> {s.views || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">favorite</span> {s.likeCount || 0}
-                            </span>
-                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <h3 className="font-serif-alt text-xl font-bold text-on-surface">Recent Activity Feed</h3>
+                    <div className="space-y-2.5">
+                      {recentActivity.map((a, idx) => (
+                        <div key={`${a.title}-${idx}`} className="rounded-lg border border-outline-variant/15 bg-surface-container-lowest/70 px-3 py-2.5">
+                          <p className="text-sm font-semibold text-on-surface flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px] text-[#f43f5e]">{a.icon}</span>
+                            <span className="line-clamp-1">{a.title}</span>
+                          </p>
+                          <p className="mt-1 text-[11px] text-outline pl-6">{a.meta}</p>
                         </div>
                       ))}
                     </div>
-                  )}
+                  </div>
                 </section>
+
               </div>
 
               {/* Right column */}
@@ -422,19 +621,84 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/stories/new"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
+                      to="/dashboard/stories/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg bg-[#f43f5e] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-[#e11d48]"
                     >
-                      <span className="material-symbols-outlined text-[14px]">auto_stories</span> New Story
+                      <span className="material-symbols-outlined text-[16px]">auto_stories</span> New Story
                     </Link>
                     <Link
-                      to="/mentors"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
+                      to="/events/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
                     >
-                      <span className="material-symbols-outlined text-[14px]">groups</span> Mentorship
+                      <span className="material-symbols-outlined text-[16px]">event</span> New Event
+                    </Link>
+                    <Link
+                      to="/dashboard/mentorship"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">groups</span> Mentorship
+                    </Link>
+                    <Link
+                      to="/dashboard/forum"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">forum</span> Forum
                     </Link>
                   </div>
                 </div>
+
+                <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Your Latest Stories</h3>
+                    <Link
+                      className="text-[11px] font-bold uppercase tracking-wider text-[#f43f5e] hover:text-[#e11d48] flex items-center gap-1"
+                      to="/dashboard/stories"
+                    >
+                      View all <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                  {myStories.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant">You haven&apos;t written any stories yet.</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {myStories.slice(0, 3).map((s) => (
+                        <div key={s._id} className="rounded-lg border border-outline-variant/20 bg-surface-container-lowest/80 px-3 py-2.5 hover:border-rose-500/40 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-11 w-14 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-white">
+                              <img
+                                src={s.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=180&h=140&fit=crop&q=80'}
+                                alt={s.title || 'Story'}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-on-surface line-clamp-1">{s.title}</p>
+                                <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 transition-colors">
+                                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                </Link>
+                              </div>
+                              <div className="mt-1.5 flex items-center gap-4 text-[11px] text-outline">
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[14px] text-[#f43f5e]">visibility</span> {s.views ?? s.viewCount ?? 0}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <span
+                                    className="material-symbols-outlined text-[14px] text-[#f43f5e]"
+                                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}
+                                  >
+                                    favorite
+                                  </span>
+                                  {s.likeCount ?? 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             </div>
 
@@ -505,7 +769,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
 
@@ -1749,14 +2013,14 @@ export default function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/dashboard/stories/new"
-            className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
           >
             + New Story
           </Link>
           {canManageEvents && (
             <Link
               to="/events/new"
-              className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
             >
               + New Event
             </Link>
@@ -1769,8 +2033,8 @@ export default function DashboardPage() {
         {[
           { label: 'My Stories',        value: myStories.length, link: '/stories' },
           { label: 'Registered Events', value: myEvents.length,  link: '/events' },
-          { label: 'Total Views',       value: myStories.reduce((a, s) => a + (s.views || 0), 0) },
-          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + (s.likeCount || 0), 0) },
+          { label: 'Total Views',       value: myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0) },
+          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0) },
         ].map(({ label, value, link }) => (
           <div key={label} className="card p-5">
             <p className="text-2xl font-display font-bold text-brand-700">{value}</p>
