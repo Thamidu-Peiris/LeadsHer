@@ -331,7 +331,9 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Published</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myStories.length}</h4>
-                      <div className="h-8 w-20 bg-primary/10 rounded-md" />
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        auto_stories
+                      </span>
                     </div>
                     <p className="text-[10px] text-outline">Your published stories</p>
                   </div>
@@ -347,9 +349,9 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Community Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews + totalLikes}</h4>
-                      <div className="text-tertiary">
-                        <span className="material-symbols-outlined">stars</span>
-                      </div>
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        stars
+                      </span>
                     </div>
                     <p className="text-[10px] text-tertiary">Views + likes combined</p>
                   </div>
