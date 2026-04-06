@@ -1221,7 +1221,8 @@ export default function MentorDashboardResourcesPage() {
 
       <div className="flex flex-1 min-h-0 items-stretch w-full">
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
-          <div className="w-full max-w-2xl mx-auto px-6 sm:px-8 pt-6 pb-4">
+          <div className="mx-auto w-full max-w-[1400px] px-8 pt-8 pb-6">
+            <div className="w-full">
             <div className="rounded-xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-lowest p-3 shadow-sm">
               <form onSubmit={handleSearch}>
                 <div className="relative group">
@@ -1236,29 +1237,27 @@ export default function MentorDashboardResourcesPage() {
                   />
                 </div>
               </form>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 dark:border-outline-variant/40 pt-3">
+                {typePills.map((pill) => (
+                  <button
+                    type="button"
+                    key={pill.key}
+                    onClick={() => handleTypeChange(pill.key)}
+                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                      activeType === pill.key
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             </div>
           </div>
 
-          <div className="px-6 pb-6 pt-2">
-            <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-lowest px-4 py-4 shadow-sm">
-              {typePills.map((pill) => (
-                <button
-                  type="button"
-                  key={pill.key}
-                  onClick={() => handleTypeChange(pill.key)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                    activeType === pill.key
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="px-8 pb-5">
+          <div className="mx-auto w-full max-w-[1400px] px-8 pb-5">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4 rounded-xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-lowest p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3 w-full">
               <div className="relative min-w-[180px]">
@@ -1340,7 +1339,7 @@ export default function MentorDashboardResourcesPage() {
             </div>
           </div>
 
-          <div className="px-8 pb-8 pt-2">
+          <div className="mx-auto w-full max-w-[1400px] px-8 pb-8 pt-2">
               {loading ? (
                 <div className="flex justify-center py-24">
                   <Spinner size="lg" />
@@ -1410,7 +1409,7 @@ export default function MentorDashboardResourcesPage() {
               )}
           </div>
 
-          <div className="xl:hidden px-8 pb-6">
+          <div className="mx-auto w-full max-w-[1400px] xl:hidden px-8 pb-6">
             <BookmarksPanel
               bookmarks={bookmarks}
               bookmarkCount={bookmarkedIds.size}
