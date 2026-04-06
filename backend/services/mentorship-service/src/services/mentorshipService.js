@@ -28,12 +28,17 @@ const getActiveMentorships = async (userId, userRole, queryRole) => {
   } else {
     filter = { status: 'active', $or: [{ mentor: userId }, { mentee: userId }] };
   }
-  const mentorships = await Mentorship.find(filter).populate('mentor', 'name email avatar').populate('mentee', 'name email avatar').sort('-startDate');
+  const mentorships = await Mentorship.find(filter)
+    .populate('mentor', 'name email avatar profilePicture')
+    .populate('mentee', 'name email avatar profilePicture')
+    .sort('-startDate');
   return { data: mentorships, count: mentorships.length };
 };
 
 const getMentorshipById = async (mentorshipId, userId) => {
-  const mentorship = await Mentorship.findById(mentorshipId).populate('mentor', 'name email avatar bio').populate('mentee', 'name email avatar bio');
+  const mentorship = await Mentorship.findById(mentorshipId)
+    .populate('mentor', 'name email avatar profilePicture bio')
+    .populate('mentee', 'name email avatar profilePicture bio');
   if (!mentorship) {
     const err = new Error('Mentorship not found');
     err.status = 404;
@@ -84,7 +89,10 @@ const logSession = async (mentorshipId, userId, sessionData) => {
     topics: topics || [],
   });
   await mentorship.save();
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorship;
 };
 
@@ -107,7 +115,10 @@ const updateGoals = async (mentorshipId, userId, goals) => {
   }
   mentorship.goals = goals;
   await mentorship.save();
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorship;
 };
 
@@ -144,7 +155,10 @@ const completeMentorship = async (mentorshipId, userId) => {
   await mentorship.save();
   const mentorProfile = await MentorProfile.findOne({ user: mentorship.mentor });
   if (mentorProfile) await mentorProfile.decrementMentees();
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorship;
 };
 
@@ -194,7 +208,10 @@ const submitFeedback = async (mentorshipId, userId, { rating, comment }) => {
       await mentorProfile.save();
     }
   }
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorship;
 };
 
@@ -274,7 +291,10 @@ const getMentorshipHistory = async (userId, { status, role }) => {
   else filter.$or = [{ mentor: userId }, { mentee: userId }];
   if (status) filter.status = status;
   else filter.status = { $in: ['completed', 'paused', 'terminated'] };
-  const mentorships = await Mentorship.find(filter).populate('mentor', 'name email avatar').populate('mentee', 'name email avatar').sort('-completedAt -createdAt');
+  const mentorships = await Mentorship.find(filter)
+    .populate('mentor', 'name email avatar profilePicture')
+    .populate('mentee', 'name email avatar profilePicture')
+    .sort({ endDate: -1, completedAt: -1, createdAt: -1 });
   return { data: mentorships, count: mentorships.length };
 };
 

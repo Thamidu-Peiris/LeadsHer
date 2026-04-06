@@ -266,7 +266,7 @@ function BookmarksPanel({ bookmarks, bookmarkCount, onRemove, className = '', ve
 
 /** Right column: horizontal collapse to a slim strip; xl+ only. */
 function BookmarksRightRail({ bookmarks, bookmarkCount, onRemove }) {
-  const [railOpen, setRailOpen] = useState(true);
+  const [railOpen, setRailOpen] = useState(false);
 
   return (
     <aside
@@ -534,38 +534,115 @@ export default function MenteeDashboardResourcesPage() {
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0 flex flex-col min-h-0">
 
-            {/* Search — top of content */}
-            <div className="w-full max-w-2xl mx-auto px-6 sm:px-8 pt-6 pb-4">
-              <form onSubmit={handleSearch}>
-                <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-rose-500 transition-colors text-[20px]">
-                    search
-                  </span>
-                  <input
-                    className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/40 transition-all"
-                    placeholder="Search resources..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                  />
-                </div>
-              </form>
-            </div>
+            <div className="mx-8 mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-outline-variant/40 dark:bg-surface-container-lowest">
+              {/* Search — top of content */}
+              <div className="w-full max-w-2xl mx-auto pb-4">
+                <form onSubmit={handleSearch}>
+                  <div className="relative group">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-rose-500 transition-colors text-[20px]">
+                      search
+                    </span>
+                    <input
+                      className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/40 transition-all"
+                      placeholder="Search resources..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                  </div>
+                </form>
+              </div>
 
-            {/* Type pills — below search */}
-            <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-2 pb-6 px-6">
-              {typePills.map((pill) => (
-                <button
-                  key={pill.key}
-                  onClick={() => handleTypeChange(pill.key)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                    activeType === pill.key
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
+              {/* Type pills — below search */}
+              <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-2 pb-6">
+                {typePills.map((pill) => (
+                  <button
+                    key={pill.key}
+                    onClick={() => handleTypeChange(pill.key)}
+                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                      activeType === pill.key
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Filter row — hidden on Recommended tab */}
+              {activeType !== 'recommended' && (
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-4 pt-5">
+                  <div className="flex flex-wrap items-center gap-3 w-full">
+
+                    {/* Category dropdown */}
+                    <div className="relative min-w-[180px]">
+                      <select
+                        value={filterCategory}
+                        onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+                        className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
+                      >
+                        {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">
+                        expand_more
+                      </span>
+                    </div>
+
+                    {/* Difficulty segmented control */}
+                    <div className="flex flex-wrap sm:flex-nowrap bg-white dark:bg-surface-container-lowest p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => { setFilterDifficulty(''); setPage(1); }}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                          !filterDifficulty
+                            ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
+                            : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
+                        }`}
+                      >
+                        All
+                      </button>
+                      {DIFFICULTIES.map((d) => (
+                        <button
+                          type="button"
+                          key={d}
+                          onClick={() => { setFilterDifficulty(d); setPage(1); }}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
+                            filterDifficulty === d
+                              ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
+                              : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
+                          }`}
+                        >
+                          {d.charAt(0).toUpperCase() + d.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Sort dropdown */}
+                    <div className="relative min-w-[150px]">
+                      <select
+                        value={sort}
+                        onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                        className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
+                      >
+                        {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">
+                        sort
+                      </span>
+                    </div>
+
+                    {(search || filterCategory || filterDifficulty) && (
+                      <button
+                        onClick={() => { setSearch(''); setSearchInput(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
+                        className="flex items-center gap-1 text-xs text-slate-400 dark:text-outline hover:text-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">close</span>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Recommended banner */}
@@ -579,81 +656,6 @@ export default function MenteeDashboardResourcesPage() {
                       Resources curated based on your bookmarks and interests.
                     </p>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Filter row — hidden on Recommended tab */}
-            {activeType !== 'recommended' && (
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-4 px-8 py-5">
-                <div className="flex flex-wrap items-center gap-3 w-full">
-
-                  {/* Category dropdown */}
-                  <div className="relative min-w-[180px]">
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
-                    >
-                      {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">
-                      expand_more
-                    </span>
-                  </div>
-
-                  {/* Difficulty segmented control */}
-                  <div className="flex flex-wrap sm:flex-nowrap bg-white dark:bg-surface-container-lowest p-1 rounded-lg border border-slate-200 dark:border-outline-variant/40 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => { setFilterDifficulty(''); setPage(1); }}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                        !filterDifficulty
-                          ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
-                          : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
-                      }`}
-                    >
-                      All
-                    </button>
-                    {DIFFICULTIES.map((d) => (
-                      <button
-                        type="button"
-                        key={d}
-                        onClick={() => { setFilterDifficulty(d); setPage(1); }}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
-                          filterDifficulty === d
-                            ? 'bg-rose-500 text-white shadow-sm dark:bg-rose-600'
-                            : 'text-slate-600 dark:text-on-surface-variant hover:bg-slate-100 dark:hover:bg-surface-container'
-                        }`}
-                      >
-                        {d.charAt(0).toUpperCase() + d.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Sort dropdown */}
-                  <div className="relative min-w-[150px]">
-                    <select
-                      value={sort}
-                      onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                      className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
-                    >
-                      {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-outline text-[18px]">
-                      sort
-                    </span>
-                  </div>
-
-                  {(search || filterCategory || filterDifficulty) && (
-                    <button
-                      onClick={() => { setSearch(''); setSearchInput(''); setFilterCategory(''); setFilterDifficulty(''); setPage(1); }}
-                      className="flex items-center gap-1 text-xs text-slate-400 dark:text-outline hover:text-red-500 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">close</span>
-                      Clear
-                    </button>
-                  )}
                 </div>
               </div>
             )}

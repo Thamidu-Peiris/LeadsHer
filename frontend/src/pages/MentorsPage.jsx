@@ -7,6 +7,7 @@ import Pagination from '../components/common/Pagination';
 import MentorFilterSidebar, { defaultFilters } from '../components/mentors/MentorFilterSidebar';
 import toast from 'react-hot-toast';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 /** Backend returns { data: MentorProfile[], pagination: { page, pages, ... } } */
 function mentorsFromResponse(body) {
@@ -38,6 +39,15 @@ const SORT_OPTIONS = [
   { value: '-createdAt', label: 'Newest' },
   { value: 'createdAt', label: 'Oldest' },
 ];
+
+function localYmd(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const mo = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
 
 function buildListParams(page, search, applied, sort, category) {
   const expertiseFromSidebar = applied.expertise.length ? applied.expertise.join(',') : undefined;
@@ -178,6 +188,10 @@ export default function MentorsPage() {
     }
     if (!requestForm.preferredStartDate) {
       toast.error('Choose a preferred start date');
+      return;
+    }
+    if (new Date(requestForm.preferredStartDate) <= new Date()) {
+      toast.error('Preferred start date must be in the future');
       return;
     }
     setSubmittingRequest(true);
@@ -349,8 +363,7 @@ export default function MentorsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {mentors.map((m) => {
                     const displayName = m.user?.name || 'Mentor';
-                    const avatarSrc = m.user?.profilePicture || m.user?.avatar;
-                    const initial = displayName[0]?.toUpperCase() || 'M';
+                    const avatarSrc = userDisplayPhoto(m.user || { name: displayName }, { size: 80 });
                     const industries = m.industries || [];
                     const areas = m.mentoringAreas || [];
                     const roleLine =
@@ -370,17 +383,11 @@ export default function MentorsPage() {
                         className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 shadow-sm transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-md dark:border-outline-variant/20 dark:bg-surface-container-lowest dark:hover:border-outline-variant/40"
                       >
                         <div className="flex gap-2.5">
-                          {avatarSrc ? (
-                            <img
-                              src={avatarSrc}
-                              alt=""
-                              className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/30"
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[13px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80 dark:bg-surface-container-high dark:text-on-surface-variant dark:ring-outline-variant/30">
-                              {initial}
-                            </div>
-                          )}
+                          <img
+                            src={avatarSrc}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/30"
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 items-center gap-1">
                               <h2 className="font-serif-alt text-[17px] font-semibold leading-tight text-neutral-900 line-clamp-1 dark:text-on-surface">
@@ -516,6 +523,7 @@ export default function MentorsPage() {
                 </label>
                 <input
                   type="date"
+                  min={localYmd(new Date())}
                   value={requestForm.preferredStartDate}
                   onChange={(e) =>
                     setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))

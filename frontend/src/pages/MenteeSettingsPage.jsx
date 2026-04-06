@@ -122,7 +122,7 @@ export default function MenteeSettingsPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} showAvatar={false} />
 
           <div className="p-8 max-w-5xl space-y-8">
-            <div>
+            <div className="rounded-xl border border-outline-variant/20 bg-white p-6 dark:bg-surface-container-lowest">
               <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Settings</h1>
               <p className="text-on-surface-variant text-sm mt-1">Profile and account security</p>
             </div>

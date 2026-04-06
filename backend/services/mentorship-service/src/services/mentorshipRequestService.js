@@ -38,7 +38,10 @@ const createRequest = async (userId, { mentorId, goals, preferredStartDate, mess
     throw err;
   }
   const mentorshipRequest = await MentorshipRequest.create({ mentor: mentorId, mentee: userId, goals, preferredStartDate: startDate, message });
-  await mentorshipRequest.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorshipRequest.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorshipRequest;
 };
 
@@ -48,12 +51,17 @@ const getRequests = async (userId, userRole, { status, type = 'received' }) => {
   else if (type === 'sent') filter.mentee = userId;
   else filter.$or = [{ mentor: userId }, { mentee: userId }];
   if (status) filter.status = status;
-  const requests = await MentorshipRequest.find(filter).populate('mentor', 'name email avatar').populate('mentee', 'name email avatar').sort('-createdAt');
+  const requests = await MentorshipRequest.find(filter)
+    .populate('mentor', 'name email avatar profilePicture')
+    .populate('mentee', 'name email avatar profilePicture')
+    .sort('-createdAt');
   return { data: requests, count: requests.length };
 };
 
 const getRequestById = async (requestId, userId) => {
-  const request = await MentorshipRequest.findById(requestId).populate('mentor', 'name email avatar bio').populate('mentee', 'name email avatar bio');
+  const request = await MentorshipRequest.findById(requestId)
+    .populate('mentor', 'name email avatar profilePicture bio')
+    .populate('mentee', 'name email avatar profilePicture bio');
   if (!request) {
     const err = new Error('Mentorship request not found');
     err.status = 404;
@@ -120,7 +128,10 @@ const acceptRequest = async (requestId, userId, responseMessage) => {
     mentorProfile.isAvailable = false;
   }
   await mentorProfile.save();
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return { request, mentorship };
 };
 
@@ -145,7 +156,10 @@ const rejectRequest = async (requestId, userId, responseMessage) => {
   request.respondedAt = Date.now();
   request.responseMessage = responseMessage || 'Request rejected';
   await request.save();
-  await request.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await request.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return request;
 };
 
