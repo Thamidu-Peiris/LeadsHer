@@ -80,12 +80,23 @@ export default function MentorDashboardForumPage() {
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Forum' }]} />
 
           <div className="flex-1 p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
-              <div>
-                <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Forum Management</h1>
-                <p className="text-outline text-sm mt-1">Manage your topics — close discussions, view replies, and mark accepted answers</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <section
+              className="mb-8 rounded-xl border border-outline-variant/20 bg-white p-6 shadow-sm dark:border-outline-variant/20 dark:bg-white sm:p-8"
+              aria-labelledby="forum-management-heading"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h1
+                    id="forum-management-heading"
+                    className="font-serif-alt text-3xl font-bold tracking-tight text-on-surface sm:text-4xl"
+                  >
+                    Forum Management
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+                    Manage your topics — close discussions, view replies, and mark accepted answers
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-3">
                 <Link
                   to="/forum"
                   target="_blank"
@@ -103,7 +114,8 @@ export default function MentorDashboardForumPage() {
                   New Discussion
                 </Link>
               </div>
-            </div>
+              </div>
+            </section>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
