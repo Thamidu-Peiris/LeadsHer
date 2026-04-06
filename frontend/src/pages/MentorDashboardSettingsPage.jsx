@@ -40,6 +40,7 @@ export default function MentorDashboardSettingsPage() {
   const [sendingReset, setSendingReset] = useState(false);
   const [pictureFile, setPictureFile] = useState(null);
   const [picturePreview, setPicturePreview] = useState('');
+  const [profileName, setProfileName] = useState(user?.name || '');
   const [resetEmail, setResetEmail] = useState(user?.email || '');
 
   const [profile, setProfile] = useState(null);
@@ -59,6 +60,10 @@ export default function MentorDashboardSettingsPage() {
     user?.profilePicture ||
     user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
+  useEffect(() => {
+    setProfileName(user?.name || '');
+  }, [user?.name]);
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
@@ -152,10 +157,22 @@ export default function MentorDashboardSettingsPage() {
     };
     setSaving(true);
     try {
+      const trimmedName = profileName.trim();
+      if (!trimmedName) {
+        toast.error('Name is required');
+        setSaving(false);
+        return;
+      }
+
       if (pictureFile) {
         const fd = new FormData();
+        fd.append('name', trimmedName);
         fd.append('profilePicture', pictureFile);
         const res = await authApi.updateProfileMultipart(fd);
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      } else if (trimmedName !== String(user?.name || '').trim()) {
+        const res = await authApi.updateProfile({ name: trimmedName });
         const u = res.data?.user || res.data;
         if (u) updateUser(u);
       }
@@ -281,6 +298,15 @@ export default function MentorDashboardSettingsPage() {
                 <div className="flex justify-center py-16"><Spinner size="lg" /></div>
               ) : (
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Name *</label>
+                    <input
+                      className="w-full input"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Your name"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Profile picture</label>
                     <div className="flex items-center gap-4">
