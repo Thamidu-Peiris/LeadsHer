@@ -336,6 +336,7 @@ export default function MentorDashboardCreateStoryPage() {
           <div className="flex flex-1 min-h-0">
             <section className="flex-1 min-w-0 overflow-y-auto bg-[#FFE6F5] dark:bg-surface-container-lowest border-r border-outline-variant/10">
               <div className="max-w-3xl mx-auto px-5 py-6 lg:px-8 lg:py-7">
+                <div className="rounded-xl border border-outline-variant/20 bg-white p-5 shadow-sm sm:p-6">
                 <div className="mb-7">
                   <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
                     Cover
@@ -442,6 +443,7 @@ export default function MentorDashboardCreateStoryPage() {
                   onChange={(html) => setField('content', html)}
                   disabled={saving}
                 />
+                </div>
               </div>
             </section>
 
