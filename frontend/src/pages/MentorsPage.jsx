@@ -561,7 +561,7 @@ export default function MentorsPage() {
                 type="button"
                 disabled={submittingRequest}
                 onClick={submitMentorshipRequest}
-                className="rounded-lg bg-gold-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-gold-accent/25 transition-all hover:brightness-95 disabled:opacity-60"
+                className="rounded-lg bg-rose-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-rose-500/25 transition-all hover:bg-rose-600 disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Send request'}
               </button>

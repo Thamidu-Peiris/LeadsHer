@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { mentorApi } from '../../api/mentorApi';
-import toast from 'react-hot-toast';
-import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 const FALLBACK_MENTORS = [
   { _id: '1', name: 'Dr. Seraphina Hall',  specialty: 'Organizational Psychology', tags: ['Conflict Res', 'Team Culture'],   initials: 'SH' },
@@ -26,7 +23,6 @@ const MENTOR_IMAGES = [
 ];
 
 export default function MentorSpotlight() {
-  const { isAuthenticated } = useAuth();
   const [mentors, setMentors] = useState(FALLBACK_MENTORS);
 
   useEffect(() => {
@@ -37,16 +33,6 @@ export default function MentorSpotlight() {
       })
       .catch(() => {});
   }, []);
-
-  const handleRequest = async (mentorId) => {
-    if (!isAuthenticated) { toast.error('Sign in to request mentorship'); return; }
-    try {
-      await mentorApi.sendRequest(mentorId, { message: 'I would love to connect!' });
-      toast.success('Mentorship request sent!');
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to send request'));
-    }
-  };
 
   return (
     <section className="py-32 bg-[#F1EFEA] dark:bg-surface-container-lowest">
@@ -120,13 +106,6 @@ export default function MentorSpotlight() {
                     </span>
                   ))}
                 </div>
-
-                <button
-                  onClick={() => handleRequest(m._id)}
-                  className="w-full border border-primary text-primary py-4 font-label text-xs tracking-widest uppercase hover:bg-secondary-container/20 transition-all"
-                >
-                  Request Guidance
-                </button>
               </div>
             );
           })}
