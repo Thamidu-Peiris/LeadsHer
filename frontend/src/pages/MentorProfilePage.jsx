@@ -4,7 +4,7 @@ import { mentorApi } from '../api/mentorApi';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
-import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
+import { absolutePhotoUrl, userDisplayPhoto } from '../utils/absolutePhotoUrl';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const TABS = [
@@ -227,8 +227,7 @@ export default function MentorProfilePage() {
   if (!profile) return null;
 
   const displayName = profile.user?.name || 'Mentor';
-  const avatarSrc = profile.user?.profilePicture || profile.user?.avatar;
-  const initial = displayName[0]?.toUpperCase() || 'M';
+  const avatarSrc = userDisplayPhoto(profile.user || { name: displayName }, { size: 240 });
   const industries = profile.industries || [];
   const areas = profile.mentoringAreas || [];
   const expertiseList = profile.expertise || [];
@@ -265,13 +264,7 @@ export default function MentorProfilePage() {
           <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row items-center lg:items-end gap-10">
             <div className="relative shrink-0">
               <div className="w-[120px] h-[120px] rounded-full p-1 ring-2 ring-rose-500">
-                {avatarSrc ? (
-                  <img src={avatarSrc} alt="" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-neutral-100 flex items-center justify-center text-3xl font-semibold text-neutral-600">
-                    {initial}
-                  </div>
-                )}
+                <img src={avatarSrc} alt="" className="w-full h-full object-cover rounded-full" />
               </div>
               {profile.isVerified ? (
                 <div

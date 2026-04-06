@@ -53,9 +53,29 @@ export default function MenteeDashboardStoriesPage() {
                 <h2 className="font-serif-alt text-xl font-bold text-on-surface mb-4">Top Stories Right Now</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {topStories.map((s) => (
-                    <div key={s._id} className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4">
-                      <p className="font-semibold text-sm text-on-surface line-clamp-2">{s.title}</p>
-                      <p className="text-xs text-outline mt-2">{s.views || 0} views</p>
+                    <div key={s._id} className="overflow-hidden rounded-xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest">
+                      <Link to={`/stories/${s._id}`} className="block group">
+                        <div className="aspect-[16/9] overflow-hidden bg-surface-container-low">
+                          {s.coverImage ? (
+                            <img
+                              src={s.coverImage}
+                              alt={s.title}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/25 to-secondary/20">
+                              <span className="font-serif-alt text-4xl text-white/40">{s.title?.[0] || 'S'}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-outline">
+                            {s.category === 'STEM' ? 'Future Tech' : 'Story'}
+                          </p>
+                          <p className="mt-1 font-semibold text-sm text-on-surface line-clamp-2">{s.title}</p>
+                          <p className="text-xs text-outline mt-2">{s.views || 0} views</p>
+                        </div>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -71,7 +91,11 @@ export default function MenteeDashboardStoriesPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {stories.map((s) => <StoryCard key={s._id} story={s} />)}
+                  {stories.map((s, idx) => (
+                    <div key={s._id} className="rounded-xl border border-outline-variant/20 bg-white p-4 dark:bg-surface-container-lowest">
+                      <StoryCard story={s} idx={idx} />
+                    </div>
+                  ))}
                 </div>
               )}
             </section>

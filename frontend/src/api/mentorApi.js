@@ -10,6 +10,7 @@ export const mentorApi = {
   getHistory: () => api.get('/mentorship/history'),
   getMyProfile: () => api.get('/mentors/me/profile'),
   upsertProfile: (data) => api.put('/mentors/profile', data),
+  deleteMyProfile: () => api.delete('/mentors/profile'),
   toggleAvailability: () => api.put('/mentors/availability'),
   adminSetVerification: (mentorProfileId, verified) =>
     api.put(`/mentors/${mentorProfileId}/verification`, { verified }),

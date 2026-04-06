@@ -10,6 +10,7 @@ import { mentorApi } from '../api/mentorApi';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 function mentorsFromResponse(body) {
   if (!body) return [];
@@ -40,6 +41,7 @@ function StarRow({ rating, className = 'text-[15px]' }) {
 function safeList(res) {
   const data = res?.data;
   if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.mentorships)) return data.mentorships;
   if (Array.isArray(data?.mentors)) return data.mentors;
   if (Array.isArray(data?.data?.mentors)) return data.data.mentors;
   if (Array.isArray(data?.requests)) return data.requests;
@@ -55,6 +57,44 @@ function formatDate(d) {
   } catch {
     return '';
   }
+}
+
+/** Avatar from populated mentor user (User.profilePicture / avatar) or name fallback. */
+function MentorFace({ mentor, displayName, size = 'md' }) {
+  const user =
+    mentor && typeof mentor === 'object'
+      ? mentor
+      : { name: displayName || 'Mentor' };
+  const dim = size === 'lg' ? 'h-14 w-14' : size === 'sm' ? 'h-10 w-10' : 'h-12 w-12';
+  const px = size === 'lg' ? 128 : size === 'sm' ? 80 : 96;
+  return (
+    <img
+      src={userDisplayPhoto(user, { size: px })}
+      alt=""
+      className={`${dim} shrink-0 rounded-full border border-outline-variant/25 bg-surface-container-lowest object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/20`}
+    />
+  );
+}
+
+function FeedbackSubmittedStars({ rating }) {
+  const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return (
+    <span
+      className="inline-flex items-center gap-px text-[14px] leading-none tracking-tight"
+      role="img"
+      aria-label={`${r} out of 5 stars`}
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span
+          key={i}
+          className={i < r ? 'text-amber-400' : 'text-neutral-300 dark:text-neutral-500'}
+          aria-hidden
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function localYmd(d) {
@@ -129,31 +169,34 @@ export default function MenteeDashboardMentorsPage() {
     });
   }, [directoryPage, appliedSearch, sortBy]);
 
-  const loadMyMentorship = async () => {
-    const [r, a, h] = await Promise.allSettled([
-      mentorshipApi.getRequests(),
-      mentorshipApi.getActive(),
-      mentorshipApi.getHistory(),
-    ]);
-    if (r.status === 'fulfilled') setRequests(safeList(r.value));
-    if (a.status === 'fulfilled') setActive(safeList(a.value));
-    if (h.status === 'fulfilled') setHistory(safeList(h.value));
-  };
+  const loadMyMentorship = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
+    if (showLoading) setLoading(true);
+    try {
+      const [r, a, h] = await Promise.allSettled([
+        mentorshipApi.getRequests(),
+        mentorshipApi.getActive(),
+        mentorshipApi.getHistory(),
+      ]);
+      if (r.status === 'fulfilled') setRequests(safeList(r.value));
+      if (a.status === 'fulfilled') setActive(safeList(a.value));
+      if (h.status === 'fulfilled') setHistory(safeList(h.value));
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        await loadMyMentorship();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    loadMyMentorship({ showLoading: true });
+  }, [loadMyMentorship]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadMyMentorship({ showLoading: false });
     };
-  }, []);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadMyMentorship]);
 
   useEffect(() => {
     if (tab !== 'directory') return;
@@ -184,6 +227,10 @@ export default function MenteeDashboardMentorsPage() {
     }
     if (!requestForm.preferredStartDate) {
       toast.error('Choose a preferred start date');
+      return;
+    }
+    if (new Date(requestForm.preferredStartDate) <= new Date()) {
+      toast.error('Preferred start date must be in the future');
       return;
     }
     setSubmitting(true);
@@ -368,8 +415,7 @@ export default function MenteeDashboardMentorsPage() {
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {mentors.map((m) => {
                               const displayName = m.user?.name || 'Mentor';
-                              const avatarSrc = m.user?.profilePicture || m.user?.avatar;
-                              const initial = displayName[0]?.toUpperCase() || 'M';
+                              const avatarSrc = userDisplayPhoto(m.user || { name: displayName }, { size: 80 });
                               const industries = m.industries || [];
                               const areas = m.mentoringAreas || [];
                               const roleLine =
@@ -390,17 +436,11 @@ export default function MenteeDashboardMentorsPage() {
                                   className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 transition-[border-color] hover:border-neutral-300 dark:border-outline-variant/20 dark:bg-surface-container-lowest"
                                 >
                                   <div className="flex gap-2.5">
-                                    {avatarSrc ? (
-                                      <img
-                                        src={avatarSrc}
-                                        alt=""
-                                        className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80"
-                                      />
-                                    ) : (
-                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[13px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80">
-                                        {initial}
-                                      </div>
-                                    )}
+                                    <img
+                                      src={avatarSrc}
+                                      alt=""
+                                      className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80"
+                                    />
                                     <div className="min-w-0 flex-1">
                                       <div className="flex min-w-0 items-center gap-1">
                                         <h2 className="font-serif-alt text-[17px] font-semibold leading-tight text-neutral-900 line-clamp-1 dark:text-on-surface">
@@ -512,16 +552,21 @@ export default function MenteeDashboardMentorsPage() {
                       <p className="text-on-surface-variant">No requests yet.</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {requests.map((r) => (
+                        {requests.map((r) => {
+                          const mentorName = r?.mentor?.name || 'Mentor';
+                          return (
                           <div key={r._id} className="border border-outline-variant/20 rounded-xl p-6">
                             <div className="flex items-start justify-between gap-4">
-                              <div>
+                              <div className="flex min-w-0 flex-1 gap-4">
+                                <MentorFace mentor={r?.mentor} displayName={mentorName} size="lg" />
+                                <div className="min-w-0">
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                <p className="font-semibold text-on-surface">{r?.mentor?.name || 'Mentor'}</p>
+                                <p className="font-semibold text-on-surface">{mentorName}</p>
                                 <p className="text-xs text-outline mt-1">Preferred start: {formatDate(r?.preferredStartDate)}</p>
                                 <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">
                                   {r?.message || 'No request message.'}
                                 </p>
+                                </div>
                               </div>
                               <span
                                 className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
@@ -559,7 +604,8 @@ export default function MenteeDashboardMentorsPage() {
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -578,14 +624,18 @@ export default function MenteeDashboardMentorsPage() {
                           const sessionCount = m?.sessions?.length || 0;
                           const goals = m?.goals || [];
                           const isExpanded = expandedId === m._id;
+                          const mentorName = m?.mentor?.name || 'Mentor';
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MentorFace mentor={m?.mentor} displayName={mentorName} size="lg" />
+                                  <div className="min-w-0">
                                   <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  <p className="font-semibold text-on-surface text-lg">{mentorName}</p>
                                   {m?.mentor?.email && <p className="text-xs text-outline">{m.mentor.email}</p>}
                                   <p className="text-xs text-outline mt-1">Started: {formatDate(m?.startDate)} · Sessions: {sessionCount}</p>
+                                  </div>
                                 </div>
                                 <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
                                   {m?.status || 'active'}
@@ -656,16 +706,20 @@ export default function MenteeDashboardMentorsPage() {
                       <div className="space-y-4">
                         {history.map((m) => {
                           const hasMenteeFeedback = !!m?.feedback?.menteeRating;
+                          const mentorName = m?.mentor?.name || 'Mentor';
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MentorFace mentor={m?.mentor} displayName={mentorName} size="lg" />
+                                  <div className="min-w-0">
                                   <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  <p className="font-semibold text-on-surface text-lg">{mentorName}</p>
                                   <p className="text-xs text-outline mt-1">
                                     Started: {formatDate(m?.startDate)} · {m?.completedAt ? `Completed: ${formatDate(m.completedAt)}` : `Ended: ${formatDate(m?.endDate)}`}
                                   </p>
                                   <p className="text-xs text-outline">Sessions: {m?.sessions?.length || 0}</p>
+                                  </div>
                                 </div>
                                 <span className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
                                   m?.status === 'completed' ? 'border-green-300 text-green-700 bg-green-50' :
@@ -687,7 +741,10 @@ export default function MenteeDashboardMentorsPage() {
                                 </div>
                               )}
                               {hasMenteeFeedback && (
-                                <p className="mt-3 text-xs text-green-700 font-semibold">✓ Feedback submitted (Rating: {m.feedback.menteeRating}/5)</p>
+                                <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-green-700 dark:text-green-400">
+                                  <span>✓ Feedback submitted</span>
+                                  <FeedbackSubmittedStars rating={m.feedback.menteeRating} />
+                                </p>
                               )}
                             </div>
                           );
@@ -717,15 +774,22 @@ export default function MenteeDashboardMentorsPage() {
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace
+                          mentor={requestingMentor?.user}
+                          displayName={requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}
+                          size="md"
+                        />
+                        <div className="min-w-0">
                         <h3 id="request-mentorship-title" className="font-serif-alt text-xl font-bold text-on-surface">
                           Request Mentorship
                         </h3>
                         <p className="text-xs text-outline">
                           Mentor: {requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}
                         </p>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => setRequestingMentor(null)} className="text-outline hover:text-on-surface">
+                      <button type="button" onClick={() => setRequestingMentor(null)} className="shrink-0 text-outline hover:text-on-surface">
                         <span className="material-symbols-outlined">close</span>
                       </button>
                     </div>
@@ -735,6 +799,7 @@ export default function MenteeDashboardMentorsPage() {
                         <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Preferred start date</label>
                         <input
                           type="date"
+                          min={localYmd(new Date())}
                           value={requestForm.preferredStartDate}
                           onChange={(e) => setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))}
                           className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
@@ -793,11 +858,14 @@ export default function MenteeDashboardMentorsPage() {
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace mentor={goalsFor?.mentor} displayName={goalsFor?.mentor?.name || 'Mentor'} size="md" />
+                        <div className="min-w-0">
                         <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
                         <p className="text-xs text-outline">Mentor: {goalsFor?.mentor?.name || 'Mentor'}</p>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
+                      <button type="button" onClick={() => setGoalsFor(null)} className="shrink-0 text-outline hover:text-on-surface">
                         <span className="material-symbols-outlined">close</span>
                       </button>
                     </div>
@@ -838,11 +906,14 @@ export default function MenteeDashboardMentorsPage() {
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace mentor={feedbackFor?.mentor} displayName={feedbackFor?.mentor?.name || 'Mentor'} size="md" />
+                        <div className="min-w-0">
                         <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
                         <p className="text-xs text-outline">Mentor: {feedbackFor?.mentor?.name || 'Mentor'}</p>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface">
+                      <button type="button" onClick={() => setFeedbackFor(null)} className="shrink-0 text-outline hover:text-on-surface">
                         <span className="material-symbols-outlined">close</span>
                       </button>
                     </div>

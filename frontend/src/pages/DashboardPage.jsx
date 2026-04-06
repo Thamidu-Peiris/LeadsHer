@@ -597,24 +597,66 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-rose-600 dark:text-rose-400">calendar_today</span> Upcoming Events
+                    <span className="material-symbols-outlined text-black dark:text-neutral-100">calendar_today</span> Upcoming Events
                   </h3>
                   {myEvents.length === 0 ? (
                     <p className="text-outline text-sm">No registered events yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {myEvents.slice(0, 2).map((e) => (
-                        <Link
-                          key={e._id}
-                          to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-rose-500/40 transition-colors rounded-lg"
-                        >
-                          <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
-                        </Link>
-                      ))}
+                      {myEvents.slice(0, 3).map((e) => {
+                        const coverUrl = menteeEventCoverUrl(e);
+                        const whenLine = menteeEventDateTimeLine(e);
+                        return (
+                          <Link
+                            key={e._id}
+                            to={`/events/${e._id}`}
+                            className="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          >
+                            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-slate-100 dark:bg-slate-800">
+                              {coverUrl ? (
+                                <img
+                                  src={coverUrl}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-full items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+                                  aria-hidden
+                                >
+                                  <span className="material-symbols-outlined text-[26px] text-rose-200 dark:text-rose-800/70">
+                                    event
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
+                              {whenLine && (
+                                <p className="text-[10px] text-outline mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px] shrink-0 text-rose-600 dark:text-rose-400">
+                                    schedule
+                                  </span>
+                                  <span className="min-w-0 line-clamp-1">{whenLine}</span>
+                                </p>
+                              )}
+                              <p className={`text-[10px] text-outline flex items-center gap-1 ${whenLine ? 'mt-0.5' : 'mt-1'}`}>
+                                <span className="material-symbols-outlined text-[12px] shrink-0 text-outline">
+                                  {e.type === 'virtual' ? 'videocam' : 'location_on'}
+                                </span>
+                                <span className="min-w-0 line-clamp-1">{menteeEventLocationLine(e)}</span>
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
+                  <Link to="/dashboard/events" className="text-black dark:text-neutral-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                    Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </Link>
                 </div>
 
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
@@ -1155,6 +1197,8 @@ function AdminDashboard({ user }) {
   const [manageAccountFilterOpen, setManageAccountFilterOpen] = useState(false);
   const [mentorAccountPage, setMentorAccountPage] = useState(1);
   const [menteeAccountPage, setMenteeAccountPage] = useState(1);
+  const [terminateDialog, setTerminateDialog] = useState({ open: false, id: null });
+  const [terminateSubmitting, setTerminateSubmitting] = useState(false);
 
   const loadAdminData = async () => {
     setLoadingAdmin(true);
@@ -1285,14 +1329,27 @@ function AdminDashboard({ user }) {
     }
   };
 
-  const terminateMentorship = async (id) => {
-    if (!window.confirm('Terminate this mentorship?')) return;
+  const openTerminateDialog = (id) => {
+    setTerminateDialog({ open: true, id });
+  };
+
+  const closeTerminateDialog = () => {
+    if (terminateSubmitting) return;
+    setTerminateDialog({ open: false, id: null });
+  };
+
+  const confirmTerminateMentorship = async () => {
+    if (!terminateDialog.id) return;
+    setTerminateSubmitting(true);
     try {
-      await mentorshipApi.adminTerminate(id, 'Terminated by admin');
+      await mentorshipApi.adminTerminate(terminateDialog.id, 'Terminated by admin');
       toast.success('Mentorship terminated');
+      setTerminateDialog({ open: false, id: null });
       await loadAdminData();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to terminate mentorship');
+    } finally {
+      setTerminateSubmitting(false);
     }
   };
 
@@ -1775,7 +1832,7 @@ function AdminDashboard({ user }) {
                     requests={requests}
                     activeMentorships={activeMentorships}
                     feedbackRows={feedbackRows}
-                    onTerminate={terminateMentorship}
+                    onTerminate={openTerminateDialog}
                     variant={
                       isViewAllMentorshipRequests
                         ? 'all-requests'
@@ -1848,6 +1905,60 @@ function AdminDashboard({ user }) {
             </div>
             )}
           </div>
+
+      {terminateDialog.open && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close terminate dialog"
+            className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
+            onClick={closeTerminateDialog}
+            disabled={terminateSubmitting}
+          />
+          <div
+            className="relative w-full max-w-md rounded-xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-2xl p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terminate-mentorship-title"
+          >
+            <h3
+              id="terminate-mentorship-title"
+              className="font-serif-alt text-xl font-bold text-on-surface"
+            >
+              Terminate mentorship?
+            </h3>
+            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+              This ends the active mentorship for the mentor and mentee. They can start a new mentorship later if
+              they choose.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeTerminateDialog}
+                disabled={terminateSubmitting}
+                className="px-4 py-2.5 rounded-lg border border-outline-variant/25 bg-white dark:bg-surface-container text-sm font-semibold text-on-surface hover:border-outline-variant/40 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmTerminateMentorship}
+                disabled={terminateSubmitting}
+                className="inline-flex min-w-[10rem] items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 dark:bg-red-600 dark:hover:bg-red-500"
+              >
+                {terminateSubmitting ? (
+                  <>
+                    <Spinner size="sm" className="text-white" />
+                    Terminating…
+                  </>
+                ) : (
+                  'Yes, terminate'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editModalOpen && (
         <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
