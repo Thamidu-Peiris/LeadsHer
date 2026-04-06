@@ -1,38 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
-
-const TESTIMONIALS = [
-  {
-    quote: 'Found my first mentor through LeadsHer. The connection was instant and transformative.',
-    name: 'Elena R.',
-    title: 'CEO',
-    initials: 'ER',
-    borderColor: '#ffb0cb',
-  },
-  {
-    quote: 'The insights I gained here saved me years of trial and error.',
-    name: 'Sarah L.',
-    title: 'Creative Director',
-    initials: 'SL',
-    borderColor: '#7b5bbe',
-    indent: true,
-  },
-];
 
 function strengthInfo(pw) {
   if (!pw)           return { label: '',          filled: 0, color: '' };
   if (pw.length < 6) return { label: 'Too short', filled: 1, color: 'bg-error' };
   if (pw.length < 8) return { label: 'Weak',      filled: 2, color: 'bg-tertiary' };
-  if (!/[^a-zA-Z0-9]/.test(pw)) return { label: 'Moderate', filled: 3, color: 'bg-gold-accent' };
-  return { label: 'Strong', filled: 4, color: 'bg-gold-accent' };
+  if (!/[^a-zA-Z0-9]/.test(pw)) return { label: 'Moderate', filled: 3, color: 'bg-[#f43f5e]' };
+  return { label: 'Strong', filled: 4, color: 'bg-[#f43f5e]' };
 }
 
 export default function RegisterPage() {
   const { register, isAuthenticated } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const [step, setStep]         = useState(1);
@@ -42,6 +22,15 @@ export default function RegisterPage() {
   const [form, setForm]         = useState({
     name: '', email: '', password: '', confirm: '', role: 'mentee',
   });
+  const leftPanelImages = [
+    'images/image1.png',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&h=1200&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&h=1200&fit=crop&q=80',
+  ];
+  const leftPanelImage = useMemo(
+    () => leftPanelImages[Math.floor(Math.random() * leftPanelImages.length)],
+    []
+  );
 
   if (isAuthenticated) { navigate('/'); return null; }
 
@@ -86,57 +75,53 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex w-full bg-white dark:bg-surface min-h-[calc(100vh-4rem)]">
+    <div className="flex w-full bg-[#FFE6F5] dark:bg-[#120d1a] min-h-[calc(100vh-4rem)]">
 
       {/* ─── LEFT PANEL ─────────────────────────────────── */}
-      <aside
-        className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-between sticky top-16 self-start h-[calc(100vh-4rem)]"
-        style={theme === 'dark' ? {
-          background: 'rgb(43 41 59)',
-          backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(208,188,255,0.08) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(239,184,200,0.08) 0%, transparent 45%)',
-        } : {
-          background: '#FDF0F3',
-          backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(212,175,55,0.10) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(218,112,143,0.12) 0%, transparent 45%)',
-        }}
-      >
-
+      <aside className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-end self-start min-h-screen min-h-[100dvh]">
+        <img
+          src={leftPanelImage}
+          alt="Women leadership inspiration"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/55" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(244,63,94,0.26)_0%,transparent_44%),radial-gradient(circle_at_85%_60%,rgba(244,114,182,0.2)_0%,transparent_44%)]" />
         {/* Quote + testimonials */}
-        <div className="z-10 space-y-10 max-w-xs">
-          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-tertiary-container">
-            "Your story is the map for someone else's journey."
+        <div className="z-10 space-y-10 max-w-md mt-auto mb-8">
+          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-rose-100">
+            "Leadership begins the moment you decide to lift someone else."
           </blockquote>
 
           <div className="space-y-7">
-            {TESTIMONIALS.map(({ quote, name, title, indent }) => (
-              <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-gold-accent/40 pl-4`}>
-                <p className="font-sans-modern text-sm text-on-surface-variant italic leading-relaxed">
-                  "{quote}"
-                </p>
-                <span className="text-[10px] font-brand font-semibold tracking-[0.15em] uppercase text-outline">
-                  {name} · {title}
-                </span>
-              </div>
-            ))}
+            {[{ quote: 'Every session with my mentor moves the needle. I keep coming back.', name: 'Dana K.', title: 'Product Lead' }]
+              .map(({ quote, name, title, indent }) => (
+                <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-rose-300/70 pl-4`}>
+                  <p className="font-sans-modern text-sm text-rose-100/90 italic leading-relaxed">
+                    "{quote}"
+                  </p>
+                  <span className="text-[10px] font-brand font-semibold tracking-[0.15em] uppercase text-rose-200/85">
+                    {name} · {title}
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
 
         {/* Stat badge */}
         <div className="z-10">
-          <div className="inline-flex items-center gap-2.5 bg-white dark:bg-surface-container px-5 py-2.5 shadow-sm border border-outline-variant/20">
-            <span className="w-2 h-2 rounded-full bg-gold-accent animate-pulse flex-shrink-0" />
-            <p className="font-sans-modern text-sm font-medium text-on-surface">
-              Join <span className="text-gold-accent font-bold">2,400+</span> women leaders
+          <div className="inline-flex items-center gap-2.5 bg-black/35 backdrop-blur-sm px-5 py-2.5 shadow-sm border border-rose-200/35">
+            <span className="w-2 h-2 rounded-full bg-[#f43f5e] animate-pulse flex-shrink-0" />
+            <p className="font-sans-modern text-sm font-medium text-rose-100">
+              <span className="text-rose-300 font-bold">2,400+</span> women leaders inside
             </p>
           </div>
         </div>
 
         {/* Decorative rings */}
-        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-gold-accent/10 rounded-full pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-tertiary/8 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-rose-200/25 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-rose-300/20 rounded-full pointer-events-none" />
       </aside>
 
       {/* ─── RIGHT PANEL ────────────────────────────────── */}
@@ -171,31 +156,31 @@ export default function RegisterPage() {
                 <div className="space-y-7">
                   {/* Full name */}
                   <div className="group">
-                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-primary transition-colors">
+                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-[#f43f5e] transition-colors">
                       Full Name
                     </label>
                     <input
                       type="text" name="name" value={form.name} onChange={handleChange}
                       placeholder="Alexandra Sterling" autoComplete="name"
-                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                   </div>
 
                   {/* Email */}
                   <div className="group">
-                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-primary transition-colors">
+                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-[#f43f5e] transition-colors">
                       Email Address
                     </label>
                     <input
                       type="email" name="email" value={form.email} onChange={handleChange}
                       placeholder="you@leadsher.com" autoComplete="email"
-                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                   </div>
 
                   {/* Password */}
                   <div className="group">
-                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-primary transition-colors">
+                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-[#f43f5e] transition-colors">
                       Password
                     </label>
                     <div className="relative">
@@ -203,11 +188,11 @@ export default function RegisterPage() {
                         type={showPw ? 'text' : 'password'}
                         name="password" value={form.password} onChange={handleChange}
                         placeholder="Min. 6 characters" autoComplete="new-password"
-                        className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 pr-9 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                        className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 pr-9 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                       />
                       <button
                         type="button" onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 text-outline hover:text-[#f43f5e] transition-colors"
                       >
                         <span className="material-symbols-outlined text-xl">{showPw ? 'visibility_off' : 'visibility'}</span>
                       </button>
@@ -230,13 +215,13 @@ export default function RegisterPage() {
 
                   {/* Confirm password */}
                   <div className="group">
-                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-primary transition-colors">
+                    <label className="block font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline mb-2 group-focus-within:text-[#f43f5e] transition-colors">
                       Confirm Password
                     </label>
                     <input
                       type="password" name="confirm" value={form.confirm} onChange={handleChange}
                       placeholder="Repeat your password" autoComplete="new-password"
-                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                      className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                     />
                     {form.confirm && form.confirm !== form.password && (
                       <p className="text-[10px] mt-1.5 text-error tracking-wider uppercase">Passwords do not match</p>
@@ -247,7 +232,7 @@ export default function RegisterPage() {
                   <div className="pt-4 space-y-4">
                     <button
                       type="button" onClick={goNext}
-                      className="w-full bg-gold-accent text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                      className="w-full bg-[#f43f5e] text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md shadow-rose-500/25 hover:bg-[#e11d48] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                     >
                       Continue
                       <span className="material-symbols-outlined text-base text-white">arrow_forward</span>
@@ -263,10 +248,10 @@ export default function RegisterPage() {
                     </div>
 
                     {/* OAuth */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       <button
                         type="button"
-                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all"
+                        className="flex items-center justify-center gap-2.5 rounded-lg border border-[#f43f5e]/45 bg-rose-50 py-3.5 font-sans-modern text-sm font-semibold text-[#be185d] hover:border-[#f43f5e] hover:bg-rose-100 dark:bg-[#2a1734] dark:text-rose-200 dark:hover:bg-[#341d41] transition-all"
                       >
                         <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -275,15 +260,6 @@ export default function RegisterPage() {
                           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
                         Google
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all"
-                      >
-                        <svg className="w-4 h-4 fill-[#0077b5] flex-shrink-0" viewBox="0 0 24 24">
-                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                        </svg>
-                        LinkedIn
                       </button>
                     </div>
                   </div>
@@ -295,8 +271,8 @@ export default function RegisterPage() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-5">
                     {[
-                      { value: 'mentor', icon: 'auto_awesome', label: 'Mentor', desc: 'Guide the next generation of visionary women.', iconColor: 'text-gold-accent' },
-                      { value: 'mentee', icon: 'psychology',   label: 'Mentee', desc: 'Accelerate your journey with expert wisdom.',   iconColor: 'text-tertiary' },
+                      { value: 'mentor', icon: 'auto_awesome', label: 'Mentor', desc: 'Guide the next generation of visionary women.', iconColor: 'text-[#f43f5e]' },
+                      { value: 'mentee', icon: 'psychology',   label: 'Mentee', desc: 'Accelerate your journey with expert wisdom.',   iconColor: 'text-[#f43f5e]' },
                     ].map(({ value, icon, label, desc, iconColor }) => {
                       const active = form.role === value;
                       return (
@@ -304,8 +280,8 @@ export default function RegisterPage() {
                           key={value}
                           className={`cursor-pointer border-2 p-7 flex flex-col items-center text-center transition-all select-none ${
                             active
-                              ? 'border-gold-accent shadow-[0_0_24px_rgba(212,175,55,0.25)] bg-white dark:bg-surface-container'
-                              : 'border-outline-variant bg-white dark:bg-surface-container hover:border-gold-accent/60'
+                              ? 'border-[#f43f5e] shadow-[0_0_24px_rgba(244,63,94,0.25)] bg-white dark:bg-surface-container'
+                              : 'border-outline-variant bg-white dark:bg-surface-container hover:border-[#f43f5e]/60'
                           }`}
                         >
                           <input type="radio" name="role" value={value}
@@ -323,7 +299,7 @@ export default function RegisterPage() {
                           <div className={`mt-5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
                             active ? 'border-gold-accent' : 'border-outline-variant'
                           }`}>
-                            {active && <div className="w-2 h-2 rounded-full bg-gold-accent" />}
+                            {active && <div className="w-2 h-2 rounded-full bg-[#f43f5e]" />}
                           </div>
                         </label>
                       );
@@ -347,7 +323,7 @@ export default function RegisterPage() {
                   <div className="pt-2 space-y-3">
                     <button
                       type="submit" disabled={loading}
-                      className="w-full bg-gold-accent text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-60"
+                      className="w-full bg-[#f43f5e] text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md shadow-rose-500/25 hover:bg-[#e11d48] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-60"
                     >
                       {loading
                         ? <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -356,7 +332,7 @@ export default function RegisterPage() {
                     </button>
                     <button
                       type="button" onClick={() => { setStep(1); setError(''); }}
-                      className="w-full border border-outline-variant py-3.5 font-brand text-xs tracking-[0.18em] uppercase text-outline hover:border-primary hover:text-primary transition-all"
+                      className="w-full border border-outline-variant py-3.5 font-brand text-xs tracking-[0.18em] uppercase text-outline hover:border-[#f43f5e] hover:text-[#f43f5e] transition-all"
                     >
                       ← Back
                     </button>
@@ -368,7 +344,7 @@ export default function RegisterPage() {
 
             <p className="font-sans-modern text-sm text-outline text-center mt-8">
               Already a member?{' '}
-              <Link to="/login" className="text-primary font-bold hover:underline">
+              <Link to="/login" className="text-[#f43f5e] font-bold hover:underline">
                 Log In
               </Link>
             </p>
