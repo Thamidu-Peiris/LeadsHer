@@ -107,7 +107,7 @@ export default function Hero() {
           {HERO_PROFILES.map((p) => (
             <div
               key={p.name}
-              className={`${p.pos} bg-surface-container-lowest dark:bg-[#3b1026] p-4 editorial-shadow border border-primary/10 dark:border-[#f43f5e]/45 transform ${p.rotate}`}
+              className={`${p.pos} bg-[#ffeaf4] dark:bg-[#ffd9eb] p-4 editorial-shadow border border-primary/10 dark:border-[#f43f5e]/45 transform ${p.rotate}`}
             >
               <div className="relative">
                 <div className="absolute -top-2 -left-2 w-full h-full border border-gold-accent/40 dark:border-[#f43f5e]/45 pointer-events-none" />
@@ -123,13 +123,13 @@ export default function Hero() {
                   className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 dark:bg-[#f43f5e]/25 text-on-surface dark:text-rose-100 px-2 py-1">
+                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 dark:bg-[#ffc3de] text-on-surface dark:text-[#4a1430] px-2 py-1">
                   {p.location}
                 </span>
               </div>
               <div className="space-y-0.5 pb-1">
-                <h4 className="font-serif-alt text-lg dark:text-rose-50">{p.name}</h4>
-                <p className="font-body text-xs text-on-surface-variant dark:text-rose-200/85">{p.role}</p>
+                <h4 className="font-serif-alt text-lg text-on-surface dark:text-[#3a0f25]">{p.name}</h4>
+                <p className="font-body text-xs text-on-surface-variant dark:text-[#5b2741]">{p.role}</p>
               </div>
             </div>
           ))}
