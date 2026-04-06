@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import MentorGoogleCalendarSection from './MentorGoogleCalendarSection';
 import { formatSessionWhen } from '../../utils/mentorshipSessionDisplay';
+import { userDisplayPhoto } from '../../utils/absolutePhotoUrl';
 
 /**
  * @param {{ active: any[]; history: any[] }} props
@@ -18,6 +19,7 @@ export default function MentorSchedulePanel({ active = [], history = [] }) {
           key: `${m._id}-${idx}`,
           mentorshipId: m._id,
           menteeName,
+          mentee: m?.mentee,
           source,
           date: dt && !Number.isNaN(dt.getTime()) ? dt : null,
           calendarDate: s?.calendarDate,
@@ -59,7 +61,16 @@ export default function MentorSchedulePanel({ active = [], history = [] }) {
                 className="border border-outline-variant/15 rounded-lg px-4 py-3 bg-surface-container-lowest/60"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <img
+                      src={userDisplayPhoto(
+                        row.mentee && typeof row.mentee === 'object' ? row.mentee : { name: row.menteeName },
+                        { size: 80 }
+                      )}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-full border border-outline-variant/25 bg-surface-container-lowest object-cover"
+                    />
+                    <div className="min-w-0">
                     <p className="font-semibold text-on-surface">
                       {row.menteeName}
                       <span className="text-on-surface-variant font-normal text-xs ml-2">
@@ -69,6 +80,7 @@ export default function MentorSchedulePanel({ active = [], history = [] }) {
                     <p className="text-sm text-outline mt-0.5">
                       {formatSessionWhen(row)} · {row.duration != null ? `${row.duration} min` : '—'}
                     </p>
+                    </div>
                   </div>
                 </div>
                 {row.topics?.length > 0 && (

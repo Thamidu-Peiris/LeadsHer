@@ -34,7 +34,7 @@ const calculateMatchScore = (menteePreferences, mentorProfile) => {
 };
 
 const getSuggestedMentors = async (menteePreferences, limit = 5) => {
-  const mentors = await MentorProfile.find({ isVerified: true }).populate('user', 'name email avatar bio');
+  const mentors = await MentorProfile.find({ isVerified: true }).populate('user', 'name email avatar profilePicture bio');
   const mentorsWithScores = mentors.map(mentor => ({
     mentor: mentor.toObject(),
     matchScore: calculateMatchScore(menteePreferences, mentor),
@@ -70,7 +70,7 @@ const findMentorsByCriteria = async (criteria) => {
     if (minExperience) query.yearsOfExperience.$gte = minExperience;
     if (maxExperience) query.yearsOfExperience.$lte = maxExperience;
   }
-  return MentorProfile.find(query).populate('user', 'name email avatar bio').sort('-rating -totalMentorships');
+  return MentorProfile.find(query).populate('user', 'name email avatar profilePicture bio').sort('-rating -totalMentorships');
 };
 
 const getSimilarMentors = async (mentorId, limit = 5) => {
@@ -84,7 +84,7 @@ const getSimilarMentors = async (mentorId, limit = 5) => {
       { industries: { $in: referenceMentor.industries } },
       { mentoringAreas: { $in: referenceMentor.mentoringAreas } },
     ],
-  }).populate('user', 'name email avatar').limit(limit);
+  }).populate('user', 'name email avatar profilePicture').limit(limit);
 };
 
 const checkCompatibility = async (menteeId, mentorProfileId) => {

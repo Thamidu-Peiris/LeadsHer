@@ -318,7 +318,12 @@ export default function MentorDashboardStoriesPage() {
                 <p className="text-on-surface-variant mb-5">
                   {statusFilter === 'draft' ? 'No drafts created yet.' : statusFilter === 'published' ? 'No published stories yet.' : 'No stories created yet.'}
                 </p>
-                <Link to="/dashboard/stories/new" className="btn-primary">Write your first story</Link>
+                <Link
+                  to="/dashboard/stories/new"
+                  className="inline-flex items-center justify-center rounded-lg bg-rose-500 px-8 py-4 font-label text-xs font-bold uppercase tracking-[0.2em] text-white shadow-sm shadow-rose-500/25 transition-colors hover:bg-rose-600 active:scale-[0.98] dark:bg-rose-600 dark:hover:bg-rose-500"
+                >
+                  Write your first story
+                </Link>
               </div>
             ) : (
               <ul className="space-y-2.5">

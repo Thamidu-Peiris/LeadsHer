@@ -1,6 +1,7 @@
 const mentorshipService = require('../services/mentorshipService');
 const Mentorship = require('../models/Mentorship');
 const MentorshipRequest = require('../models/MentorshipRequest');
+const MentorProfile = require('../models/MentorProfile');
 const adminOps = require('../utils/adminOperations');
 
 exports.getActiveMentorships = async (req, res) => {
@@ -166,6 +167,8 @@ exports.adminTerminateMentorship = async (req, res) => {
     item.status = 'terminated';
     item.endDate = Date.now();
     await item.save();
+    const mentorProfile = await MentorProfile.findOne({ user: item.mentor });
+    if (mentorProfile) await mentorProfile.decrementMentees();
     await item.populate([
       { path: 'mentor', select: 'name email profilePicture' },
       { path: 'mentee', select: 'name email profilePicture' },

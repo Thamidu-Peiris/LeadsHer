@@ -4,6 +4,7 @@ import { storyApi } from '../api/storyApi';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 export default function StoryDetailPage() {
   const { id }            = useParams();
@@ -70,8 +71,8 @@ export default function StoryDetailPage() {
 
   const isOwner = user?._id === (story.author?._id || story.author);
   const authorName = story.author?.name || 'Unknown Mentor';
-  const authorAvatar = story.author?.profilePicture || story.author?.avatar || '';
-  const currentUserAvatar = user?.profilePicture || user?.avatar || '';
+  const authorAvatar = userDisplayPhoto(story.author || { name: authorName }, { size: 96 });
+  const currentUserAvatar = userDisplayPhoto(user || { name: 'You' }, { size: 80 });
   const categoryLabel = story.category ? story.category.replace(/-/g, ' ') : 'story';
   const publishedDate = new Date(story.publishedAt || story.createdAt).toLocaleDateString('en-US', {
     month: 'long',
@@ -127,17 +128,11 @@ export default function StoryDetailPage() {
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-outline-variant/15">
             <div className="flex items-center gap-3">
-              {authorAvatar ? (
-                <img
-                  src={authorAvatar}
-                  alt={authorName}
-                  className="w-12 h-12 rounded-full object-cover border border-outline-variant/20"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/40 to-secondary/35 flex items-center justify-center text-white font-bold">
-                  {authorName?.[0]?.toUpperCase() || 'M'}
-                </div>
-              )}
+              <img
+                src={authorAvatar}
+                alt={authorName}
+                className="w-12 h-12 rounded-full object-cover border border-outline-variant/20"
+              />
               <div>
                 <p className="text-sm font-semibold text-on-surface">{authorName}</p>
                 <p className="text-xs text-outline">Mentor storyteller</p>
@@ -210,17 +205,11 @@ export default function StoryDetailPage() {
 
         {isAuthenticated && (
           <form onSubmit={handleComment} className="mb-6 flex gap-3">
-            {currentUserAvatar ? (
-              <img
-                src={currentUserAvatar}
-                alt={user?.name || 'You'}
-                className="w-10 h-10 rounded-full object-cover border border-outline-variant/20 shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary/80 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                {user?.name?.[0]?.toUpperCase()}
-              </div>
-            )}
+            <img
+              src={currentUserAvatar}
+              alt={user?.name || 'You'}
+              className="w-10 h-10 rounded-full object-cover border border-outline-variant/20 shrink-0"
+            />
             <div className="flex-1 flex gap-2">
               <input
                 value={comment}
@@ -239,17 +228,11 @@ export default function StoryDetailPage() {
           <ul className="space-y-4">
             {comments.map((c) => (
               <li key={c._id} className="flex gap-3">
-                {c.user?.profilePicture || c.user?.avatar ? (
-                  <img
-                    src={c.user?.profilePicture || c.user?.avatar}
-                    alt={c.user?.name || 'User'}
-                    className="w-9 h-9 rounded-full object-cover border border-outline-variant/20 shrink-0"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-white font-bold text-xs shrink-0">
-                    {c.user?.name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
+                <img
+                  src={userDisplayPhoto(c.user || { name: 'User' }, { size: 72 })}
+                  alt={c.user?.name || 'User'}
+                  className="w-9 h-9 rounded-full object-cover border border-outline-variant/20 shrink-0"
+                />
                 <div className="bg-white dark:bg-surface-container border border-outline-variant/15 rounded-xl px-4 py-3 flex-1">
                   <p className="font-medium text-sm text-on-surface">{c.user?.name || 'User'}</p>
                   <p className="text-sm text-on-surface-variant mt-0.5">{c.content}</p>

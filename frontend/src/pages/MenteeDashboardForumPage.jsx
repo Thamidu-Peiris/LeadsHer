@@ -66,7 +66,7 @@ export default function MenteeDashboardForumPage() {
 
           {/* Content */}
           <div className="flex-1 p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div className="mb-8 flex flex-col gap-4 rounded-xl border border-outline-variant/20 bg-white p-6 dark:bg-surface-container-lowest sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">My Discussions</h1>
                 <p className="text-outline text-sm mt-1">Manage the topics you've started</p>
