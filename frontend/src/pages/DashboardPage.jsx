@@ -361,7 +361,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Latest Stories</h2>
-                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/stories">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/dashboard/stories">
                       View all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
