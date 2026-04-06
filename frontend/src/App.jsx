@@ -81,7 +81,7 @@ function MainLayout() {
     (user?.role === 'mentor' || user?.role === 'mentee' || user?.role === 'admin');
 
   const hideChromeForStoryEditor = /^\/stories\/[^/]+\/edit$/.test(location.pathname);
-  const hideFooterForLogin = location.pathname === '/login';
+  const hideFooterForAuthPages = location.pathname === '/login' || location.pathname === '/register';
   const hideChrome = hideChromeForRoleDashboard || hideChromeForStoryEditor;
 
   return (
@@ -90,7 +90,7 @@ function MainLayout() {
       <div className="flex-1 bg-surface">
         <Outlet />
       </div>
-      {!hideChrome && !hideFooterForLogin && <Footer />}
+      {!hideChrome && !hideFooterForAuthPages && <Footer />}
     </div>
   );
 }
