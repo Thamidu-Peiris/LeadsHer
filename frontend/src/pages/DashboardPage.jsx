@@ -194,6 +194,88 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     () => myStories.reduce((a, s) => a + (s.likeCount || 0), 0),
     [myStories]
   );
+  const monthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
+  const monthLabel = useMemo(
+    () => new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    []
+  );
+  const storiesThisMonth = useMemo(
+    () =>
+      myStories.filter((s) => {
+        const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myStories, monthStart]
+  );
+  const sessionsThisMonth = useMemo(
+    () =>
+      myEvents.filter((e) => {
+        const t = new Date(e?.date || e?.startDate || e?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myEvents, monthStart]
+  );
+  const repliesThisMonth = useMemo(
+    () =>
+      myStories
+        .filter((s) => {
+          const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+          return Number.isFinite(t) && t >= monthStart.getTime();
+        })
+        .reduce((sum, s) => sum + Number(s?.commentCount || 0), 0),
+    [myStories, monthStart]
+  );
+  const goals = useMemo(() => ([
+    { key: 'stories', label: 'Stories', icon: 'auto_stories', value: storiesThisMonth, target: 4 },
+    { key: 'sessions', label: 'Sessions', icon: 'event', value: sessionsThisMonth, target: 3 },
+    { key: 'replies', label: 'Replies', icon: 'chat', value: repliesThisMonth, target: 20 },
+  ]), [storiesThisMonth, sessionsThisMonth, repliesThisMonth]);
+  const recentActivity = useMemo(() => {
+    const items = [];
+    const sortedStories = [...myStories].sort(
+      (a, b) => new Date(b?.updatedAt || b?.createdAt || 0) - new Date(a?.updatedAt || a?.createdAt || 0)
+    );
+    sortedStories.slice(0, 2).forEach((s) => {
+      const likes = Number(s?.likeCount || 0);
+      const comments = Number(s?.commentCount || 0);
+      items.push({
+        icon: 'auto_stories',
+        title: s?.title || 'Story update',
+        meta: `${likes} likes · ${comments} comments`,
+      });
+    });
+    const nextEvent = [...myEvents]
+      .filter((e) => new Date(e?.date || e?.startDate || 0).getTime() >= Date.now())
+      .sort((a, b) => new Date(a?.date || a?.startDate || 0) - new Date(b?.date || b?.startDate || 0))[0];
+    if (nextEvent) {
+      items.push({
+        icon: 'event_upcoming',
+        title: `Upcoming: ${nextEvent.title || 'Event'}`,
+        meta: new Date(nextEvent?.date || nextEvent?.startDate || Date.now()).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+      });
+    }
+    if (mentorProfile) {
+      items.push({
+        icon: mentorProfile?.isAvailable ? 'toggle_on' : 'toggle_off',
+        title: `Mentorship ${mentorProfile?.isAvailable ? 'availability on' : 'availability off'}`,
+        meta: 'From your mentor profile settings',
+      });
+    }
+    if (items.length === 0) {
+      items.push({
+        icon: 'notifications',
+        title: 'No new activity yet',
+        meta: 'Your latest likes, comments, and updates will appear here',
+      });
+    }
+    return items.slice(0, 4);
+  }, [myStories, myEvents, mentorProfile]);
 
   return (
     <>
@@ -356,6 +438,51 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-[10px] text-tertiary">Views + likes combined</p>
                   </div>
                 </div>
+
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mini Goals / Progress</h3>
+                      <span className="text-[10px] px-2 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold uppercase tracking-wider">
+                        {monthLabel}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {goals.map((g) => {
+                        const pct = Math.min(100, Math.round((g.value / g.target) * 100));
+                        return (
+                          <div key={g.key} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <p className="font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-[#f43f5e]">{g.icon}</span>
+                                {g.label}
+                              </p>
+                              <p className="text-outline tabular-nums">{g.value}/{g.target}</p>
+                            </div>
+                            <div className="h-2 rounded-full bg-outline-variant/20 overflow-hidden">
+                              <div className="h-2 rounded-full bg-[#f43f5e]" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <h3 className="font-serif-alt text-xl font-bold text-on-surface">Recent Activity Feed</h3>
+                    <div className="space-y-2.5">
+                      {recentActivity.map((a, idx) => (
+                        <div key={`${a.title}-${idx}`} className="rounded-lg border border-outline-variant/15 bg-surface-container-lowest/70 px-3 py-2.5">
+                          <p className="text-sm font-semibold text-on-surface flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px] text-[#f43f5e]">{a.icon}</span>
+                            <span className="line-clamp-1">{a.title}</span>
+                          </p>
+                          <p className="mt-1 text-[11px] text-outline pl-6">{a.meta}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
 
                 {/* Recent stories (your stories) */}
                 <section className="space-y-6">
