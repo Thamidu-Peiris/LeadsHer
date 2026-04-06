@@ -306,14 +306,14 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
+                    className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 active:scale-95 transition-all dark:bg-rose-600 dark:hover:bg-rose-500"
+                      className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
                     >
                       + New Event
                     </Link>
@@ -1749,14 +1749,14 @@ export default function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/dashboard/stories/new"
-            className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
           >
             + New Story
           </Link>
           {canManageEvents && (
             <Link
               to="/events/new"
-              className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
             >
               + New Event
             </Link>
