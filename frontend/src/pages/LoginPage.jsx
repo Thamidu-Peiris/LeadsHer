@@ -45,26 +45,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex w-full bg-white dark:bg-surface min-h-[calc(100vh-4rem)]">
+    <div className="flex w-full bg-[#fff7fb] dark:bg-[#120d1a] min-h-[calc(100vh-4rem)]">
 
       {/* ─── LEFT PANEL ─────────────────────────────────── */}
       <aside
         className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-between sticky top-16 self-start h-[calc(100vh-4rem)]"
         style={theme === 'dark' ? {
-          background: 'rgb(43 41 59)',
+          background: '#1f1228',
           backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(208,188,255,0.08) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(239,184,200,0.08) 0%, transparent 45%)',
+            'radial-gradient(circle at 15% 15%, rgba(244,63,94,0.20) 0%, transparent 45%),' +
+            'radial-gradient(circle at 85% 60%, rgba(244,114,182,0.18) 0%, transparent 45%)',
         } : {
           background: '#FDF0F3',
           backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(212,175,55,0.10) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(218,112,143,0.12) 0%, transparent 45%)',
+            'radial-gradient(circle at 15% 15%, rgba(244,63,94,0.15) 0%, transparent 45%),' +
+            'radial-gradient(circle at 85% 60%, rgba(244,114,182,0.18) 0%, transparent 45%)',
         }}
       >
         {/* Quote */}
         <div className="z-10 space-y-10 max-w-xs">
-          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-tertiary-container">
+          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-[#be185d] dark:text-rose-200">
             "Leadership begins the moment you decide to lift someone else."
           </blockquote>
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
               { quote: 'Signing back in feels like coming home. This community never stops giving.', name: 'Priya M.', title: 'Founder' },
               { quote: 'Every session with my mentor moves the needle. I keep coming back.', name: 'Dana K.', title: 'Product Lead', indent: true },
             ].map(({ quote, name, title, indent }) => (
-              <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-gold-accent/40 pl-4`}>
+              <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-[#f43f5e]/45 pl-4`}>
                 <p className="font-sans-modern text-sm text-on-surface-variant italic leading-relaxed">
                   "{quote}"
                 </p>
@@ -88,16 +88,16 @@ export default function LoginPage() {
         {/* Stat badge */}
         <div className="z-10">
           <div className="inline-flex items-center gap-2.5 bg-white dark:bg-surface-container px-5 py-2.5 shadow-sm border border-outline-variant/20">
-            <span className="w-2 h-2 rounded-full bg-gold-accent animate-pulse flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-[#f43f5e] animate-pulse flex-shrink-0" />
             <p className="font-sans-modern text-sm font-medium text-on-surface">
-              <span className="text-gold-accent font-bold">2,400+</span> women leaders inside
+              <span className="text-[#f43f5e] font-bold">2,400+</span> women leaders inside
             </p>
           </div>
         </div>
 
         {/* Decorative rings */}
-        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-gold-accent/10 rounded-full pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-tertiary/8 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-[#f43f5e]/20 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-[#f472b6]/20 rounded-full pointer-events-none" />
       </aside>
 
       {/* ─── RIGHT PANEL ────────────────────────────────── */}
@@ -128,7 +128,7 @@ export default function LoginPage() {
                 <input
                   type="email" name="email" value={form.email} onChange={handleChange}
                   placeholder="you@leadsher.com" autoComplete="email"
-                  className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                  className="w-full bg-white dark:bg-transparent border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                 />
               </div>
 
@@ -138,7 +138,7 @@ export default function LoginPage() {
                   <label className="font-sans-modern text-[10px] font-bold tracking-[0.18em] uppercase text-outline group-focus-within:text-primary transition-colors">
                     Password
                   </label>
-                  <Link to="/forgot-password" className="font-sans-modern text-[10px] text-primary tracking-wider hover:underline">
+                  <Link to="/forgot-password" className="font-sans-modern text-[10px] text-[#f43f5e] tracking-wider hover:underline">
                     Forgot password?
                   </Link>
                 </div>
@@ -147,11 +147,11 @@ export default function LoginPage() {
                     type={showPw ? 'text' : 'password'}
                     name="password" value={form.password} onChange={handleChange}
                     placeholder="••••••••••••" autoComplete="current-password"
-                    className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-0 py-2.5 pr-9 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
+                    className="w-full bg-white border-0 border-b-2 border-outline-variant focus:border-[#f43f5e] focus:ring-0 px-0 py-2.5 pr-9 font-sans-modern text-base text-on-surface placeholder:text-outline/40 transition-colors outline-none"
                   />
                   <button
                     type="button" onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-outline hover:text-[#f43f5e] transition-colors"
                   >
                     <span className="material-symbols-outlined text-xl">{showPw ? 'visibility_off' : 'visibility'}</span>
                   </button>
@@ -162,7 +162,7 @@ export default function LoginPage() {
               <div className="pt-4 space-y-4">
                 <button
                   type="submit" disabled={loading}
-                  className="w-full bg-gold-accent text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-60"
+                  className="w-full bg-[#f43f5e] text-white py-4 font-brand font-bold text-sm tracking-[0.2em] uppercase shadow-md shadow-rose-500/25 hover:bg-[#e11d48] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-60"
                 >
                   {loading
                     ? <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -182,7 +182,7 @@ export default function LoginPage() {
                 {/* OAuth */}
                 <div className="grid grid-cols-2 gap-3">
                   <button type="button"
-                    className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all">
+                    className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-[#f43f5e] hover:bg-rose-50 dark:hover:bg-surface-container transition-all">
                     <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -192,7 +192,7 @@ export default function LoginPage() {
                     Google
                   </button>
                   <button type="button"
-                    className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-primary hover:bg-white dark:hover:bg-surface-container transition-all">
+                    className="flex items-center justify-center gap-2.5 border border-outline-variant py-3.5 font-sans-modern text-sm font-medium hover:border-[#f43f5e] hover:bg-rose-50 dark:hover:bg-surface-container transition-all">
                     <svg className="w-4 h-4 fill-[#0077b5] flex-shrink-0" viewBox="0 0 24 24">
                       <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                     </svg>
@@ -204,7 +204,7 @@ export default function LoginPage() {
 
             <p className="font-sans-modern text-sm text-outline text-center mt-8">
               Don't have an account?{' '}
-              <Link to="/register" className="text-primary font-bold hover:underline">
+              <Link to="/register" className="text-[#f43f5e] font-bold hover:underline">
                 Join LeadsHer
               </Link>
             </p>
