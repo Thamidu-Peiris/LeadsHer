@@ -74,14 +74,14 @@ export default function Hero() {
       <div className="relative container mx-auto px-8 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center z-10">
         {/* Left copy */}
         <div className="max-w-2xl">
-          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface">
+          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface dark:text-black">
             Where Women Lead.{' '}
             <br />
             <span className="italic text-tertiary-container">
               Where Stories Ignite.
             </span>
           </h1>
-          <p className="font-body text-xl text-on-surface-variant leading-relaxed mb-12 max-w-lg">
+          <p className="font-body text-xl text-[#475569] dark:text-[#475569] leading-relaxed mb-12 max-w-lg">
             A curated ecosystem for the modern female architect of change. Bridging ambition and legacy through editorial insight and shared wisdom.
           </p>
 
