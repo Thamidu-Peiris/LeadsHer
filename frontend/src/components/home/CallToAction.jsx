@@ -6,15 +6,15 @@ export default function CallToAction() {
   if (isAuthenticated) return null;
 
   return (
-    <section className="py-32 bg-pink-100 text-center text-neutral-900 dark:bg-rose-950/35 dark:text-on-surface">
+    <section className="py-32 bg-pink-100 text-center text-neutral-900 dark:bg-[#1a1324] dark:text-rose-50">
       <div className="container mx-auto px-8 md:px-12 max-w-3xl">
         <p className="font-label text-[10px] tracking-[0.4em] uppercase text-rose-600 mb-6 dark:text-rose-300">
           Your story matters
         </p>
-        <h2 className="font-headline text-5xl md:text-6xl italic mb-6 leading-tight text-neutral-900 dark:text-on-surface">
+        <h2 className="font-headline text-5xl md:text-6xl italic mb-6 leading-tight text-neutral-900 dark:text-rose-50">
           Ready to Share Your Voice?
         </h2>
-        <p className="font-body text-neutral-700 text-lg mb-12 max-w-xl mx-auto leading-relaxed dark:text-on-surface-variant">
+        <p className="font-body text-neutral-700 text-lg mb-12 max-w-xl mx-auto leading-relaxed dark:text-rose-100/80">
           Join thousands of women sharing their leadership journeys and inspiring the next generation of change-makers.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">

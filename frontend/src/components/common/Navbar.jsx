@@ -26,8 +26,8 @@ function AnimatedNavLink({ to, label, end, onClick, className = '' }) {
       className={[
         'group relative inline-block pb-1 font-sans-modern text-base font-bold tracking-normal transition-colors duration-200',
         isActive
-          ? 'text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300'
-          : 'text-neutral-950 hover:text-rose-700 dark:text-neutral-100 dark:hover:text-rose-300',
+          ? 'text-rose-600 dark:text-rose-400'
+          : 'text-neutral-950 dark:text-neutral-100',
         className,
       ]
         .filter(Boolean)
@@ -87,7 +87,7 @@ export default function Navbar() {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 text-on-surface-variant hover:text-primary transition-colors"
+            className="p-2 text-on-surface-variant transition-colors"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
@@ -99,7 +99,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setDropOpen((v) => !v)}
-                className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors"
+                className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant transition-colors"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-container flex items-center justify-center text-white font-bold text-sm">
                   {avatarSrc ? (
@@ -113,18 +113,18 @@ export default function Navbar() {
               {dropOpen && (
                 <div className="absolute right-0 mt-3 w-44 bg-surface-container-lowest border border-outline-variant/20 editorial-shadow z-50">
                   <Link to="/dashboard" onClick={() => setDropOpen(false)}
-                    className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
+                    className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:bg-surface-container-low transition-colors">
                     Dashboard
                   </Link>
                   {isMentee && (
                     <Link to="/dashboard/profile" onClick={() => setDropOpen(false)}
-                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
+                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:bg-surface-container-low transition-colors">
                       Profile
                     </Link>
                   )}
                   {canWriteStory && (
                     <Link to="/dashboard/stories/new" onClick={() => setDropOpen(false)}
-                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors">
+                      className="block px-5 py-3 font-label text-[11px] tracking-widest uppercase text-on-surface-variant hover:bg-surface-container-low transition-colors">
                       Write Story
                     </Link>
                   )}
@@ -139,7 +139,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login"
-                className="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors">
+                className="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant transition-colors">
                 Sign In
               </Link>
               <Link to="/register"
@@ -174,7 +174,7 @@ export default function Navbar() {
           {/* Theme toggle (mobile) */}
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors"
+            className="flex items-center gap-2 font-label text-xs tracking-widest uppercase text-on-surface-variant transition-colors"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             <span className="material-symbols-outlined text-[20px]">

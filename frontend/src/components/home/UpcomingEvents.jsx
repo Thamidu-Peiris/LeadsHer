@@ -36,7 +36,7 @@ export default function UpcomingEvents() {
   );
 
   if (!events.length) return (
-    <section className="py-24 bg-surface">
+    <section className="py-24 bg-[#fff7fb] dark:bg-[#130f1c]">
       <div className="container mx-auto px-8 md:px-12 text-center">
         <h2 className="font-headline text-5xl mb-6">Upcoming Gatherings</h2>
         <p className="font-body text-on-surface-variant mb-8">No events scheduled yet. Check back soon!</p>
@@ -46,17 +46,17 @@ export default function UpcomingEvents() {
   );
 
   return (
-    <section className="py-24 bg-surface">
+    <section className="py-24 bg-[#fff7fb] dark:bg-[#130f1c]">
       <div className="container mx-auto px-8 md:px-12">
         {/* Header */}
         <div className="flex justify-between items-baseline mb-14">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400">Community</p>
-            <h2 className="font-headline text-5xl">Upcoming Gatherings</h2>
+            <h2 className="font-headline text-5xl text-on-surface dark:text-rose-50">Upcoming Gatherings</h2>
           </div>
           <Link
             to="/events"
-            className="font-label text-xs tracking-[0.2em] uppercase text-primary transition-all hover:tracking-[0.3em] hidden md:flex items-center gap-1"
+            className="font-label text-xs tracking-[0.2em] uppercase text-primary dark:text-rose-300 transition-all hover:tracking-[0.3em] hidden md:flex items-center gap-1"
           >
             View All <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
           </Link>
@@ -87,7 +87,7 @@ export default function UpcomingEvents() {
               <Link
                 to={`/events/${e._id}`}
                 key={e._id}
-                className="group flex flex-col bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+                className="group flex flex-col bg-white dark:bg-[#23172f] rounded-2xl border border-slate-100 dark:border-rose-300/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
               >
                 {/* Date → thumbnail → title */}
                 <div className="flex min-h-[96px] items-stretch sm:min-h-[104px]">
