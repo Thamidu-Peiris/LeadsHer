@@ -187,11 +187,11 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
   const totalLikes = useMemo(
-    () => myStories.reduce((a, s) => a + (s.likeCount || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0),
     [myStories]
   );
   const monthStart = useMemo(() => {
@@ -225,7 +225,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
           const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
           return Number.isFinite(t) && t >= monthStart.getTime();
         })
-        .reduce((sum, s) => sum + Number(s?.commentCount || 0), 0),
+        .reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0),
     [myStories, monthStart]
   );
   const goals = useMemo(() => ([
@@ -239,8 +239,8 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
       (a, b) => new Date(b?.updatedAt || b?.createdAt || 0) - new Date(a?.updatedAt || a?.createdAt || 0)
     );
     sortedStories.slice(0, 2).forEach((s) => {
-      const likes = Number(s?.likeCount || 0);
-      const comments = Number(s?.commentCount || 0);
+      const likes = Number(s?.likeCount ?? s?.likes?.length ?? 0);
+      const comments = Number(s?.commentCount ?? 0);
       items.push({
         icon: 'auto_stories',
         title: s?.title || 'Story update',
@@ -304,7 +304,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     return { buckets, maxValue };
   }, [myStories, myEvents]);
   const engagement = useMemo(() => {
-    const comments = myStories.reduce((sum, s) => sum + Number(s?.commentCount || 0), 0);
+    const comments = myStories.reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0);
     const likes = totalLikes;
     const views = totalViews;
     const total = Math.max(1, likes + comments + views);
@@ -769,7 +769,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
 
@@ -2033,8 +2033,8 @@ export default function DashboardPage() {
         {[
           { label: 'My Stories',        value: myStories.length, link: '/stories' },
           { label: 'Registered Events', value: myEvents.length,  link: '/events' },
-          { label: 'Total Views',       value: myStories.reduce((a, s) => a + (s.views || 0), 0) },
-          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + (s.likeCount || 0), 0) },
+          { label: 'Total Views',       value: myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0) },
+          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0) },
         ].map(({ label, value, link }) => (
           <div key={label} className="card p-5">
             <p className="text-2xl font-display font-bold text-brand-700">{value}</p>
