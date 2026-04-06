@@ -44,14 +44,14 @@ const REPORT_STATUS_COLORS = {
 
 function TopicRow({ topic, onPin, onClose, onDelete, loading }) {
   return (
-    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-gold-accent/20 transition-all">
+    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-rose-500/25 transition-all">
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1.5">
           <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${CAT_COLORS[topic.category] || CAT_COLORS.general}`}>
             {fmtCat(topic.category)}
           </span>
           {topic.isPinned && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gold-accent bg-gold-accent/10 border border-gold-accent/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/25 dark:border-rose-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
               <span className="material-symbols-outlined text-[11px]">push_pin</span>Pinned
             </span>
           )}
@@ -63,7 +63,7 @@ function TopicRow({ topic, onPin, onClose, onDelete, loading }) {
             <span className="text-[10px] font-bold uppercase tracking-widest text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Open</span>
           )}
         </div>
-        <Link to={`/forum/${topic._id}`} className="block font-bold text-on-surface hover:text-gold-accent transition-colors line-clamp-1 mb-1">
+        <Link to={`/forum/${topic._id}`} className="block font-bold text-on-surface hover:text-rose-600 dark:hover:text-rose-400 transition-colors line-clamp-1 mb-1">
           {topic.title}
         </Link>
         <div className="flex flex-wrap items-center gap-3 text-xs text-outline">
@@ -80,43 +80,46 @@ function TopicRow({ topic, onPin, onClose, onDelete, loading }) {
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+      <div className="flex items-center gap-2.5 flex-wrap flex-shrink-0">
         <Link
           to={`/forum/${topic._id}`}
-          className="flex items-center gap-1 text-xs text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/30 px-2.5 py-1.5 rounded-lg transition-all"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 bg-sky-50 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 px-4 py-2 min-h-[40px] rounded-xl transition-all dark:text-sky-300 dark:bg-sky-950/50 dark:border-sky-800/80 dark:hover:bg-sky-950/80"
         >
-          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+          <span className="material-symbols-outlined text-[18px]">open_in_new</span>
           View
         </Link>
         <button
+          type="button"
           onClick={() => onPin(topic._id)}
           disabled={loading}
-          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-all disabled:opacity-60 ${
+          className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 min-h-[40px] rounded-xl border transition-all disabled:opacity-60 ${
             topic.isPinned
-              ? 'bg-gold-accent/10 text-gold-accent border-gold-accent/30 hover:bg-gold-accent/20'
-              : 'text-outline border-outline-variant/30 hover:text-gold-accent hover:border-gold-accent/30'
+              ? 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50 dark:hover:bg-rose-950'
+              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60 dark:hover:bg-rose-950/70'
           }`}
         >
-          <span className="material-symbols-outlined text-[14px]">push_pin</span>
+          <span className="material-symbols-outlined text-[18px]">push_pin</span>
           {topic.isPinned ? 'Unpin' : 'Pin'}
         </button>
         <button
+          type="button"
           onClick={() => onClose(topic._id)}
           disabled={loading}
-          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-all disabled:opacity-60 ${
+          className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 min-h-[40px] rounded-xl border transition-all disabled:opacity-60 ${
             topic.isClosed
-              ? 'text-green-700 bg-green-50 border-green-300 hover:bg-green-100'
-              : 'text-slate-600 border-outline-variant/30 hover:bg-slate-50 hover:border-slate-300'
+              ? 'text-green-800 bg-green-50 border-green-300 hover:bg-green-100 dark:text-green-300 dark:bg-green-950/50 dark:border-green-700 dark:hover:bg-green-950/80'
+              : 'text-amber-800 bg-amber-50 border-amber-200 hover:bg-amber-100 hover:border-amber-300 dark:text-amber-200 dark:bg-amber-950/45 dark:border-amber-800/70 dark:hover:bg-amber-950/70'
           }`}
         >
-          <span className="material-symbols-outlined text-[14px]">{topic.isClosed ? 'lock_open' : 'lock'}</span>
+          <span className="material-symbols-outlined text-[18px]">{topic.isClosed ? 'lock_open' : 'lock'}</span>
           {topic.isClosed ? 'Reopen' : 'Close'}
         </button>
         <button
-          onClick={() => onDelete(topic._id)}
-          className="flex items-center gap-1 text-xs text-outline hover:text-red-500 border border-outline-variant/30 hover:border-red-300 px-2.5 py-1.5 rounded-lg transition-all"
+          type="button"
+          onClick={() => onDelete(topic)}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 px-4 py-2 min-h-[40px] rounded-xl transition-all dark:text-red-400 dark:bg-red-950/40 dark:border-red-900/60 dark:hover:bg-red-950/70"
         >
-          <span className="material-symbols-outlined text-[14px]">delete</span>
+          <span className="material-symbols-outlined text-[18px]">delete</span>
           Delete
         </button>
       </div>
@@ -170,7 +173,7 @@ function ReportRow({ report, onResolve }) {
           <div className="mt-2">
             <Link
               to={`/forum/${report.post}`}
-              className="text-xs text-gold-accent hover:underline flex items-center gap-1"
+              className="text-xs text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[13px]">open_in_new</span>
               View reported content
@@ -221,6 +224,8 @@ export default function AdminDashboardForumPage() {
   const [topicSearch, setTopicSearch] = useState('');
   const [topicSearchInput, setTopicSearchInput] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
+  const [deleteTopicPending, setDeleteTopicPending] = useState(false);
 
   // Reports state
   const [reports, setReports]               = useState([]);
@@ -305,14 +310,31 @@ export default function AdminDashboardForumPage() {
     }
   };
 
-  const handleDeleteTopic = async (topicId) => {
-    if (!window.confirm('Delete this topic and all replies? This cannot be undone.')) return;
+  const requestDeleteTopic = (topic) => {
+    setDeleteDialog({
+      open: true,
+      id: topic._id,
+      title: (topic.title || '').trim() || 'this discussion',
+    });
+  };
+
+  const closeDeleteTopicDialog = () => {
+    if (deleteTopicPending) return;
+    setDeleteDialog({ open: false, id: null, title: '' });
+  };
+
+  const confirmDeleteTopic = async () => {
+    if (!deleteDialog.id) return;
+    setDeleteTopicPending(true);
     try {
-      await forumApi.deleteTopic(topicId);
+      await forumApi.deleteTopic(deleteDialog.id);
       toast.success('Topic deleted.');
+      setDeleteDialog({ open: false, id: null, title: '' });
       fetchTopics();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to delete topic.');
+    } finally {
+      setDeleteTopicPending(false);
     }
   };
 
@@ -342,60 +364,79 @@ export default function AdminDashboardForumPage() {
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
           />
-          <div className="px-4 sm:px-8 pt-3 pb-2">
-            <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Forum moderation</h1>
-            <p className="text-sm text-outline mt-1">Pin topics, close threads, and review reports.</p>
-          </div>
-
-          <div className="flex-1 p-8">
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <Link
-                to="/forum"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium bg-white text-outline border border-outline-variant/30 hover:text-gold-accent hover:border-gold-accent/40 hover:bg-slate-50/80 px-4 py-2.5 rounded-lg transition-all shadow-sm dark:bg-surface-container-lowest dark:hover:bg-surface-container"
-              >
-                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                Browse Forum
-              </Link>
-              <Link
-                to="/forum/new"
-                className="inline-flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                New Discussion
-              </Link>
-            </div>
+          <div className="px-4 sm:px-8 pt-4 pb-8 max-w-[1600px] mx-auto w-full">
+            <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/20 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-6 py-5 sm:px-8 sm:py-6 border-b border-slate-100 dark:border-outline-variant/20 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-serif-alt text-2xl sm:text-3xl font-bold text-on-surface">Forum moderation</h1>
+                  <p className="text-sm text-outline mt-1">Pin topics, close threads, and review reports.</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-3 shrink-0 sm:ml-auto self-end sm:self-auto w-full sm:w-auto">
+                  <Link
+                    to="/forum"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium bg-white dark:bg-surface-container text-outline border border-outline-variant/30 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-400/50 hover:bg-rose-50/80 dark:hover:bg-rose-950/20 px-4 py-2.5 rounded-lg transition-all shadow-sm dark:hover:bg-surface-container-high"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                    Browse Forum
+                  </Link>
+                  <Link
+                    to="/forum/new"
+                    className="inline-flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    New Discussion
+                  </Link>
+                </div>
+              </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest mb-1">Total Topics</p>
-                <p className="font-serif-alt text-3xl font-bold text-on-surface">{topicsTotal}</p>
+            <div className="px-6 sm:px-8 pt-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-slate-100 dark:border-outline-variant/20">
+              <div className="rounded-xl border-2 border-sky-300 bg-sky-100 p-5 dark:border-sky-700 dark:bg-sky-950">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-[22px] text-sky-700 dark:text-sky-300">forum</span>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-sky-900 dark:text-sky-200">Total Topics</p>
+                </div>
+                <p className="font-serif-alt text-3xl font-bold text-sky-800 dark:text-sky-200">{topicsTotal}</p>
               </div>
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest mb-1">Pinned</p>
-                <p className="font-serif-alt text-3xl font-bold text-gold-accent">{pinnedTopics.length}</p>
+              <div className="rounded-xl border-2 border-rose-300 bg-rose-100 p-5 dark:border-rose-700 dark:bg-rose-950">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-[22px] text-rose-700 dark:text-rose-300" style={{ fontVariationSettings: "'FILL' 1" }}>push_pin</span>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-rose-900 dark:text-rose-200">Pinned</p>
+                </div>
+                <p className="font-serif-alt text-3xl font-bold text-rose-700 dark:text-rose-300">{pinnedTopics.length}</p>
               </div>
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest mb-1">Pending Reports</p>
-                <p className={`font-serif-alt text-3xl font-bold ${reportsTotal > 0 ? 'text-red-500' : 'text-on-surface'}`}>
+              <div className={`rounded-xl border-2 p-5 ${
+                reportsTotal > 0
+                  ? 'border-orange-400 bg-orange-100 dark:border-orange-600 dark:bg-orange-950'
+                  : 'border-amber-300 bg-amber-100 dark:border-amber-700 dark:bg-amber-950'
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`material-symbols-outlined text-[22px] ${reportsTotal > 0 ? 'text-orange-700 dark:text-orange-300' : 'text-amber-800 dark:text-amber-300'}`}>flag</span>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${reportsTotal > 0 ? 'text-orange-950 dark:text-orange-100' : 'text-amber-950 dark:text-amber-200'}`}>Pending Reports</p>
+                </div>
+                <p className={`font-serif-alt text-3xl font-bold ${reportsTotal > 0 ? 'text-red-700 dark:text-red-400' : 'text-amber-900 dark:text-amber-200'}`}>
                   {reportsTotal}
                 </p>
               </div>
-              <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest mb-1">Categories</p>
-                <p className="font-serif-alt text-3xl font-bold text-on-surface">6</p>
+              <div className="rounded-xl border-2 border-violet-300 bg-violet-100 p-5 dark:border-violet-700 dark:bg-violet-950">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-[22px] text-violet-700 dark:text-violet-300">category</span>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-violet-950 dark:text-violet-200">Categories</p>
+                </div>
+                <p className="font-serif-alt text-3xl font-bold text-violet-800 dark:text-violet-200">6</p>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-outline-variant/20">
+            <div className="flex flex-nowrap items-center gap-1 px-4 sm:px-6 border-b border-outline-variant/20 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <button
+                type="button"
                 onClick={() => setActiveTab('topics')}
-                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-all ${
+                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px relative ${
                   activeTab === 'topics'
-                    ? 'border-gold-accent text-gold-accent'
+                    ? 'border-rose-500 text-rose-600 dark:text-rose-400'
                     : 'border-transparent text-outline hover:text-on-surface'
                 }`}
               >
@@ -405,10 +446,11 @@ export default function AdminDashboardForumPage() {
                 </span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('reports')}
-                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-all ${
+                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px relative ${
                   activeTab === 'reports'
-                    ? 'border-gold-accent text-gold-accent'
+                    ? 'border-rose-500 text-rose-600 dark:text-rose-400'
                     : 'border-transparent text-outline hover:text-on-surface'
                 }`}
               >
@@ -424,6 +466,7 @@ export default function AdminDashboardForumPage() {
               </button>
             </div>
 
+            <div className="p-6 sm:p-8 space-y-6">
             {/* Topics Tab */}
             {activeTab === 'topics' && (
               <div>
@@ -437,17 +480,17 @@ export default function AdminDashboardForumPage() {
                         value={topicSearchInput}
                         onChange={(e) => setTopicSearchInput(e.target.value)}
                         placeholder="Search topics…"
-                        className="w-full border border-outline-variant/30 rounded-lg pl-9 pr-4 py-2 text-sm bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-gold-accent"
+                        className="w-full border border-outline-variant/30 rounded-lg pl-9 pr-4 py-2 text-sm bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-rose-500"
                       />
                     </div>
-                    <button type="submit" className="px-3 py-2 text-xs font-bold bg-gold-accent hover:bg-gold-accent/90 text-white rounded-lg transition-colors">
+                    <button type="submit" className="px-3 py-2 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors dark:bg-rose-600 dark:hover:bg-rose-500">
                       Search
                     </button>
                   </form>
                   <select
                     value={topicCategory}
                     onChange={(e) => { setTopicCategory(e.target.value); setTopicsPage(1); }}
-                    className="border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-gold-accent"
+                    className="border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-rose-500"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -464,7 +507,7 @@ export default function AdminDashboardForumPage() {
                       <div className="mb-4 space-y-3">
                         <p className="text-xs font-bold text-outline uppercase tracking-widest">Pinned</p>
                         {pinnedTopics.map((t) => (
-                          <TopicRow key={t._id} topic={t} onPin={handlePin} onClose={handleClose} onDelete={handleDeleteTopic} loading={actionLoading} />
+                          <TopicRow key={t._id} topic={t} onPin={handlePin} onClose={handleClose} onDelete={requestDeleteTopic} loading={actionLoading} />
                         ))}
                       </div>
                     )}
@@ -479,7 +522,7 @@ export default function AdminDashboardForumPage() {
                         {topics.length > 0 && (
                           <div className="space-y-3">
                             {topics.map((t) => (
-                              <TopicRow key={t._id} topic={t} onPin={handlePin} onClose={handleClose} onDelete={handleDeleteTopic} loading={actionLoading} />
+                              <TopicRow key={t._id} topic={t} onPin={handlePin} onClose={handleClose} onDelete={requestDeleteTopic} loading={actionLoading} />
                             ))}
                           </div>
                         )}
@@ -520,8 +563,8 @@ export default function AdminDashboardForumPage() {
                       onClick={() => { setReportStatus(s.value); setReportsPage(1); }}
                       className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
                         reportStatus === s.value
-                          ? 'bg-gold-accent text-white border-gold-accent'
-                          : 'bg-white dark:bg-surface-container-lowest text-outline border-outline-variant/30 hover:border-gold-accent/40'
+                          ? 'bg-rose-500 text-white border-rose-500 dark:bg-rose-600 dark:border-rose-600'
+                          : 'bg-white dark:bg-surface-container-lowest text-outline border-outline-variant/30 hover:border-rose-400/50'
                       }`}
                     >
                       {s.label}
@@ -560,7 +603,59 @@ export default function AdminDashboardForumPage() {
                 )}
               </div>
             )}
+            </div>
+            </div>
           </div>
+
+        {deleteDialog.open && (
+          <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Close dialog"
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+              onClick={closeDeleteTopicDialog}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-delete-forum-topic-title"
+              className="relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-outline-variant/25 bg-white dark:bg-surface-container-lowest shadow-[0_24px_60px_rgba(15,23,42,0.28)] p-6"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-red-500 text-[32px] shrink-0" aria-hidden>delete_forever</span>
+                <div className="min-w-0">
+                  <h3 id="admin-delete-forum-topic-title" className="font-serif-alt text-xl font-bold text-on-surface">
+                    Delete discussion?
+                  </h3>
+                  <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+                    This will permanently remove{' '}
+                    <span className="font-semibold text-on-surface break-words">"{deleteDialog.title}"</span>
+                    {' '}and all replies. This cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={closeDeleteTopicDialog}
+                  disabled={deleteTopicPending}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-outline-variant/40 text-sm font-bold text-on-surface-variant hover:bg-slate-50 dark:hover:bg-surface-container transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteTopic}
+                  disabled={deleteTopicPending}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors disabled:opacity-60"
+                >
+                  {deleteTopicPending && <Spinner size="sm" className="text-white" />}
+                  {deleteTopicPending ? 'Deleting…' : 'Delete discussion'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   );
 }

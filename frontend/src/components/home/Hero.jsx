@@ -13,30 +13,32 @@ const MARQUEE_WORDS = [
 
 const HERO_PROFILES = [
   {
-    name: 'Elena Vance',
-    role: 'Chief Design Officer',
-    location: 'London, UK',
-    image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=700&h=900&fit=crop&crop=face&q=80',
-    rotate: 'rotate-3',
-    pos: 'absolute top-0 right-10 w-72 z-30',
-    h: 'h-80',
-  },
-  {
     name: 'Margot Chen',
     role: 'Global Creative Lead',
     location: 'Paris, FR',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=700&h=900&fit=crop&crop=face&q=80',
+    image: 'https://images.unsplash.com/photo-1690444963408-9573a17a8058?w=700&h=900&fit=crop&q=80',
     rotate: '-rotate-6',
     pos: 'absolute top-20 left-10 w-64 z-20',
     h: 'h-72',
   },
   {
+    name: 'Elena Vance',
+    role: 'Chief Design Officer',
+    location: 'London, UK',
+    image:
+      'https://images.unsplash.com/photo-1665065950598-3993c1331626?w=700&h=900&fit=crop&q=80',
+    rotate: 'rotate-3',
+    pos: 'absolute top-0 right-10 w-72 z-30',
+    h: 'h-80',
+  },
+  {
     name: 'Sloane Harper',
     role: 'Founding Partner, Vesper',
     location: 'New York, NY',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=700&h=900&fit=crop&crop=face&q=80',
+    image:
+      'https://images.unsplash.com/photo-1685541003882-7328ef51bac8?w=700&h=900&fit=crop&q=80',
     rotate: 'rotate-1',
-    pos: 'absolute bottom-0 right-20 w-64 z-40',
+    pos: 'absolute bottom-0 right-40 w-64 z-40',
     h: 'h-64',
   },
 ];
@@ -49,7 +51,7 @@ export default function Hero() {
       className="relative min-h-screen flex items-center pt-24 overflow-hidden"
       style={{
         background:
-          'linear-gradient(135deg, #FFE6F0 0%, #FFD5E8 38%, #F8C6E2 72%, #F1CFF0 100%)',
+          'linear-gradient(135deg, #FFE6F0 0%, #FFD5E8 38%, #F8C6E2 72%, #FFE4E9 100%)',
       }}
     >
       {/* Hero gradient */}
@@ -57,15 +59,15 @@ export default function Hero() {
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 74% 26%, rgba(235,67,147,0.22) 0%, rgba(198,88,188,0.10) 48%, rgba(255,255,255,0.25) 100%), radial-gradient(circle at 18% 78%, rgba(255,105,180,0.16) 0%, rgba(255,192,203,0.06) 45%, rgba(255,255,255,0) 70%)',
+            'radial-gradient(circle at 74% 26%, rgba(235,67,147,0.22) 0%, rgba(225,29,72,0.10) 48%, rgba(255,255,255,0.25) 100%), radial-gradient(circle at 18% 78%, rgba(255,105,180,0.16) 0%, rgba(255,192,203,0.06) 45%, rgba(255,255,255,0) 70%)',
         }}
       />
       {/* Geometric line art */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <line x1="0" y1="100" x2="100" y2="0"  stroke="#7B5BBE" strokeWidth="0.05" />
+          <line x1="0" y1="100" x2="100" y2="0"  stroke="#E11D48" strokeWidth="0.05" />
           <line x1="-20" y1="80" x2="80" y2="-20" stroke="#D4748F" strokeWidth="0.05" />
-          <line x1="20" y1="120" x2="120" y2="20" stroke="#7B5BBE" strokeWidth="0.05" />
+          <line x1="20" y1="120" x2="120" y2="20" stroke="#E11D48" strokeWidth="0.05" />
         </svg>
       </div>
 
@@ -89,7 +91,7 @@ export default function Hero() {
                 <Link to="/dashboard/stories/new" className="btn-primary shadow-lg shadow-primary/10">
                   Write a Story
                 </Link>
-                <Link to="/mentors" className="btn-outline">
+                <Link to="/mentors" className="btn-outline-white-rose">
                   Find a Mentor
                 </Link>
               </>
@@ -98,7 +100,7 @@ export default function Hero() {
                 <Link to="/register" className="btn-primary shadow-lg shadow-primary/10">
                   Begin Your Journey
                 </Link>
-                <Link to="/stories" className="btn-outline">
+                <Link to="/stories" className="btn-explore-archives">
                   Explore Archives
                 </Link>
               </>

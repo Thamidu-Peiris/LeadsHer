@@ -129,7 +129,7 @@ export default function MenteeDashboardForumPage() {
                   {topics.map((topic) => (
                     <div
                       key={topic._id}
-                      className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-gold-accent/30 transition-all"
+                      className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-blue-900/30 transition-all"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -140,12 +140,12 @@ export default function MenteeDashboardForumPage() {
                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Closed</span>
                           )}
                           {topic.isPinned && (
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gold-accent bg-gold-accent/10 px-2 py-0.5 rounded-full">Pinned</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-900 bg-blue-900/10 px-2 py-0.5 rounded-full">Pinned</span>
                           )}
                         </div>
                         <Link
                           to={`/forum/${topic._id}`}
-                          className="block font-bold text-on-surface hover:text-gold-accent transition-colors line-clamp-1 mb-1"
+                          className="block font-bold text-on-surface hover:text-blue-900 transition-colors line-clamp-1 mb-1"
                         >
                           {topic.title}
                         </Link>
@@ -168,14 +168,14 @@ export default function MenteeDashboardForumPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <Link
                           to={`/forum/${topic._id}`}
-                          className="flex items-center gap-1 text-xs text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/30 px-3 py-1.5 rounded-lg transition-all"
+                          className="flex items-center gap-1 text-xs text-outline hover:text-blue-900 border border-outline-variant/30 hover:border-blue-900/30 px-3 py-1.5 rounded-lg transition-all"
                         >
                           <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                           View
                         </Link>
                         <Link
                           to={`/forum/${topic._id}/edit`}
-                          className="flex items-center gap-1 text-xs text-outline hover:text-gold-accent border border-outline-variant/30 hover:border-gold-accent/30 px-3 py-1.5 rounded-lg transition-all"
+                          className="flex items-center gap-1 text-xs text-outline hover:text-blue-900 border border-outline-variant/30 hover:border-blue-900/30 px-3 py-1.5 rounded-lg transition-all"
                         >
                           <span className="material-symbols-outlined text-[14px]">edit</span>
                           Edit
