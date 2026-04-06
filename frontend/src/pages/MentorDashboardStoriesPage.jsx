@@ -302,8 +302,8 @@ export default function MentorDashboardStoriesPage() {
                   onClick={() => setStatusFilter(f.key)}
                   className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${
                     statusFilter === f.key
-                      ? 'bg-rose-500/10 text-on-surface border-rose-500/40'
-                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-rose-500/40'
+                      ? 'bg-[#f43f5e] text-white border-[#f43f5e]'
+                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-[#f43f5e]/40 hover:text-[#f43f5e]'
                   }`}
                 >
                   {f.label}
