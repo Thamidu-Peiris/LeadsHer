@@ -276,6 +276,43 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
     }
     return items.slice(0, 4);
   }, [myStories, myEvents, mentorProfile]);
+  const monthlyTrend = useMemo(() => {
+    const now = new Date();
+    const buckets = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: d.toLocaleDateString('en-US', { month: 'short' }),
+        stories: 0,
+        sessions: 0,
+      };
+    });
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    myStories.forEach((s) => {
+      const t = new Date(s?.publishedAt || s?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].stories += 1;
+    });
+    myEvents.forEach((e) => {
+      const t = new Date(e?.date || e?.startDate || e?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].sessions += 1;
+    });
+    const maxValue = Math.max(1, ...buckets.map((b) => Math.max(b.stories, b.sessions)));
+    return { buckets, maxValue };
+  }, [myStories, myEvents]);
+  const engagement = useMemo(() => {
+    const comments = myStories.reduce((sum, s) => sum + Number(s?.commentCount || 0), 0);
+    const likes = totalLikes;
+    const views = totalViews;
+    const total = Math.max(1, likes + comments + views);
+    const likesPct = Math.round((likes / total) * 100);
+    const commentsPct = Math.round((comments / total) * 100);
+    const viewsPct = 100 - likesPct - commentsPct;
+    return { likes, comments, views, likesPct, commentsPct, viewsPct };
+  }, [myStories, totalLikes, totalViews]);
 
   return (
     <>
@@ -438,6 +475,76 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <p className="text-[10px] text-tertiary">Views + likes combined</p>
                   </div>
                 </div>
+
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Monthly Trend</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Last 6 months
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2 items-end h-40">
+                      {monthlyTrend.buckets.map((b) => {
+                        const storiesH = Math.max(6, Math.round((b.stories / monthlyTrend.maxValue) * 92));
+                        const sessionsH = Math.max(6, Math.round((b.sessions / monthlyTrend.maxValue) * 92));
+                        return (
+                          <div key={b.key} className="flex flex-col items-center gap-1">
+                            <div className="flex items-end gap-1 h-28">
+                              <span
+                                className="w-3 rounded-md bg-[#f43f5e]"
+                                style={{ height: `${storiesH}%` }}
+                                title={`Stories: ${b.stories}`}
+                              />
+                              <span
+                                className="w-3 rounded-md border border-[#f43f5e]/40 bg-rose-100"
+                                style={{ height: `${sessionsH}%` }}
+                                title={`Sessions: ${b.sessions}`}
+                              />
+                            </div>
+                            <span className="text-[10px] font-semibold text-outline">{b.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex items-center gap-4 text-[11px] text-outline">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm bg-[#f43f5e]" /> Stories
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm border border-[#f43f5e]/50 bg-rose-100" /> Sessions
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Engagement Mix</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Likes / Comments / Views
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-5">
+                      <div
+                        className="h-28 w-28 rounded-full border border-outline-variant/20"
+                        style={{
+                          background: `conic-gradient(#f43f5e 0% ${engagement.likesPct}%, #fb7185 ${engagement.likesPct}% ${engagement.likesPct + engagement.commentsPct}%, #ffd1e7 ${engagement.likesPct + engagement.commentsPct}% 100%)`,
+                        }}
+                      />
+                      <div className="space-y-2 text-xs">
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#f43f5e]" /> Likes: {engagement.likes}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#fb7185]" /> Comments: {engagement.comments}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#ffd1e7] border border-[#f43f5e]/20" /> Views: {engagement.views}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
