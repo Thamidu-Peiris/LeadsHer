@@ -55,19 +55,19 @@ export default function StatsSection() {
   }, [hasStarted]);
 
   return (
-    <section ref={sectionRef} className="py-16 bg-surface-container-lowest">
+    <section ref={sectionRef} className="py-16 bg-white dark:bg-[#130f1c]">
       <div className="container mx-auto px-8 md:px-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center items-center">
           {STATS.map(({ label, unit, suffix }, i) => (
-            <div key={label} className={`relative px-6 group ${i < STATS.length - 1 ? '' : ''}`}>
-              <h3 className="font-serif-alt text-6xl text-primary-container mb-2 transition-all group-hover:scale-105">
+            <div key={label} className={`relative px-6 group rounded-xl py-4 ${i < STATS.length - 1 ? '' : ''}`}>
+              <h3 className="font-serif-alt text-6xl text-primary-container dark:text-rose-300 mb-2 transition-all group-hover:scale-105">
                 {formatStatValue(counts[i], unit, suffix)}
               </h3>
-              <p className="font-label text-[10px] tracking-[0.2em] uppercase text-on-surface-variant">
+              <p className="font-label text-[10px] tracking-[0.2em] uppercase text-on-surface-variant dark:text-rose-100/80">
                 {label}
               </p>
               {i < STATS.length - 1 && (
-                <div className="hidden md:block absolute right-0 top-1/4 h-1/2 w-px bg-outline-variant/30" />
+                <div className="hidden md:block absolute right-0 top-1/4 h-1/2 w-px bg-outline-variant/30 dark:bg-rose-300/25" />
               )}
             </div>
           ))}

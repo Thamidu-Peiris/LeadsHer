@@ -47,13 +47,7 @@ export default function Hero() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <header
-      className="relative min-h-screen flex items-center pt-24 overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(135deg, #FFE6F0 0%, #FFD5E8 38%, #F8C6E2 72%, #FFE4E9 100%)',
-      }}
-    >
+    <header className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-gradient-to-br from-[#ffe6f0] via-[#ffd5e8] to-[#ffe4e9] dark:bg-gradient-to-br dark:from-[#140714] dark:via-[#1c0a1f] dark:to-[#0f0b1a]">
       {/* Hero gradient */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
@@ -74,14 +68,14 @@ export default function Hero() {
       <div className="relative container mx-auto px-8 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center z-10">
         {/* Left copy */}
         <div className="max-w-2xl">
-          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface dark:text-black">
+          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface dark:text-rose-50">
             Where Women Lead.{' '}
             <br />
-            <span className="italic text-tertiary-container">
+            <span className="italic text-tertiary-container dark:text-rose-300">
               Where Stories Ignite.
             </span>
           </h1>
-          <p className="font-body text-xl text-[#475569] dark:text-[#475569] leading-relaxed mb-12 max-w-lg">
+          <p className="font-body text-xl text-[#475569] dark:text-rose-100/90 leading-relaxed mb-12 max-w-lg">
             A curated ecosystem for the modern female architect of change. Bridging ambition and legacy through editorial insight and shared wisdom.
           </p>
 
@@ -143,10 +137,10 @@ export default function Hero() {
       </div>
 
       {/* Bottom marquee */}
-      <div className="absolute bottom-0 w-full py-5 bg-surface-container-low border-y border-outline-variant/10 overflow-hidden">
+      <div className="absolute bottom-0 w-full py-5 bg-white/70 dark:bg-[#220f2a]/80 border-y border-outline-variant/10 dark:border-rose-300/20 overflow-hidden">
         <div className="marquee">
           {[0, 1].map((i) => (
-            <div key={i} className="marquee-content font-label text-xs tracking-[0.4em] uppercase text-on-surface-variant/60">
+            <div key={i} className="marquee-content font-label text-xs tracking-[0.4em] uppercase text-on-surface-variant/70 dark:text-rose-100/70">
               {MARQUEE_WORDS.map(({ text, dot }) => (
                 <span key={text} className="flex items-center gap-3">
                   {text}

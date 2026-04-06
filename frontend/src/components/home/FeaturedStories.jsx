@@ -38,16 +38,16 @@ export default function FeaturedStories() {
   if (!stories.length) return null;
 
   return (
-    <section className="py-24 bg-[#FFE6F5]">
+    <section className="py-24 bg-[#FFE6F5] dark:bg-[#120d1a]">
       <div className="container mx-auto px-8 md:px-12">
-        <div className="mb-12 rounded-2xl border border-outline-variant/20 bg-white px-6 py-7 shadow-sm dark:bg-black sm:px-8">
+        <div className="mb-12 rounded-2xl border border-outline-variant/20 bg-white px-6 py-7 shadow-sm dark:border-rose-300/25 dark:bg-black sm:px-8">
           <div className="flex justify-between items-end gap-4">
-            <h2 className="font-headline text-4xl text-on-surface italic max-w-xl leading-tight sm:text-5xl md:text-6xl">
+            <h2 className="font-headline text-4xl text-on-surface dark:text-rose-50 italic max-w-xl leading-tight sm:text-5xl md:text-6xl">
             The Pulse of <br /> Modern Authority
             </h2>
             <Link
               to="/stories"
-              className="hidden md:inline-flex items-center gap-1 rounded-lg border-2 border-[#f43f5e]/60 bg-white px-4 py-2 font-label text-[10px] font-bold tracking-widest uppercase text-[#f43f5e] transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+              className="hidden md:inline-flex items-center gap-1 rounded-lg border-2 border-[#f43f5e]/60 bg-white px-4 py-2 font-label text-[10px] font-bold tracking-widest uppercase text-[#f43f5e] transition-colors hover:border-[#f43f5e] hover:bg-rose-50 dark:bg-black dark:text-rose-200 dark:hover:bg-[#2a1224]"
             >
               View Editorial
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -60,7 +60,7 @@ export default function FeaturedStories() {
             <Link
               to={`/stories/${s._id}`}
               key={s._id}
-              className="group cursor-pointer rounded-xl border border-outline-variant/20 bg-white p-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#f43f5e]/35 hover:shadow-md"
+              className="group cursor-pointer rounded-xl border border-outline-variant/20 bg-white p-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#f43f5e]/35 hover:shadow-md dark:border-rose-300/20 dark:bg-[#21162b]"
             >
               {(() => {
                 const authorRaw = String(s?.author?.profilePicture || s?.author?.avatar || '').trim();
@@ -89,11 +89,11 @@ export default function FeaturedStories() {
               <span className="mb-2 block font-label text-[8px] tracking-widest uppercase text-[#f43f5e]">
                 {CATEGORY_LABEL[s.category] || s.category}
               </span>
-              <h3 className="mb-1.5 font-serif-alt text-[1.1rem] leading-snug text-on-surface transition-colors group-hover:text-[#f43f5e]">
+              <h3 className="mb-1.5 font-serif-alt text-[1.1rem] leading-snug text-on-surface dark:text-rose-50 transition-colors group-hover:text-[#f43f5e]">
                 {s.title}
               </h3>
               {s.excerpt && (
-                <p className="mb-2.5 line-clamp-2 font-body text-[12px] leading-relaxed text-on-surface-variant">
+                <p className="mb-2.5 line-clamp-2 font-body text-[12px] leading-relaxed text-on-surface-variant dark:text-rose-100/80">
                   {s.excerpt}
                 </p>
               )}
@@ -115,8 +115,8 @@ export default function FeaturedStories() {
                   )}
                 </div>
                 <div>
-                  <p className="font-label text-[9px] tracking-wider uppercase">{s.author?.name || 'Author'}</p>
-                  <p className="text-[9px] text-on-surface-variant">{s.readingTime} min read</p>
+                  <p className="font-label text-[9px] tracking-wider uppercase text-on-surface dark:text-rose-100">{s.author?.name || 'Author'}</p>
+                  <p className="text-[9px] text-on-surface-variant dark:text-rose-200/75">{s.readingTime} min read</p>
                 </div>
               </div>
                   </>
@@ -129,7 +129,7 @@ export default function FeaturedStories() {
         <div className="mt-8 text-center md:hidden">
           <Link
             to="/stories"
-            className="inline-flex items-center gap-1 rounded-lg border-2 border-[#f43f5e]/60 bg-white px-4 py-2 font-label text-[10px] font-bold tracking-widest uppercase text-[#f43f5e] transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+            className="inline-flex items-center gap-1 rounded-lg border-2 border-[#f43f5e]/60 bg-white px-4 py-2 font-label text-[10px] font-bold tracking-widest uppercase text-[#f43f5e] transition-colors hover:border-[#f43f5e] hover:bg-rose-50 dark:bg-black dark:text-rose-200 dark:hover:bg-[#2a1224]"
           >
             View Editorial
             <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
