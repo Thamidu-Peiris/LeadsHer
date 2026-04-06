@@ -70,7 +70,7 @@ function eventRowCoverUrl(e) {
 function StatCard({ icon, title, value, accent = 'text-[#f43f5e]' }) {
   return (
     <div className={`${CARD} p-5 flex items-center gap-4`}>
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800/40">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-900/20">
         <span className={`material-symbols-outlined text-[22px] ${accent}`}>{icon}</span>
       </div>
       <div>
@@ -621,7 +621,7 @@ function MenteeView() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard icon="event" title="Registered" value={events.length} />
         <StatCard icon="upcoming" title="Upcoming" value={upcoming.length} accent="text-emerald-500" />
-        <StatCard icon="history" title="Past Events" value={past.length} accent="text-slate-400" />
+        <StatCard icon="history" title="Past Events" value={past.length} />
       </div>
 
       {loading ? (
@@ -760,10 +760,10 @@ function MentorView({ onNew, refreshKey = 0 }) {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon="event"    title="Created"   value={created.length} />
-        <StatCard icon="upcoming" title="Upcoming"  value={created.filter(e => e.status === 'upcoming').length} accent="text-emerald-500" />
-        <StatCard icon="group"    title="Total Attendees" value={created.reduce((a, e) => a + (e.registeredAttendees?.length || 0), 0)} accent="text-blue-500" />
-        <StatCard icon="how_to_reg" title="Registered" value={registered.length} accent="text-purple-500" />
+        <StatCard icon="event"      title="Created"         value={created.length} />
+        <StatCard icon="upcoming"   title="Upcoming"        value={created.filter(e => e.status === 'upcoming').length} />
+        <StatCard icon="group"      title="Total Attendees" value={created.reduce((a, e) => a + (e.registeredAttendees?.length || 0), 0)} />
+        <StatCard icon="how_to_reg" title="Registered"      value={registered.length} />
       </div>
 
       <TabBar tabs={tabs} active={tab} onChange={setTab} />
