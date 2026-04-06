@@ -591,43 +591,6 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   </div>
                 </section>
 
-                {/* Recent stories (your stories) */}
-                <section className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Latest Stories</h2>
-                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/dashboard/stories">
-                      View all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
-                  </div>
-
-                  {myStories.length === 0 ? (
-                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 text-on-surface-variant">
-                      You haven&apos;t written any stories yet.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 hover:border-rose-500/40 transition-colors">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
-                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
-                              <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                            </Link>
-                          </div>
-                          {s.excerpt && <p className="text-on-surface-variant text-sm mt-2 line-clamp-2">{s.excerpt}</p>}
-                          <div className="mt-4 flex items-center justify-between text-xs text-outline">
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">visibility</span> {s.views || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">favorite</span> {s.likeCount || 0}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
               </div>
 
               {/* Right column */}
@@ -683,6 +646,59 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     </Link>
                   </div>
                 </div>
+
+                <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Your Latest Stories</h3>
+                    <Link
+                      className="text-[11px] font-bold uppercase tracking-wider text-[#f43f5e] hover:text-[#e11d48] flex items-center gap-1"
+                      to="/dashboard/stories"
+                    >
+                      View all <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                  {myStories.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant">You haven&apos;t written any stories yet.</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {myStories.slice(0, 3).map((s) => (
+                        <div key={s._id} className="rounded-lg border border-outline-variant/20 bg-surface-container-lowest/80 px-3 py-2.5 hover:border-rose-500/40 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-11 w-14 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-white">
+                              <img
+                                src={s.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=180&h=140&fit=crop&q=80'}
+                                alt={s.title || 'Story'}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-on-surface line-clamp-1">{s.title}</p>
+                                <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 transition-colors">
+                                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                </Link>
+                              </div>
+                              <div className="mt-1.5 flex items-center gap-4 text-[11px] text-outline">
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[14px] text-[#f43f5e]">visibility</span> {s.views ?? s.viewCount ?? 0}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <span
+                                    className="material-symbols-outlined text-[14px] text-[#f43f5e]"
+                                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}
+                                  >
+                                    favorite
+                                  </span>
+                                  {s.likeCount ?? 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             </div>
 
