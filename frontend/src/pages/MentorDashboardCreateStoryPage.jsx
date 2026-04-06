@@ -241,7 +241,7 @@ export default function MentorDashboardCreateStoryPage() {
 
   return (
     <>
-          <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-white/95 dark:bg-surface-container-lowest/95 backdrop-blur-md">
+          <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-[#FFE6F5] dark:bg-surface-container-lowest/95 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
@@ -334,7 +334,7 @@ export default function MentorDashboardCreateStoryPage() {
           </div>
 
           <div className="flex flex-1 min-h-0">
-            <section className="flex-1 min-w-0 overflow-y-auto bg-white dark:bg-surface-container-lowest border-r border-outline-variant/10">
+            <section className="flex-1 min-w-0 overflow-y-auto bg-[#FFE6F5] dark:bg-surface-container-lowest border-r border-outline-variant/10">
               <div className="max-w-3xl mx-auto px-5 py-6 lg:px-8 lg:py-7">
                 <div className="mb-7">
                   <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
@@ -445,7 +445,7 @@ export default function MentorDashboardCreateStoryPage() {
               </div>
             </section>
 
-            <aside className="w-[min(100%,380px)] shrink-0 flex flex-col bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+            <aside className="w-[min(100%,380px)] shrink-0 flex flex-col bg-[#FFE6F5] dark:bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
               <div className="p-5 sm:p-6 space-y-6">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-serif-alt text-xl font-bold text-on-surface leading-tight">Details</h2>

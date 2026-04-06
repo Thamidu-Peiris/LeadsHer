@@ -202,7 +202,7 @@ export default function MentorDashboardStoriesPage() {
     <>
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Stories' }]} />
 
-          <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 px-8 py-8" style={{ backgroundColor: '#FFE6F5' }}>
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Stories Studio</h1>
