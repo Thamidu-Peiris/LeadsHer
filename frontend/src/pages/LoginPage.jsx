@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -15,6 +15,15 @@ export default function LoginPage() {
   const [showPw, setShowPw]   = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const leftPanelImages = [
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&h=1200&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&h=1200&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&h=1200&fit=crop&q=80',
+  ];
+  const leftPanelImage = useMemo(
+    () => leftPanelImages[Math.floor(Math.random() * leftPanelImages.length)],
+    []
+  );
 
   if (isAuthenticated) { navigate(from, { replace: true }); return null; }
 
@@ -48,36 +57,31 @@ export default function LoginPage() {
     <div className="flex w-full bg-[#fff7fb] dark:bg-[#120d1a] min-h-[calc(100vh-4rem)]">
 
       {/* ─── LEFT PANEL ─────────────────────────────────── */}
-      <aside
-        className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-between sticky top-16 self-start h-[calc(100vh-4rem)]"
-        style={theme === 'dark' ? {
-          background: '#1f1228',
-          backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(244,63,94,0.20) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(244,114,182,0.18) 0%, transparent 45%)',
-        } : {
-          background: '#FDF0F3',
-          backgroundImage:
-            'radial-gradient(circle at 15% 15%, rgba(244,63,94,0.15) 0%, transparent 45%),' +
-            'radial-gradient(circle at 85% 60%, rgba(244,114,182,0.18) 0%, transparent 45%)',
-        }}
-      >
+      <aside className="hidden md:flex flex-col w-[42%] flex-shrink-0 relative overflow-hidden px-14 pt-24 pb-14 justify-end sticky top-16 self-start h-[calc(100vh-4rem)]">
+        <img
+          src={leftPanelImage}
+          alt="Women leadership inspiration"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/55" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(244,63,94,0.26)_0%,transparent_44%),radial-gradient(circle_at_85%_60%,rgba(244,114,182,0.2)_0%,transparent_44%)]" />
         {/* Quote */}
-        <div className="z-10 space-y-10 max-w-xs">
-          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-[#be185d] dark:text-rose-200">
+        <div className="z-10 space-y-10 max-w-md mt-auto mb-8">
+          <blockquote className="font-accent italic text-[2.2rem] leading-[1.15] text-rose-100">
             "Leadership begins the moment you decide to lift someone else."
           </blockquote>
 
           <div className="space-y-7">
             {[
-              { quote: 'Signing back in feels like coming home. This community never stops giving.', name: 'Priya M.', title: 'Founder' },
-              { quote: 'Every session with my mentor moves the needle. I keep coming back.', name: 'Dana K.', title: 'Product Lead', indent: true },
+              { quote: 'Every session with my mentor moves the needle. I keep coming back.', name: 'Dana K.', title: 'Product Lead' },
             ].map(({ quote, name, title, indent }) => (
-              <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-[#f43f5e]/45 pl-4`}>
-                <p className="font-sans-modern text-sm text-on-surface-variant italic leading-relaxed">
+              <div key={name} className={`flex flex-col gap-1 ${indent ? 'ml-6' : ''} border-l-2 border-rose-300/70 pl-4`}>
+                <p className="font-sans-modern text-sm text-rose-100/90 italic leading-relaxed">
                   "{quote}"
                 </p>
-                <span className="text-[10px] font-brand font-semibold tracking-[0.15em] uppercase text-outline">
+                <span className="text-[10px] font-brand font-semibold tracking-[0.15em] uppercase text-rose-200/85">
                   {name} · {title}
                 </span>
               </div>
@@ -87,17 +91,17 @@ export default function LoginPage() {
 
         {/* Stat badge */}
         <div className="z-10">
-          <div className="inline-flex items-center gap-2.5 bg-white dark:bg-surface-container px-5 py-2.5 shadow-sm border border-outline-variant/20">
+          <div className="inline-flex items-center gap-2.5 bg-black/35 backdrop-blur-sm px-5 py-2.5 shadow-sm border border-rose-200/35">
             <span className="w-2 h-2 rounded-full bg-[#f43f5e] animate-pulse flex-shrink-0" />
-            <p className="font-sans-modern text-sm font-medium text-on-surface">
-              <span className="text-[#f43f5e] font-bold">2,400+</span> women leaders inside
+            <p className="font-sans-modern text-sm font-medium text-rose-100">
+              <span className="text-rose-300 font-bold">2,400+</span> women leaders inside
             </p>
           </div>
         </div>
 
         {/* Decorative rings */}
-        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-[#f43f5e]/20 rounded-full pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-[#f472b6]/20 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[26rem] h-[26rem] border border-rose-200/25 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-[26rem] h-[26rem] border border-rose-300/20 rounded-full pointer-events-none" />
       </aside>
 
       {/* ─── RIGHT PANEL ────────────────────────────────── */}
