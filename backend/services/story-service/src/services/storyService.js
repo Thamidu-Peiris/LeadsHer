@@ -502,7 +502,20 @@ const getStoriesByUser = async (targetUserId, { page = 1, limit = 10 } = {}) => 
       .lean(),
     Story.countDocuments(query),
   ]);
-  return { stories, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const commentCounts = await Comment.aggregate([
+    { $match: { story: { $in: stories.map((s) => s._id) } } },
+    { $group: { _id: '$story', count: { $sum: 1 } } },
+  ]);
+  const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
+  const out = stories.map((s) => ({
+    ...s,
+    likeCount: s.likes ? s.likes.length : 0,
+    commentCount: commentMap.get(String(s._id)) || 0,
+    likes: undefined,
+  }));
+
+  return { stories: out, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
 const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
@@ -521,9 +534,16 @@ const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
     Story.countDocuments(query),
   ]);
 
+  const commentCounts = await Comment.aggregate([
+    { $match: { story: { $in: stories.map((s) => s._id) } } },
+    { $group: { _id: '$story', count: { $sum: 1 } } },
+  ]);
+  const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
   const out = stories.map((s) => ({
     ...s,
     likeCount: s.likes ? s.likes.length : 0,
+    commentCount: commentMap.get(String(s._id)) || 0,
     likes: undefined,
   }));
 
