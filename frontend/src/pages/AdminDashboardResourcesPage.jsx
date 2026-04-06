@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminTopBar from '../components/dashboard/AdminTopBar';
-import { ADMIN_SIDEBAR_WIDTH_PX } from '../components/dashboard/AdminSidebar';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { resourceApi } from '../api/resourceApi';
@@ -38,10 +37,19 @@ const TYPE_CFG = {
   tool:    { icon: 'build',          label: 'Tool',    thumb: 'from-emerald-700 to-teal-900',   badge: 'bg-emerald-800/80'  },
   guide:   { icon: 'local_library',  label: 'Guide',   thumb: 'from-[#6242a3] to-[#3a1f7a]',   badge: 'bg-[#6242a3]/80'    },
 };
-const DIFF_BADGE = {
-  beginner:     'bg-emerald-500/80',
-  intermediate: 'bg-amber-500/80',
-  advanced:     'bg-red-500/80',
+/** Solid label chips below thumbnail (admin cards) — white uppercase text */
+const TYPE_LABEL_SOLID = {
+  article:  'bg-slate-800',
+  ebook:    'bg-violet-800',
+  video:    'bg-red-950',
+  podcast:  'bg-amber-800',
+  tool:     'bg-emerald-800',
+  guide:    'bg-[#5b3d8a]',
+};
+const DIFF_LABEL_SOLID = {
+  beginner:     'bg-emerald-600',
+  intermediate: 'bg-amber-500',
+  advanced:     'bg-rose-400',
 };
 
 const fmt     = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0));
@@ -56,10 +64,10 @@ const EMPTY_FORM = {
 
 /* ─── Resource Card (Admin) ──────────────────────────────────────────────── */
 
-function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, onRate, onEdit, onDelete, onApprove, onReject, showApprovalActions, onPreview }) {
-  const cfg       = TYPE_CFG[resource.type] || TYPE_CFG.article;
-  const diffBadge = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
-  const isBookmarked = bookmarkedIds.has(resource._id);
+function AdminResourceCard({ resource, onDownload, onRate, onEdit, onDelete, onApprove, onReject, showApprovalActions, onPreview }) {
+  const cfg          = TYPE_CFG[resource.type] || TYPE_CFG.article;
+  const typeLabelBg  = TYPE_LABEL_SOLID[resource.type] || TYPE_LABEL_SOLID.article;
+  const diffLabelBg  = DIFF_LABEL_SOLID[resource.difficulty] || DIFF_LABEL_SOLID.beginner;
 
   const handleAccess = () => {
     onDownload(resource._id);
@@ -69,7 +77,7 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
   };
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 transition-all duration-300 flex flex-col">
+    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-rose-500/50 transition-all duration-300 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden flex-shrink-0">
@@ -82,41 +90,34 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
           </div>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
-          <span className={`px-2 py-1 ${cfg.badge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {cfg.label}
-          </span>
-          <span className={`px-2 py-1 ${diffBadge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {resource.difficulty}
-          </span>
+        {/* Status overlays (admin workflow) */}
+        <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap max-w-[calc(100%-1rem)]">
           {resource.isPremium && (
-            <span className="px-2 py-1 bg-gold-accent/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
+            <span className="px-2 py-1 bg-rose-600 text-white text-[10px] uppercase font-bold tracking-wider rounded-sm shadow-sm">
               Premium
             </span>
           )}
-          <span className={`px-2 py-1 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded ${
-            resource.isApproved ? 'bg-emerald-600/80' : resource.isRejected ? 'bg-red-600/80' : 'bg-amber-500/80'
+          <span className={`px-2 py-1 text-white text-[10px] uppercase font-bold tracking-wider rounded-sm shadow-sm ${
+            resource.isApproved ? 'bg-emerald-700' : resource.isRejected ? 'bg-red-700' : 'bg-amber-600'
           }`}>
             {resource.isApproved ? 'Approved' : resource.isRejected ? 'Rejected' : 'Pending'}
           </span>
         </div>
+      </div>
 
-        {/* Bookmark button */}
-        <button
-          onClick={() => onBookmark(resource._id)}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
-            isBookmarked ? 'bg-gold-accent text-white' : 'bg-black/20 text-white hover:bg-gold-accent hover:text-white'
-          }`}
-          title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-        >
-          <span className="material-symbols-outlined text-[18px]">{isBookmarked ? 'bookmark' : 'bookmark_border'}</span>
-        </button>
+      {/* Type + difficulty labels (below image, like public cards) */}
+      <div className="px-4 pt-3 flex flex-wrap gap-2 bg-white dark:bg-surface-container-lowest">
+        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-sm ${typeLabelBg}`}>
+          {(cfg.label || '').toUpperCase()}
+        </span>
+        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-sm ${diffLabelBg}`}>
+          {(resource.difficulty || '').replace(/-/g, ' ').toUpperCase()}
+        </span>
       </div>
 
       {/* Card body */}
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
+      <div className="px-5 pb-5 pt-3 flex flex-col flex-1 gap-3">
+        <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-rose-500 transition-colors">
           {resource.title}
         </h3>
         <p className="text-sm text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1">
@@ -132,25 +133,22 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
           <span>{fmtDate(resource.createdAt)}</span>
         </div>
 
-        {/* Stats */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-outline-variant/20">
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 font-semibold text-gold-accent">
-              <span className="material-symbols-outlined text-[14px]">download</span>
-              {fmt(resource.downloads)}
+        {/* Stats: downloads (blue), rating (amber) + review count */}
+        <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-outline-variant/20">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums">
+            <span className="flex items-center gap-1.5 font-bold text-blue-800 dark:text-blue-300" title="Downloads">
+              <span className="material-symbols-outlined text-[15px] text-blue-800 dark:text-blue-300">download</span>
+              {fmt(resource.downloads ?? 0)}
             </span>
-            <span className="flex items-center gap-1 font-semibold text-amber-500">
-              <span className="material-symbols-outlined text-[14px]">visibility</span>
-              {fmt(resource.views)}
-            </span>
-            <span className="flex items-center gap-1 font-semibold text-yellow-500">
-              <span className="material-symbols-outlined text-[14px]">star</span>
-              {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
+            <span className="flex items-center gap-1 font-bold text-amber-500 dark:text-amber-400" title="Average rating">
+              <span className="material-symbols-outlined text-[15px] text-amber-500 dark:text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              {(Number(resource.averageRating) || 0).toFixed(1)}
+              <span className="font-normal text-slate-400 dark:text-slate-500">({resource.ratingCount ?? 0})</span>
             </span>
           </div>
           <button
             onClick={() => onRate(resource)}
-            className="text-[11px] text-slate-400 dark:text-outline hover:text-gold-accent transition-colors flex items-center gap-0.5"
+            className="text-[11px] text-slate-400 dark:text-outline hover:text-rose-500 transition-colors flex items-center gap-0.5"
           >
             <span className="material-symbols-outlined text-[13px]">star_border</span>
             Rate
@@ -160,7 +158,7 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
         {/* Access */}
         <button
           onClick={handleAccess}
-          className="w-full py-2 rounded-lg border border-gold-accent/40 text-gold-accent text-sm font-bold hover:bg-gold-accent hover:text-white transition-all"
+          className="w-full py-2 rounded-lg border border-rose-500/40 text-rose-500 text-sm font-bold hover:bg-rose-500 hover:text-white transition-all"
         >
           Access Resource
         </button>
@@ -198,80 +196,21 @@ function AdminResourceCard({ resource, bookmarkedIds, onBookmark, onDownload, on
         {/* Admin edit/delete (all resources) */}
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => onEdit(resource)}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-primary/40 hover:text-primary rounded-lg transition-all"
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold bg-black text-white hover:bg-neutral-800 rounded-lg transition-colors dark:bg-neutral-950 dark:hover:bg-neutral-800"
           >
             <span className="material-symbols-outlined text-[13px]">edit</span>
             Edit
           </button>
           <button
+            type="button"
             onClick={() => onDelete(resource._id)}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-red-400 hover:text-red-600 rounded-lg transition-all"
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors dark:bg-red-600 dark:hover:bg-red-500"
           >
             <span className="material-symbols-outlined text-[13px]">delete</span>
             Delete
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Bookmarks Drawer ───────────────────────────────────────────────────── */
-
-function BookmarksDrawer({ bookmarks, bookmarkCount, onRemove }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="fixed bottom-0 z-50 transition-all" style={{ left: ADMIN_SIDEBAR_WIDTH_PX, right: 0 }}>
-      <div className="mx-6">
-        <div className="bg-white dark:bg-surface-container border-x border-t border-slate-200 dark:border-outline-variant/40 rounded-t-2xl shadow-2xl overflow-hidden">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-surface-container-high transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gold-accent/10 flex items-center justify-center text-gold-accent">
-                <span className="material-symbols-outlined text-[18px]">bookmarks</span>
-              </div>
-              <span className="text-sm font-bold text-on-surface">Your Bookmarks</span>
-              {bookmarkCount > 0 && (
-                <span className="text-xs bg-gold-accent text-white px-2 py-0.5 rounded-full font-bold">{bookmarkCount}</span>
-              )}
-            </div>
-            <span className={`material-symbols-outlined text-slate-400 dark:text-outline transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
-              keyboard_arrow_up
-            </span>
-          </button>
-          {open && (
-            <div className="border-t border-slate-100 dark:border-outline-variant/20 p-5 pt-3">
-              {bookmarks.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-outline text-center py-4">No bookmarks yet.</p>
-              ) : (
-                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                  {bookmarks.map((r) => {
-                    const cfg = TYPE_CFG[r.type] || TYPE_CFG.article;
-                    return (
-                      <div key={r._id} className="flex-shrink-0 w-56 flex gap-3 p-3 bg-slate-50 dark:bg-surface-container rounded-xl border border-transparent hover:border-gold-accent/30 transition-all">
-                        <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${cfg.thumb} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
-                          {r.thumbnail
-                            ? <img src={r.thumbnail} alt={r.title} className="w-full h-full object-cover rounded-lg" />
-                            : <span className="material-symbols-outlined text-white/50 text-[22px]">{cfg.icon}</span>}
-                        </div>
-                        <div className="flex flex-col justify-center overflow-hidden flex-1 min-w-0">
-                          <h4 className="text-xs font-bold truncate text-on-surface">{r.title}</h4>
-                          <span className="text-[10px] text-slate-400 dark:text-outline mt-1 uppercase font-bold tracking-widest">{cfg.label}</span>
-                        </div>
-                        <button onClick={() => onRemove(r._id)} className="self-start text-slate-300 dark:text-outline hover:text-red-500 transition-colors flex-shrink-0 mt-0.5" title="Remove bookmark">
-                          <span className="material-symbols-outlined text-[16px]">close</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -334,7 +273,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
   };
 
   const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
-  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent/50 transition-all';
+  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500/50 transition-all';
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
@@ -394,7 +333,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
               <div className="flex gap-2 mb-3">
                 {['link', 'file'].map((m) => (
                   <button key={m} type="button" onClick={() => set('fileMode', m)}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${form.fileMode === m ? 'bg-gold-accent text-white border-gold-accent' : 'border-slate-200 text-slate-500 hover:border-gold-accent/40'}`}>
+                    className={`px-4 py-2 text-xs font-bold rounded-lg border transition-all ${form.fileMode === m ? 'bg-rose-500 text-white border-rose-500' : 'border-slate-200 text-slate-500 hover:border-rose-500/40'}`}>
                     {m === 'link' ? 'External Link' : 'Upload File'}
                   </button>
                 ))}
@@ -402,7 +341,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
               {form.fileMode === 'link' ? (
                 <input className={inp} value={form.externalLink} onChange={(e) => set('externalLink', e.target.value)} placeholder="https://..." type="url" />
               ) : (
-                <div className="border-2 border-dashed border-slate-200 dark:border-outline-variant/40 rounded-xl p-6 text-center hover:border-gold-accent/40 transition-colors">
+                <div className="border-2 border-dashed border-slate-200 dark:border-outline-variant/40 rounded-xl p-6 text-center hover:border-rose-500/40 transition-colors">
                   {uploading ? (
                     <div className="flex justify-center"><Spinner /></div>
                   ) : uploadedFile ? (
@@ -425,7 +364,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
                       <span className="material-symbols-outlined text-[40px] text-slate-300 dark:text-outline">cloud_upload</span>
                       <p className="text-sm text-slate-400 dark:text-on-surface-variant mt-2">PDF, DOC, MP4, MP3, ZIP supported (max 100MB)</p>
                       <button type="button" onClick={() => fileInputRef.current?.click()}
-                        className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-all">
+                        className="mt-3 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-rose-500/40 hover:text-rose-500 rounded-lg transition-all">
                         Choose File
                       </button>
                     </>
@@ -437,7 +376,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
             </div>
             <div className="sm:col-span-2 flex items-center gap-3">
               <input id="isPremium" type="checkbox" checked={form.isPremium} onChange={(e) => set('isPremium', e.target.checked)}
-                className="w-4 h-4 accent-gold-accent rounded" />
+                className="w-4 h-4 accent-rose-500 rounded" />
               <label htmlFor="isPremium" className="text-sm text-on-surface font-medium cursor-pointer">
                 Mark as Premium resource
               </label>
@@ -451,7 +390,7 @@ function ResourceFormModal({ mode, initial, onClose, onSave }) {
             Cancel
           </button>
           <button disabled={saving || uploading} onClick={handleSubmit}
-            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
+            className="px-6 py-2.5 text-sm font-bold bg-rose-500 text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
             {saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Upload Resource'}
           </button>
         </div>
@@ -492,7 +431,7 @@ function RateModal({ resource, onClose, onSave }) {
               <button key={star} type="button"
                 onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
                 onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
-                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline'}`}>
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-rose-500' : 'text-slate-200 dark:text-outline'}`}>
                   {star <= (hovered || rating) ? 'star' : 'star_border'}
                 </span>
               </button>
@@ -503,7 +442,7 @@ function RateModal({ resource, onClose, onSave }) {
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5">Review (optional)</label>
-            <textarea className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+            <textarea className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/40"
               value={review} onChange={(e) => setReview(e.target.value)} placeholder="Share your thoughts..." maxLength={500} />
           </div>
         </div>
@@ -512,7 +451,7 @@ function RateModal({ resource, onClose, onSave }) {
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving || !rating}
-            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
+            className="px-6 py-2.5 text-sm font-bold bg-rose-500 text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
             {saving ? 'Submitting…' : 'Submit Rating'}
           </button>
         </div>
@@ -540,7 +479,7 @@ function AnalyticsPanel({ analytics, loading }) {
     { label: 'Approved',          value: overview.approved,           icon: 'check_circle',   color: 'text-emerald-500' },
     { label: 'Pending Approval',  value: overview.pending,            icon: 'pending',        color: 'text-amber-500'   },
     { label: 'Rejected',          value: overview.rejected ?? 0,      icon: 'cancel',         color: 'text-red-500'     },
-    { label: 'Total Downloads',   value: fmt(overview.totalDownloads), icon: 'download',      color: 'text-gold-accent' },
+    { label: 'Total Downloads',   value: fmt(overview.totalDownloads), icon: 'download',      color: 'text-rose-500' },
     { label: 'Total Views',       value: fmt(overview.totalViews),     icon: 'visibility',    color: 'text-blue-500'    },
     { label: 'Avg Rating',        value: overview.avgRating ? overview.avgRating.toFixed(1) : '—', icon: 'star', color: 'text-yellow-500' },
   ];
@@ -562,7 +501,7 @@ function AnalyticsPanel({ analytics, loading }) {
         {/* By Type */}
         <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl p-6">
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent text-[18px]">donut_large</span>
+            <span className="material-symbols-outlined text-rose-500 text-[18px]">donut_large</span>
             Resources by Type
           </h3>
           <div className="space-y-3">
@@ -579,7 +518,7 @@ function AnalyticsPanel({ analytics, loading }) {
                     <span className="text-slate-500 dark:text-outline font-mono text-xs">{item.count} · {pct}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-slate-100 dark:bg-outline-variant/20 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-gold-accent to-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-rose-500 to-primary transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -590,7 +529,7 @@ function AnalyticsPanel({ analytics, loading }) {
         {/* By Category */}
         <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl p-6">
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent text-[18px]">category</span>
+            <span className="material-symbols-outlined text-rose-500 text-[18px]">category</span>
             Resources by Category
           </h3>
           <div className="space-y-3">
@@ -616,18 +555,18 @@ function AnalyticsPanel({ analytics, loading }) {
         {/* Top Downloaded */}
         <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl p-6">
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent text-[18px]">download</span>
+            <span className="material-symbols-outlined text-rose-500 text-[18px]">download</span>
             Top Downloaded
           </h3>
           <div className="space-y-3">
             {(topDownloads || []).map((r, i) => (
               <div key={r._id} className="flex items-center gap-3 py-2 border-b border-slate-50 dark:border-outline-variant/10 last:border-0">
-                <span className="w-6 h-6 rounded-full bg-gold-accent/10 text-gold-accent text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                <span className="w-6 h-6 rounded-full bg-rose-500/10 text-rose-500 text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-on-surface truncate">{r.title}</p>
                   <p className="text-[10px] text-slate-400 dark:text-outline uppercase font-bold">{r.type}</p>
                 </div>
-                <span className="text-xs font-bold text-gold-accent">{fmt(r.downloads)}</span>
+                <span className="text-xs font-bold text-rose-500">{fmt(r.downloads)}</span>
               </div>
             ))}
             {(!topDownloads || topDownloads.length === 0) && (
@@ -639,7 +578,7 @@ function AnalyticsPanel({ analytics, loading }) {
         {/* Top Viewed */}
         <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl p-6">
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-gold-accent text-[18px]">visibility</span>
+            <span className="material-symbols-outlined text-rose-500 text-[18px]">visibility</span>
             Top Viewed
           </h3>
           <div className="space-y-3">
@@ -695,10 +634,6 @@ export default function AdminDashboardResourcesPage() {
   const [sort, setSort]                     = useState('-createdAt');
   const [page, setPage]                     = useState(1);
 
-  /* ── Bookmarks ── */
-  const [bookmarks, setBookmarks]       = useState([]);
-  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
-
   /* ── Analytics ── */
   const [analytics, setAnalytics]         = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -708,6 +643,8 @@ export default function AdminDashboardResourcesPage() {
   const [editTarget, setEditTarget]   = useState(null);
   const [rateTarget, setRateTarget]   = useState(null);
   const [previewResource, setPreviewResource] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, title: '' });
+  const [deletePending, setDeletePending] = useState(false);
 
   /* ── Fetch resources ── */
   const fetchResources = useCallback(async () => {
@@ -764,36 +701,7 @@ export default function AdminDashboardResourcesPage() {
       .finally(() => setAnalyticsLoading(false));
   }, [activeTab]);
 
-  /* ── Fetch bookmarks ── */
-  const fetchBookmarks = useCallback(async () => {
-    try {
-      const res = await resourceApi.getBookmarks({ limit: 50 });
-      const bk  = res.data?.resources || [];
-      setBookmarks(bk);
-      setBookmarkedIds(new Set(bk.map((r) => r._id)));
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => { fetchBookmarks(); }, [fetchBookmarks]);
-
   /* ── Handlers ── */
-  const handleBookmark = async (id) => {
-    try {
-      const res = await resourceApi.toggleBookmark(id);
-      if (res.data.bookmarked) {
-        setBookmarkedIds((prev) => new Set([...prev, id]));
-        const target = resources.find((r) => r._id === id);
-        if (target) setBookmarks((prev) => [target, ...prev.filter((b) => b._id !== id)]);
-      } else {
-        setBookmarkedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
-        setBookmarks((prev) => prev.filter((b) => b._id !== id));
-      }
-      toast.success(res.data.bookmarked ? 'Saved to bookmarks' : 'Removed from bookmarks');
-    } catch {
-      toast.error('Failed to update bookmark');
-    }
-  };
-
   const handleDownload = async (id) => {
     try { await resourceApi.trackDownload(id); } catch { /* ignore */ }
   };
@@ -832,14 +740,28 @@ export default function AdminDashboardResourcesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Permanently delete this resource? This cannot be undone.')) return;
+  const requestDeleteResource = (id) => {
+    const r = resources.find((x) => x._id === id);
+    setDeleteDialog({ open: true, id, title: (r?.title || '').trim() || 'this resource' });
+  };
+
+  const closeDeleteDialog = () => {
+    if (deletePending) return;
+    setDeleteDialog({ open: false, id: null, title: '' });
+  };
+
+  const confirmDeleteResource = async () => {
+    if (!deleteDialog.id) return;
+    setDeletePending(true);
     try {
-      await resourceApi.delete(id);
-      setResources((prev) => prev.filter((r) => r._id !== id));
+      await resourceApi.delete(deleteDialog.id);
+      setResources((prev) => prev.filter((r) => r._id !== deleteDialog.id));
       toast.success('Resource deleted');
+      setDeleteDialog({ open: false, id: null, title: '' });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete');
+    } finally {
+      setDeletePending(false);
     }
   };
 
@@ -891,36 +813,37 @@ export default function AdminDashboardResourcesPage() {
             user={user}
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
-          >
-            <button
-              type="button"
-              onClick={() => setUploadModal(true)}
-              className="bg-gold-accent text-white text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span className="hidden sm:inline">Upload Resource</span>
-              <span className="sm:hidden">Upload</span>
-            </button>
-          </AdminTopBar>
-          <div className="px-4 sm:px-8 pt-3 pb-2">
-            <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
-            <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
-              Approve uploads, manage all resources, and view platform-wide analytics.
-            </p>
-          </div>
+          />
 
-          {/* ── Content ── */}
-          <div className="p-8 space-y-6 pb-32">
+          <div className="px-4 sm:px-8 pt-4 pb-32 max-w-[1600px] mx-auto w-full">
+            <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/20 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-6 py-5 sm:px-8 sm:py-6 border-b border-slate-100 dark:border-outline-variant/20 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Resource Management</h1>
+                  <p className="text-sm text-slate-500 dark:text-on-surface-variant mt-1">
+                    Approve uploads, manage all resources, and view platform-wide analytics.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUploadModal(true)}
+                  className="inline-flex items-center justify-center gap-2 shrink-0 self-end sm:self-auto sm:ml-auto bg-rose-500 text-white text-sm font-bold px-4 py-2.5 sm:px-5 rounded-lg hover:opacity-90 active:scale-95 transition-all whitespace-nowrap dark:bg-rose-600 dark:hover:bg-rose-500"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <span className="hidden sm:inline">Upload Resource</span>
+                  <span className="sm:hidden">Upload</span>
+                </button>
+              </div>
 
-            {/* ── Tabs ── */}
-            <div className="flex items-center gap-1 border-b border-slate-200 dark:border-outline-variant/30">
+              {/* ── Tabs ── */}
+              <div className="flex flex-nowrap items-center gap-1 px-4 sm:px-6 border-b border-slate-200 dark:border-outline-variant/30 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {TABS.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => handleTabChange(tab.key)}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition-all -mb-px relative ${
                     activeTab === tab.key
-                      ? 'border-gold-accent text-gold-accent'
+                      ? 'border-rose-500 text-rose-500'
                       : 'border-transparent text-slate-500 dark:text-outline hover:text-on-surface'
                   }`}
                 >
@@ -938,7 +861,10 @@ export default function AdminDashboardResourcesPage() {
                   )}
                 </button>
               ))}
-            </div>
+              </div>
+
+              {/* ── Tab content ── */}
+              <div className="p-6 sm:p-8 space-y-6">
 
             {/* ── Analytics Tab ── */}
             {activeTab === 'analytics' && (
@@ -956,14 +882,14 @@ export default function AdminDashboardResourcesPage() {
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                       placeholder="Search resources…"
-                      className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-accent/40 text-on-surface"
+                      className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-on-surface"
                     />
                   </form>
 
                   <select
                     value={filterType}
                     onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
-                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-rose-500/40"
                   >
                     <option value="">All Types</option>
                     {TYPES.map((t) => <option key={t} value={t}>{TYPE_CFG[t].label}</option>)}
@@ -972,7 +898,7 @@ export default function AdminDashboardResourcesPage() {
                   <select
                     value={filterCategory}
                     onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-rose-500/40"
                   >
                     {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
@@ -980,7 +906,7 @@ export default function AdminDashboardResourcesPage() {
                   <select
                     value={sort}
                     onChange={(e) => { setSort(e.target.value); setPage(1); }}
-                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                    className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-rose-500/40"
                   >
                     {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
@@ -1038,12 +964,10 @@ export default function AdminDashboardResourcesPage() {
                       <AdminResourceCard
                         key={r._id}
                         resource={r}
-                        bookmarkedIds={bookmarkedIds}
-                        onBookmark={handleBookmark}
                         onDownload={handleDownload}
                         onRate={handleRate}
                         onEdit={handleEdit}
-                        onDelete={handleDelete}
+                        onDelete={requestDeleteResource}
                         onApprove={handleApprove}
                         onReject={handleReject}
                         showApprovalActions={activeTab === 'pending' ? 'pending' : activeTab === 'rejected' ? 'rejected' : null}
@@ -1059,7 +983,7 @@ export default function AdminDashboardResourcesPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page <= 1}
-                      className="px-4 py-2 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 rounded-lg text-slate-500 dark:text-outline hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      className="px-4 py-2 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 rounded-lg text-slate-500 dark:text-outline hover:border-rose-500/40 hover:text-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
                       Previous
                     </button>
@@ -1069,7 +993,7 @@ export default function AdminDashboardResourcesPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                       disabled={page >= pagination.totalPages}
-                      className="px-4 py-2 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 rounded-lg text-slate-500 dark:text-outline hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      className="px-4 py-2 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 rounded-lg text-slate-500 dark:text-outline hover:border-rose-500/40 hover:text-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
                       Next
                     </button>
@@ -1077,6 +1001,8 @@ export default function AdminDashboardResourcesPage() {
                 )}
               </>
             )}
+              </div>
+            </div>
           </div>
         {/* ── Modals ── */}
         {uploadModal && (
@@ -1092,12 +1018,55 @@ export default function AdminDashboardResourcesPage() {
           <ResourcePreviewModal resource={previewResource} onClose={() => setPreviewResource(null)} />
         )}
 
-        {/* ── Bookmarks Drawer ── */}
-        <BookmarksDrawer
-          bookmarks={bookmarks}
-          bookmarkCount={bookmarkedIds.size}
-          onRemove={handleBookmark}
-        />
+        {deleteDialog.open && (
+          <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Close dialog"
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+              onClick={closeDeleteDialog}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-delete-resource-title"
+              className="relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-outline-variant/25 bg-white dark:bg-surface-container-lowest shadow-[0_24px_60px_rgba(15,23,42,0.28)] p-6"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-red-500 text-[32px] shrink-0" aria-hidden>delete_forever</span>
+                <div className="min-w-0">
+                  <h3 id="admin-delete-resource-title" className="font-serif-alt text-xl font-bold text-on-surface">
+                    Delete resource?
+                  </h3>
+                  <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+                    This will permanently remove{' '}
+                    <span className="font-semibold text-on-surface break-words">"{deleteDialog.title}"</span>.
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={closeDeleteDialog}
+                  disabled={deletePending}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-outline-variant/40 text-sm font-bold text-on-surface-variant hover:bg-slate-50 dark:hover:bg-surface-container transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteResource}
+                  disabled={deletePending}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors disabled:opacity-60"
+                >
+                  {deletePending && <Spinner size="sm" className="text-white" />}
+                  {deletePending ? 'Deleting…' : 'Delete resource'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   );
 }

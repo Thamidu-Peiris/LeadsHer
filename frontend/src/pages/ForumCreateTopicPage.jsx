@@ -104,7 +104,7 @@ export default function ForumCreateTopicPage() {
       <div className="max-w-2xl mx-auto">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2.5 text-sm sm:text-base text-outline mb-6">
-          <Link to="/forum" className="font-medium hover:text-gold-accent transition-colors">Forum</Link>
+          <Link to="/forum" className="font-medium hover:text-blue-900 transition-colors">Forum</Link>
           <span className="material-symbols-outlined text-[18px] sm:text-[22px] shrink-0">chevron_right</span>
           <span className="text-on-surface font-semibold">{isEdit ? 'Edit Topic' : 'New Discussion'}</span>
         </nav>
@@ -131,7 +131,7 @@ export default function ForumCreateTopicPage() {
                 maxLength={200}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="What do you want to discuss?"
-                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all placeholder:text-outline/60"
+                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-blue-900/40 focus:border-blue-900 transition-all placeholder:text-outline/60"
               />
               <p className="text-xs text-outline mt-1 text-right">{form.title.length}/200</p>
             </div>
@@ -141,7 +141,7 @@ export default function ForumCreateTopicPage() {
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all"
+                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-blue-900/40 transition-all"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
@@ -158,7 +158,7 @@ export default function ForumCreateTopicPage() {
                 onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
                 rows={10}
                 placeholder="Share your question, insight, or story in detail…"
-                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface resize-y focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all placeholder:text-outline/60"
+                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface resize-y focus:outline-none focus:ring-2 focus:ring-blue-900/40 focus:border-blue-900 transition-all placeholder:text-outline/60"
               />
             </div>
 
@@ -169,7 +169,7 @@ export default function ForumCreateTopicPage() {
                 value={form.tags}
                 onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
                 placeholder="leadership, career, networking (comma-separated, max 10)"
-                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40 transition-all placeholder:text-outline/60"
+                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface focus:outline-none focus:ring-2 focus:ring-blue-900/40 transition-all placeholder:text-outline/60"
               />
             </div>
 
@@ -177,7 +177,7 @@ export default function ForumCreateTopicPage() {
               <button
                 type="submit"
                 disabled={saving || !form.title.trim() || !form.content.trim()}
-                className="flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-6 py-3 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white font-bold px-6 py-3 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {saving ? (
                   <>

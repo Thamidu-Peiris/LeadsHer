@@ -5,10 +5,10 @@ import { absolutePhotoUrl } from '../../utils/absolutePhotoUrl';
 import Spinner from '../common/Spinner';
 
 const CATEGORY_STYLES = {
-  webinar:            'bg-violet-100 text-violet-700',
+  webinar:            'bg-rose-100 text-rose-800',
   workshop:           'bg-blue-100 text-blue-700',
   networking:         'bg-teal-100 text-teal-700',
-  conference:         'bg-purple-100 text-purple-700',
+  conference:         'bg-pink-100 text-pink-800',
   'panel-discussion': 'bg-rose-100 text-rose-700',
 };
 

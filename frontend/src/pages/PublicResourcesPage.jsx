@@ -183,19 +183,17 @@ function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, on
         </p>
 
         <div className="flex min-w-0 items-center justify-between gap-2 border-t border-slate-100 pt-2 dark:border-outline-variant/20">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="flex shrink-0 items-center gap-1 text-xs font-bold tabular-nums text-blue-800 dark:text-blue-300">
-              <span className="material-symbols-outlined text-[16px] leading-none">download</span>
-              {fmt(resource.downloads)}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums text-blue-800 dark:text-blue-300" title="Downloads">
+              <span className="material-symbols-outlined text-[17px] leading-none text-blue-800 dark:text-blue-300">download</span>
+              {fmt(resource.downloads ?? 0)}
             </span>
             <span className="flex shrink-0 items-center gap-1 text-xs font-bold tabular-nums text-amber-500 dark:text-amber-400">
-              <span className="material-symbols-outlined text-[16px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span className="material-symbols-outlined text-[17px] leading-none text-amber-500 dark:text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>
                 star
               </span>
-              {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
-              {resource.ratingCount > 0 && (
-                <span className="font-normal text-slate-400">({resource.ratingCount})</span>
-              )}
+              {(Number(resource.averageRating) || 0).toFixed(1)}
+              <span className="font-normal text-slate-400 dark:text-slate-500">({resource.ratingCount ?? 0})</span>
             </span>
             <button
               type="button"

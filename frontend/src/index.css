@@ -53,6 +53,32 @@
   --c-gold-accent:                212 175 55;
 }
 
+/* Home page: rose/pink accents instead of purple primary (scoped to .home-theme-rose) */
+.home-theme-rose {
+  --c-primary:                    225 29 72;
+  --c-primary-container:          244 63 94;
+  --c-on-primary:                 255 255 255;
+  --c-on-primary-container:       255 241 242;
+  --c-inverse-primary:            254 205 211;
+  --c-primary-fixed:              255 228 230;
+  --c-primary-fixed-dim:          225 29 72;
+  --c-on-primary-fixed:           136 19 55;
+  --c-on-primary-fixed-variant:   159 18 57;
+  --c-surface-tint:               225 29 72;
+}
+
+.dark .home-theme-rose {
+  --c-primary:                    251 113 133;
+  --c-primary-container:          225 29 72;
+  --c-on-primary:                 255 255 255;
+  --c-on-primary-container:       255 241 242;
+  --c-inverse-primary:            225 29 72;
+  --c-primary-fixed:              136 19 55;
+  --c-primary-fixed-dim:          251 113 133;
+  --c-on-primary-fixed-variant:   255 228 230;
+  --c-surface-tint:               251 113 133;
+}
+
 /* ─── Dark mode tokens ─────────────────────────────────────────────── */
 .dark {
   --c-outline:                    154 147 168;
@@ -428,6 +454,13 @@
   }
   .btn-outline {
     @apply inline-flex items-center justify-center px-8 py-4 border border-outline-variant text-primary font-label text-xs tracking-[0.2em] uppercase hover:bg-secondary-container/20 transition-all active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-outline-white-rose {
+    @apply inline-flex items-center justify-center px-8 py-4 bg-white border-2 border-rose-500 text-primary font-label font-bold text-xs tracking-[0.2em] uppercase hover:bg-rose-50 transition-all active:scale-[0.98] disabled:opacity-50;
+  }
+  /* Hero: white control, pink label, rose stroke */
+  .btn-explore-archives {
+    @apply inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white border-2 border-rose-500 text-rose-600 font-label font-bold text-xs tracking-[0.2em] uppercase shadow-md shadow-rose-900/5 hover:bg-rose-50 hover:text-rose-700 transition-all active:scale-[0.98] disabled:opacity-50;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center px-4 py-2 text-on-surface-variant font-label text-xs tracking-wider uppercase hover:text-primary transition-colors;

@@ -8,7 +8,7 @@ import CallToAction    from '../components/home/CallToAction';
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="home-theme-rose">
       <Hero />
       <StatsSection />
       <FeaturedStories />

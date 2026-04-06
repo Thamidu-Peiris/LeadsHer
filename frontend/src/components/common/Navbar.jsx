@@ -1,17 +1,52 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useMatch, useNavigate, useResolvedPath } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const navLinks = [
-  { to: '/',           label: 'Home' },
-  { to: '/stories',    label: 'Stories' },
-  { to: '/events',     label: 'Events' },
-  { to: '/mentors',    label: 'Mentors' },
-  { to: '/resources',  label: 'Resources' },
-  { to: '/forum',      label: 'Discussion' },
+  { to: '/', label: 'Home' },
+  { to: '/stories', label: 'Stories' },
+  { to: '/events', label: 'Events' },
+  { to: '/mentors', label: 'Mentors' },
+  { to: '/resources', label: 'Resources' },
+  { to: '/forum', label: 'Discussion' },
 ];
+
+function AnimatedNavLink({ to, label, end, onClick, className = '' }) {
+  const resolved = useResolvedPath(to);
+  const match = useMatch({ path: resolved.pathname, end: !!end });
+  const isActive = !!match;
+
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      onClick={onClick}
+      className={[
+        'group relative inline-block pb-1 font-sans-modern text-base font-bold tracking-normal transition-colors duration-200',
+        isActive
+          ? 'text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300'
+          : 'text-neutral-950 hover:text-rose-700 dark:text-neutral-100 dark:hover:text-rose-300',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {label}
+      <span
+        aria-hidden
+        className={[
+          'pointer-events-none absolute bottom-0 left-0 h-[2px] w-full origin-left rounded-full',
+          'transition-transform duration-300 ease-out motion-reduce:duration-150',
+          isActive
+            ? 'hidden'
+            : 'scale-x-0 bg-rose-500 group-hover:scale-x-100 dark:bg-rose-400',
+        ].join(' ')}
+      />
+    </NavLink>
+  );
+}
 
 export default function Navbar() {
   const { isAuthenticated, user, logout, isMentee } = useAuth();
@@ -39,21 +74,10 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <ul className="hidden md:flex gap-10">
+        <ul className="hidden md:flex gap-10 items-center">
           {navLinks.map(({ to, label }) => (
             <li key={to}>
-              <NavLink
-                to={to}
-                className={({ isActive }) =>
-                  `font-sans-modern text-base font-normal tracking-wide transition-colors duration-200 ${
-                    isActive
-                      ? 'text-primary border-b border-primary/30'
-                      : 'text-on-surface-variant hover:text-primary'
-                  }`
-                }
-              >
-                {label}
-              </NavLink>
+              <AnimatedNavLink to={to} label={label} end={to === '/'} />
             </li>
           ))}
         </ul>
@@ -115,11 +139,11 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login"
-                className="font-label text-xs tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors">
+                className="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors">
                 Sign In
               </Link>
               <Link to="/register"
-                className="bg-primary text-white px-6 py-2 font-label text-xs tracking-widest uppercase hover:opacity-90 transition-opacity active:scale-[0.98]">
+                className="bg-rose-500 px-6 py-2 font-label text-xs font-bold tracking-widest uppercase text-white shadow-sm shadow-rose-500/25 transition-colors hover:bg-rose-600 active:scale-[0.98] dark:bg-rose-600 dark:hover:bg-rose-500">
                 Join
               </Link>
             </>
@@ -134,13 +158,17 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-outline-variant/10 bg-surface-container-lowest px-8 py-6 space-y-4">
+        <div className="md:hidden border-t border-outline-variant/10 bg-surface-container-lowest px-8 py-6 space-y-1">
           {navLinks.map(({ to, label }) => (
-            <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `block font-sans-modern text-base font-medium tracking-wide ${isActive ? 'text-primary' : 'text-on-surface-variant'}`
-              }
-            >{label}</NavLink>
+            <div key={to} className="py-1">
+              <AnimatedNavLink
+                to={to}
+                label={label}
+                end={to === '/'}
+                onClick={() => setMenuOpen(false)}
+                className="py-1"
+              />
+            </div>
           ))}
           <hr className="border-outline-variant/20 my-4" />
           {/* Theme toggle (mobile) */}
@@ -169,9 +197,9 @@ export default function Navbar() {
           ) : (
             <div className="flex gap-3 pt-2">
               <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center border border-outline-variant py-3 font-label text-xs tracking-widest uppercase text-on-surface-variant">Sign In</Link>
+                className="flex-1 text-center border border-outline-variant py-3 font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant">Sign In</Link>
               <Link to="/register" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center bg-primary text-white py-3 font-label text-xs tracking-widest uppercase">Join</Link>
+                className="flex-1 text-center bg-rose-500 py-3 font-label text-xs font-bold tracking-widest uppercase text-white shadow-sm shadow-rose-500/25 transition-colors hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">Join</Link>
             </div>
           )}
         </div>
