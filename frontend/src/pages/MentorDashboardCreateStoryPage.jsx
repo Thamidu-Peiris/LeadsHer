@@ -241,7 +241,7 @@ export default function MentorDashboardCreateStoryPage() {
 
   return (
     <>
-          <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-white/95 dark:bg-surface-container-lowest/95 backdrop-blur-md">
+          <div className="sticky top-0 z-40 border-b border-outline-variant/15 bg-white dark:bg-surface-container-lowest/95 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
@@ -324,7 +324,7 @@ export default function MentorDashboardCreateStoryPage() {
                   type="button"
                   disabled={saving}
                   onClick={() => saveStory('published')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-[#f43f5e] text-white hover:bg-[#e11d48] disabled:opacity-50 transition-colors"
                 >
                   {saving ? <Spinner size="sm" className="text-white" /> : 'Publish'}
                   {!saving && <span className="material-symbols-outlined text-[16px]">send</span>}
@@ -334,8 +334,9 @@ export default function MentorDashboardCreateStoryPage() {
           </div>
 
           <div className="flex flex-1 min-h-0">
-            <section className="flex-1 min-w-0 overflow-y-auto bg-white dark:bg-surface-container-lowest border-r border-outline-variant/10">
+            <section className="flex-1 min-w-0 overflow-y-auto bg-[#FFE6F5] dark:bg-surface-container-lowest border-r border-outline-variant/10">
               <div className="max-w-3xl mx-auto px-5 py-6 lg:px-8 lg:py-7">
+                <div className="rounded-xl border border-outline-variant/20 bg-white p-5 shadow-sm sm:p-6">
                 <div className="mb-7">
                   <label className="block text-[10px] font-bold text-outline uppercase tracking-widest mb-2">
                     Cover
@@ -442,10 +443,11 @@ export default function MentorDashboardCreateStoryPage() {
                   onChange={(html) => setField('content', html)}
                   disabled={saving}
                 />
+                </div>
               </div>
             </section>
 
-            <aside className="w-[min(100%,380px)] shrink-0 flex flex-col bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+            <aside className="w-[min(100%,380px)] shrink-0 flex flex-col bg-white dark:bg-surface-container-lowest border-l border-outline-variant/10 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
               <div className="p-5 sm:p-6 space-y-6">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-serif-alt text-xl font-bold text-on-surface leading-tight">Details</h2>

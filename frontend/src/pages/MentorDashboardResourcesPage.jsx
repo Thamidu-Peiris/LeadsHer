@@ -329,7 +329,7 @@ function BookmarksPanel({ bookmarks, bookmarkCount, onRemove, className = '', ve
 }
 
 function BookmarksRightRail({ bookmarks, bookmarkCount, onRemove }) {
-  const [railOpen, setRailOpen] = useState(true);
+  const [railOpen, setRailOpen] = useState(false);
 
   return (
     <aside
@@ -1221,40 +1221,44 @@ export default function MentorDashboardResourcesPage() {
 
       <div className="flex flex-1 min-h-0 items-stretch w-full">
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
-          <div className="w-full max-w-2xl mx-auto px-6 sm:px-8 pt-6 pb-4">
-            <form onSubmit={handleSearch}>
-              <div className="relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-rose-500 transition-colors text-[20px]">
-                  search
-                </span>
-                <input
-                  className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/40 transition-all"
-                  placeholder="Search resources..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
+          <div className="mx-auto w-full max-w-[1400px] px-8 pt-8 pb-6">
+            <div className="w-full">
+            <div className="rounded-xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-lowest p-3 shadow-sm">
+              <form onSubmit={handleSearch}>
+                <div className="relative group">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-rose-500 transition-colors text-[20px]">
+                    search
+                  </span>
+                  <input
+                    className="w-full bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-full py-2.5 pl-10 pr-4 text-sm placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/40 transition-all"
+                    placeholder="Search resources..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                </div>
+              </form>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 dark:border-outline-variant/40 pt-3">
+                {typePills.map((pill) => (
+                  <button
+                    type="button"
+                    key={pill.key}
+                    onClick={() => handleTypeChange(pill.key)}
+                    className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                      activeType === pill.key
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
               </div>
-            </form>
+            </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 border-b border-slate-200 dark:border-outline-variant/40 pt-2 pb-6 px-6">
-            {typePills.map((pill) => (
-              <button
-                type="button"
-                key={pill.key}
-                onClick={() => handleTypeChange(pill.key)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                  activeType === pill.key
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-white border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-rose-500/50 hover:text-rose-500'
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 px-8 py-5">
+          <div className="mx-auto w-full max-w-[1400px] px-8 pb-5">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 rounded-xl border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-lowest p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3 w-full">
               <div className="relative min-w-[180px]">
                 <select
@@ -1332,9 +1336,10 @@ export default function MentorDashboardResourcesPage() {
                 Upload Resource
               </button>
             )}
+            </div>
           </div>
 
-          <div className="px-8 pb-8 pt-2">
+          <div className="mx-auto w-full max-w-[1400px] px-8 pb-8 pt-2">
               {loading ? (
                 <div className="flex justify-center py-24">
                   <Spinner size="lg" />
@@ -1404,7 +1409,7 @@ export default function MentorDashboardResourcesPage() {
               )}
           </div>
 
-          <div className="xl:hidden px-8 pb-6">
+          <div className="mx-auto w-full max-w-[1400px] xl:hidden px-8 pb-6">
             <BookmarksPanel
               bookmarks={bookmarks}
               bookmarkCount={bookmarkedIds.size}
