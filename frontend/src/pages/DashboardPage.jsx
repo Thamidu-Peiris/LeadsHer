@@ -422,16 +422,28 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/stories/new"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
+                      to="/dashboard/stories/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg bg-[#f43f5e] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-[#e11d48]"
                     >
-                      <span className="material-symbols-outlined text-[14px]">auto_stories</span> New Story
+                      <span className="material-symbols-outlined text-[16px]">auto_stories</span> New Story
                     </Link>
                     <Link
-                      to="/mentors"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-rose-500/40 transition-colors"
+                      to="/events/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
                     >
-                      <span className="material-symbols-outlined text-[14px]">groups</span> Mentorship
+                      <span className="material-symbols-outlined text-[16px]">event</span> New Event
+                    </Link>
+                    <Link
+                      to="/dashboard/mentorship"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">groups</span> Mentorship
+                    </Link>
+                    <Link
+                      to="/dashboard/forum"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">forum</span> Forum
                     </Link>
                   </div>
                 </div>
