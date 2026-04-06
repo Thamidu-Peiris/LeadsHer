@@ -40,7 +40,7 @@ export default function FeaturedStories() {
   return (
     <section className="py-24 bg-[#FFE6F5]">
       <div className="container mx-auto px-8 md:px-12">
-        <div className="mb-12 rounded-2xl border border-outline-variant/20 bg-white px-6 py-7 shadow-sm sm:px-8">
+        <div className="mb-12 rounded-2xl border border-outline-variant/20 bg-white px-6 py-7 shadow-sm dark:bg-black sm:px-8">
           <div className="flex justify-between items-end gap-4">
             <h2 className="font-headline text-4xl text-on-surface italic max-w-xl leading-tight sm:text-5xl md:text-6xl">
             The Pulse of <br /> Modern Authority
