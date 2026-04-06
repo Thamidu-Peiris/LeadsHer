@@ -329,7 +329,7 @@ function BookmarksPanel({ bookmarks, bookmarkCount, onRemove, className = '', ve
 }
 
 function BookmarksRightRail({ bookmarks, bookmarkCount, onRemove }) {
-  const [railOpen, setRailOpen] = useState(true);
+  const [railOpen, setRailOpen] = useState(false);
 
   return (
     <aside
