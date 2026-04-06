@@ -176,7 +176,7 @@ export default function MentorDashboardSettingsPage() {
     <>
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} />
 
-          <div className="p-8 space-y-6 max-w-[1000px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 px-8 py-8">
             {isAdmin && (
               <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-rose-500">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -222,7 +222,8 @@ export default function MentorDashboardSettingsPage() {
               </section>
             )}
 
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 lg:col-span-2">
               <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
                 <div>
                   <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentor Profile</h1>
@@ -357,7 +358,7 @@ export default function MentorDashboardSettingsPage() {
               </div>
             </section>
 
-            <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 max-w-[900px]">
+            <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 lg:col-span-1">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-rose-500 text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">
@@ -386,6 +387,7 @@ export default function MentorDashboardSettingsPage() {
                   </div>
                 </div>
             </section>
+            </div>
           </div>
     </>
   );
