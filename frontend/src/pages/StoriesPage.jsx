@@ -342,7 +342,7 @@ export default function StoriesPage() {
                 className={`px-3.5 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em] border transition-all duration-200 active:scale-[0.98] ${
                   filters.category === c
                     ? 'bg-pink-500 text-white border-pink-600 shadow-md shadow-pink-500/25 ring-1 ring-pink-400/40 dark:bg-pink-500 dark:text-white dark:border-pink-400'
-                    : 'bg-pink-100 text-pink-800 border-pink-300/90 hover:bg-pink-200 hover:border-pink-400 hover:text-pink-950 dark:bg-pink-950/55 dark:text-pink-200 dark:border-pink-500/50 dark:hover:bg-pink-900/70 dark:hover:border-pink-400 dark:hover:text-pink-50'
+                    : 'bg-pink-100 text-pink-800 border-pink-300/90 hover:bg-pink-200 hover:border-pink-400 hover:text-pink-950 dark:bg-pink-300 dark:text-black dark:border-pink-400 dark:hover:bg-pink-200 dark:hover:border-pink-500 dark:hover:text-black'
                 }`}
               >
                 {CATEGORY_LABELS[c]}
@@ -493,7 +493,7 @@ export default function StoriesPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface">
+                        <span className="px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold uppercase tracking-widest text-on-surface dark:bg-pink-200 dark:text-black">
                           {CATEGORY_LABELS[s.category] || s.category}
                         </span>
                         <button

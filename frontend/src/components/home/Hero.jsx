@@ -47,13 +47,7 @@ export default function Hero() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <header
-      className="relative min-h-screen flex items-center pt-24 overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(135deg, #FFE6F0 0%, #FFD5E8 38%, #F8C6E2 72%, #FFE4E9 100%)',
-      }}
-    >
+    <header className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-gradient-to-br from-[#ffe6f0] via-[#ffd5e8] to-[#ffe4e9] dark:bg-gradient-to-br dark:from-[#140714] dark:via-[#1c0a1f] dark:to-[#0f0b1a]">
       {/* Hero gradient */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
@@ -74,14 +68,14 @@ export default function Hero() {
       <div className="relative container mx-auto px-8 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center z-10">
         {/* Left copy */}
         <div className="max-w-2xl">
-          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface">
+          <h1 className="font-headline text-[72px] md:text-[96px] leading-[0.9] tracking-tighter mb-8 text-on-surface dark:text-rose-50">
             Where Women Lead.{' '}
             <br />
-            <span className="italic text-tertiary-container">
+            <span className="italic text-tertiary-container dark:text-rose-300">
               Where Stories Ignite.
             </span>
           </h1>
-          <p className="font-body text-xl text-on-surface-variant leading-relaxed mb-12 max-w-lg">
+          <p className="font-body text-xl text-[#475569] dark:text-rose-100/90 leading-relaxed mb-12 max-w-lg">
             A curated ecosystem for the modern female architect of change. Bridging ambition and legacy through editorial insight and shared wisdom.
           </p>
 
@@ -113,15 +107,15 @@ export default function Hero() {
           {HERO_PROFILES.map((p) => (
             <div
               key={p.name}
-              className={`${p.pos} bg-surface-container-lowest p-4 editorial-shadow border border-primary/10 transform ${p.rotate}`}
+              className={`${p.pos} bg-[#ffeaf4] dark:bg-[#ffd9eb] p-4 editorial-shadow border border-primary/10 dark:border-[#f43f5e]/45 transform ${p.rotate}`}
             >
               <div className="relative">
-                <div className="absolute -top-2 -left-2 w-full h-full border border-gold-accent/40 pointer-events-none" />
-                <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-gold-accent/80 z-10" />
-                <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-gold-accent/80 z-10" />
+                <div className="absolute -top-2 -left-2 w-full h-full border border-gold-accent/40 dark:border-[#f43f5e]/45 pointer-events-none" />
+                <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-gold-accent/80 dark:border-[#f43f5e]/80 z-10" />
+                <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-gold-accent/80 dark:border-[#f43f5e]/80 z-10" />
               </div>
               <div
-                className={`relative w-full ${p.h} mb-4 flex items-end p-3 overflow-hidden border border-gold-accent/50`}
+                className={`relative w-full ${p.h} mb-4 flex items-end p-3 overflow-hidden border border-gold-accent/50 dark:border-[#f43f5e]/55`}
               >
                 <img
                   src={p.image}
@@ -129,13 +123,13 @@ export default function Hero() {
                   className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 text-on-surface px-2 py-1">
+                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 dark:bg-[#ffc3de] text-on-surface dark:text-[#4a1430] px-2 py-1">
                   {p.location}
                 </span>
               </div>
               <div className="space-y-0.5 pb-1">
-                <h4 className="font-serif-alt text-lg">{p.name}</h4>
-                <p className="font-body text-xs text-on-surface-variant">{p.role}</p>
+                <h4 className="font-serif-alt text-lg text-on-surface dark:text-[#3a0f25]">{p.name}</h4>
+                <p className="font-body text-xs text-on-surface-variant dark:text-[#5b2741]">{p.role}</p>
               </div>
             </div>
           ))}
@@ -143,10 +137,10 @@ export default function Hero() {
       </div>
 
       {/* Bottom marquee */}
-      <div className="absolute bottom-0 w-full py-5 bg-surface-container-low border-y border-outline-variant/10 overflow-hidden">
+      <div className="absolute bottom-0 w-full py-5 bg-white/70 dark:bg-[#220f2a]/80 border-y border-outline-variant/10 dark:border-rose-300/20 overflow-hidden">
         <div className="marquee">
           {[0, 1].map((i) => (
-            <div key={i} className="marquee-content font-label text-xs tracking-[0.4em] uppercase text-on-surface-variant/60">
+            <div key={i} className="marquee-content font-label text-xs tracking-[0.4em] uppercase text-on-surface-variant/70 dark:text-rose-100/70">
               {MARQUEE_WORDS.map(({ text, dot }) => (
                 <span key={text} className="flex items-center gap-3">
                   {text}
