@@ -37,10 +37,10 @@ export default function MentorDashboardSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [pictureSaving, setPictureSaving] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [pictureFile, setPictureFile] = useState(null);
   const [picturePreview, setPicturePreview] = useState('');
+  const [profileName, setProfileName] = useState(user?.name || '');
   const [resetEmail, setResetEmail] = useState(user?.email || '');
 
   const [profile, setProfile] = useState(null);
@@ -60,6 +60,10 @@ export default function MentorDashboardSettingsPage() {
     user?.profilePicture ||
     user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
+  useEffect(() => {
+    setProfileName(user?.name || '');
+  }, [user?.name]);
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
@@ -120,28 +124,6 @@ export default function MentorDashboardSettingsPage() {
     else setPicturePreview('');
   };
 
-  const saveProfilePicture = async () => {
-    if (!pictureFile) {
-      toast.error('Choose a profile image first');
-      return;
-    }
-    setPictureSaving(true);
-    try {
-      const fd = new FormData();
-      fd.append('profilePicture', pictureFile);
-      const res = await authApi.updateProfileMultipart(fd);
-      const u = res.data?.user || res.data;
-      if (u) updateUser(u);
-      toast.success('Profile image updated');
-      setPictureFile(null);
-      setPicturePreview('');
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to update profile image');
-    } finally {
-      setPictureSaving(false);
-    }
-  };
-
   const sendPasswordReset = async (e) => {
     e.preventDefault();
     if (!resetEmail?.trim()) {
@@ -175,8 +157,29 @@ export default function MentorDashboardSettingsPage() {
     };
     setSaving(true);
     try {
+      const trimmedName = profileName.trim();
+      if (!trimmedName) {
+        toast.error('Name is required');
+        setSaving(false);
+        return;
+      }
+
+      if (pictureFile) {
+        const fd = new FormData();
+        fd.append('name', trimmedName);
+        fd.append('profilePicture', pictureFile);
+        const res = await authApi.updateProfileMultipart(fd);
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      } else if (trimmedName !== String(user?.name || '').trim()) {
+        const res = await authApi.updateProfile({ name: trimmedName });
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      }
       await mentorApi.upsertProfile(payload);
       toast.success('Mentor profile saved');
+      setPictureFile(null);
+      setPicturePreview('');
       localStorage.setItem(`leadsher_onboarding_mentorprofile_${user?._id}`, '1');
       await load();
     } catch (e) {
@@ -190,7 +193,7 @@ export default function MentorDashboardSettingsPage() {
     <>
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} />
 
-          <div className="p-8 space-y-6 max-w-[1000px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 px-8 py-8">
             {isAdmin && (
               <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-rose-500">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -236,7 +239,8 @@ export default function MentorDashboardSettingsPage() {
               </section>
             )}
 
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 lg:col-span-2">
               <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
                 <div>
                   <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentor Profile</h1>
@@ -287,14 +291,6 @@ export default function MentorDashboardSettingsPage() {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-outline">On</span>
                     </label>
                   </div>
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={save}
-                    className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
-                  >
-                    {saving ? 'Saving…' : 'Save changes'}
-                  </button>
                 </div>
               </div>
 
@@ -302,6 +298,15 @@ export default function MentorDashboardSettingsPage() {
                 <div className="flex justify-center py-16"><Spinner size="lg" /></div>
               ) : (
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Name *</label>
+                    <input
+                      className="w-full input"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Your name"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Profile picture</label>
                     <div className="flex items-center gap-4">
@@ -314,17 +319,9 @@ export default function MentorDashboardSettingsPage() {
                             Choose image
                             <input type="file" accept="image/*" onChange={handlePictureFile} className="hidden" />
                           </label>
-                          <button
-                            type="button"
-                            disabled={pictureSaving}
-                            onClick={saveProfilePicture}
-                            className="bg-rose-500 text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
-                          >
-                            {pictureSaving ? 'Uploading…' : 'Upload'}
-                          </button>
                           <span className="text-xs text-outline truncate">{pictureFile?.name || 'No file chosen'}</span>
                         </div>
-                        <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB. Uploaded to Cloudinary.</p>
+                        <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB. Image uploads when you click Save changes.</p>
                       </div>
                     </div>
                   </div>
@@ -375,9 +372,19 @@ export default function MentorDashboardSettingsPage() {
                   </div>
                 </div>
               )}
+              <div className="mt-8 border-t border-outline-variant/20 pt-5 flex justify-end">
+                <button
+                  type="button"
+                  disabled={saving || loading}
+                  onClick={save}
+                  className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                >
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
             </section>
 
-            <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 max-w-[900px]">
+            <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 lg:col-span-1">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-rose-500 text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">
@@ -406,6 +413,7 @@ export default function MentorDashboardSettingsPage() {
                   </div>
                 </div>
             </section>
+            </div>
           </div>
     </>
   );

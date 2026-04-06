@@ -202,7 +202,7 @@ export default function MentorDashboardStoriesPage() {
     <>
           <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Stories' }]} />
 
-          <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 px-8 py-8" style={{ backgroundColor: '#FFE6F5' }}>
             <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Stories Studio</h1>
@@ -302,8 +302,8 @@ export default function MentorDashboardStoriesPage() {
                   onClick={() => setStatusFilter(f.key)}
                   className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${
                     statusFilter === f.key
-                      ? 'bg-rose-500/10 text-on-surface border-rose-500/40'
-                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-rose-500/40'
+                      ? 'bg-[#f43f5e] text-white border-[#f43f5e]'
+                      : 'bg-white dark:bg-surface-container-lowest border-outline-variant/25 text-outline hover:border-[#f43f5e]/40 hover:text-[#f43f5e]'
                   }`}
                 >
                   {f.label}
