@@ -113,15 +113,15 @@ export default function Hero() {
           {HERO_PROFILES.map((p) => (
             <div
               key={p.name}
-              className={`${p.pos} bg-surface-container-lowest p-4 editorial-shadow border border-primary/10 transform ${p.rotate}`}
+              className={`${p.pos} bg-surface-container-lowest dark:bg-[#3b1026] p-4 editorial-shadow border border-primary/10 dark:border-[#f43f5e]/45 transform ${p.rotate}`}
             >
               <div className="relative">
-                <div className="absolute -top-2 -left-2 w-full h-full border border-gold-accent/40 pointer-events-none" />
-                <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-gold-accent/80 z-10" />
-                <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-gold-accent/80 z-10" />
+                <div className="absolute -top-2 -left-2 w-full h-full border border-gold-accent/40 dark:border-[#f43f5e]/45 pointer-events-none" />
+                <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-gold-accent/80 dark:border-[#f43f5e]/80 z-10" />
+                <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-gold-accent/80 dark:border-[#f43f5e]/80 z-10" />
               </div>
               <div
-                className={`relative w-full ${p.h} mb-4 flex items-end p-3 overflow-hidden border border-gold-accent/50`}
+                className={`relative w-full ${p.h} mb-4 flex items-end p-3 overflow-hidden border border-gold-accent/50 dark:border-[#f43f5e]/55`}
               >
                 <img
                   src={p.image}
@@ -129,13 +129,13 @@ export default function Hero() {
                   className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 text-on-surface px-2 py-1">
+                <span className="font-label text-[9px] tracking-widest uppercase bg-secondary-container/40 dark:bg-[#f43f5e]/25 text-on-surface dark:text-rose-100 px-2 py-1">
                   {p.location}
                 </span>
               </div>
               <div className="space-y-0.5 pb-1">
-                <h4 className="font-serif-alt text-lg">{p.name}</h4>
-                <p className="font-body text-xs text-on-surface-variant">{p.role}</p>
+                <h4 className="font-serif-alt text-lg dark:text-rose-50">{p.name}</h4>
+                <p className="font-body text-xs text-on-surface-variant dark:text-rose-200/85">{p.role}</p>
               </div>
             </div>
           ))}
