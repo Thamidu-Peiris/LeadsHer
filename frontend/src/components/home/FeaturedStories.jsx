@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { storyApi } from '../../api/storyApi';
 import Spinner from '../common/Spinner';
+import { absolutePhotoUrl } from '../../utils/absolutePhotoUrl';
 
 const CATEGORY_LABEL = {
   leadership:       'Leadership Philosophy',
@@ -54,6 +55,12 @@ export default function FeaturedStories() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {stories.slice(0, 3).map((s, i) => (
             <Link to={`/stories/${s._id}`} key={s._id} className="group cursor-pointer">
+              {(() => {
+                const authorRaw = String(s?.author?.profilePicture || s?.author?.avatar || '').trim();
+                const authorAvatar = authorRaw ? absolutePhotoUrl(authorRaw) : '';
+                const authorInitial = s.author?.name?.[0]?.toUpperCase() || 'A';
+                return (
+                  <>
               {/* Portrait image */}
               <div className="relative aspect-[3/4] overflow-hidden mb-8 bg-surface-container-low">
                 {s.coverImage ? (
@@ -85,14 +92,29 @@ export default function FeaturedStories() {
               )}
 
               <div className="flex items-center gap-4 border-t border-outline-variant/10 pt-6">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-secondary/30 flex items-center justify-center font-bold text-white text-sm">
-                  {s.author?.name?.[0]?.toUpperCase() || 'A'}
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-primary/40 to-secondary/30 flex items-center justify-center font-bold text-white text-sm">
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={s.author?.name || 'Author'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const fallbackName = encodeURIComponent(s.author?.name || 'Author');
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${fallbackName}&background=f43f5e&color=fff&bold=true`;
+                      }}
+                    />
+                  ) : (
+                    authorInitial
+                  )}
                 </div>
                 <div>
                   <p className="font-label text-[10px] tracking-wider uppercase">{s.author?.name || 'Author'}</p>
                   <p className="text-[10px] text-on-surface-variant">{s.readingTime} min read</p>
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </Link>
           ))}
         </div>
