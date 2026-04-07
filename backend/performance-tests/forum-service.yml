@@ -1,0 +1,59 @@
+config:
+  target: "http://localhost:5005"
+  phases:
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 10
+      name: "Warm-up"
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained Load"
+    - duration: 30
+      arrivalRate: 30
+      name: "Stress Spike"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  ensure:
+    p99: 1000
+    maxErrorRate: 1
+
+scenarios:
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "List Topics (Public)"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/forum/topics"
+          expect:
+            - statusCode: 200
+
+  - name: "Topics by Category"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/forum/topics?category=career-advice"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/forum/topics?category=general&page=1&limit=10"
+          expect:
+            - statusCode: 200
+
+  - name: "Topic Detail"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/forum/topics"
+          capture:
+            - json: "$.topics[0]._id"
+              as: "topicId"
+      - get:
+          url: "/api/forum/topics/{{ topicId }}"

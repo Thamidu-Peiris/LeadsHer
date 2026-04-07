@@ -1,0 +1,69 @@
+config:
+  target: "http://localhost:5002"
+  phases:
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 15
+      name: "Warm-up"
+    - duration: 60
+      arrivalRate: 15
+      name: "Sustained Load"
+    - duration: 30
+      arrivalRate: 40
+      name: "Stress Spike"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  ensure:
+    p99: 1000
+    maxErrorRate: 1
+
+scenarios:
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "List All Stories"
+    weight: 35
+    flow:
+      - get:
+          url: "/api/stories"
+          expect:
+            - statusCode: 200
+
+  - name: "Featured Stories"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/stories/featured"
+          expect:
+            - statusCode: 200
+
+  - name: "Stories with Filters"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/stories?category=STEM&page=1&limit=10"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/stories?category=leadership&page=1&limit=10"
+          expect:
+            - statusCode: 200
+
+  - name: "Story Detail View"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/stories"
+          capture:
+            - json: "$.data[0]._id"
+              as: "storyId"
+      - get:
+          url: "/api/stories/{{ storyId }}"
+          expect:
+            - statusCode: 200
