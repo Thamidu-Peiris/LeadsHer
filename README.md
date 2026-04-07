@@ -80,6 +80,94 @@ Story service will listen on port **5002** (or `STORY_SERVICE_PORT`).
 
 ---
 
+## Testing Instruction Report
+
+This project includes unit, integration, and performance testing instructions under `backend/TESTING.md`.  
+Use the quick guide below for day-to-day execution.
+
+### i. How to run unit tests
+
+Unit tests run at service level with Jest.
+
+```bash
+cd backend/services/<service-name>
+npm install
+npm run test:unit
+```
+
+Examples:
+
+```bash
+cd backend/services/auth-service
+npm run test:unit
+
+cd backend/services/mentorship-service
+npm run test:unit
+```
+
+### ii. Integration testing setup and execution
+
+Integration tests use Jest + Supertest with in-memory MongoDB (`mongodb-memory-server`), so a local MongoDB instance is not required.
+
+Setup and run:
+
+```bash
+cd backend/services/<service-name>
+npm install
+npm run test:integration
+```
+
+Run all tests for a service (unit + integration):
+
+```bash
+cd backend/services/<service-name>
+npm test
+```
+
+### iii. Performance testing setup and execution
+
+Performance tests are configured with Artillery in `backend/performance-tests/`.
+
+1. Start backend services (auth, story, mentorship, resource, forum, event) on ports `5001-5006`.
+2. Install performance test dependencies.
+3. Run service-specific or full-suite load tests.
+
+```bash
+cd backend/performance-tests
+npm install
+
+# Service-specific tests
+npm run test:auth
+npm run test:mentorship
+npm run test:story
+npm run test:forum
+npm run test:resource
+npm run test:event
+
+# All performance tests
+npm run test:all
+```
+
+Reports are generated to `backend/performance-tests/reports/` as JSON + HTML.
+
+### iv. Testing environment configuration details
+
+- **Test framework:** Jest (`test`, `test:unit`, `test:integration`, `test:coverage` scripts in each service `package.json`).
+- **Integration test stack:** Supertest + `mongodb-memory-server` (isolated in-memory DB per suite).
+- **Environment variables used in tests:**
+  - `NODE_ENV=test`
+  - `JWT_SECRET=<test-secret>`
+- **Runtime requirements:**
+  - Unit/integration: no external MongoDB required.
+  - Performance: services must be running, and test accounts should exist in `backend/performance-tests/data/users.csv`.
+- **Artifacts:**
+  - Coverage reports: `backend/services/<service-name>/coverage/`
+  - Performance reports: `backend/performance-tests/reports/`
+
+For full details and examples, see `backend/TESTING.md`.
+
+---
+
 ## API overview
 
 Use the **gateway** at `http://localhost:5000` so paths below are under that host (e.g. `http://localhost:5000/api/auth/...`). When running a service alone, use its port (e.g. `http://localhost:5002/api/stories/...`).
