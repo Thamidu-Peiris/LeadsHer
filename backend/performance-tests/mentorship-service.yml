@@ -1,0 +1,63 @@
+config:
+  target: "http://localhost:5003"
+  phases:
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 10
+      name: "Warm-up"
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained Load"
+    - duration: 30
+      arrivalRate: 30
+      name: "Stress Spike"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  ensure:
+    p99: 1500
+    maxErrorRate: 1
+
+scenarios:
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "List Mentors (Public)"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/mentors"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/mentors?page=1&limit=10"
+          expect:
+            - statusCode: 200
+
+  - name: "List Mentors with Filters"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/mentors?expertise=JavaScript"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/mentors?industry=Tech&page=1&limit=5"
+          expect:
+            - statusCode: 200
+
+  - name: "Mentor Profile View"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/mentors"
+          capture:
+            - json: "$.data[0]._id"
+              as: "mentorId"
+      - get:
+          url: "/api/mentors/{{ mentorId }}"
