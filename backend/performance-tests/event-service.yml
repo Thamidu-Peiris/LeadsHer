@@ -1,0 +1,59 @@
+config:
+  target: "http://localhost:5006"
+  phases:
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 10
+      name: "Warm-up"
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained Load"
+    - duration: 30
+      arrivalRate: 30
+      name: "Stress Spike"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  ensure:
+    p99: 1000
+    maxErrorRate: 1
+
+scenarios:
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "List Events"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/events"
+          expect:
+            - statusCode: 200
+
+  - name: "Events with Filters"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/events?status=upcoming"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/events?category=webinar&type=virtual"
+          expect:
+            - statusCode: 200
+
+  - name: "Event Detail"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/events"
+          capture:
+            - json: "$.data[0]._id"
+              as: "eventId"
+      - get:
+          url: "/api/events/{{ eventId }}"
