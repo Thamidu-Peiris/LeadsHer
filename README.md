@@ -24,6 +24,8 @@ Backend and API for LeadsHer — Node/Express microservices with an API gateway.
 
 ## Quick start
 
+**Classification:** Public-SLIIT
+
 ### 1. Clone and prepare env
 
 ```bash
@@ -100,6 +102,68 @@ Use the **gateway** at `http://localhost:5000` so paths below are under that hos
 
 **Roles:** `Admin`, `Mentor`, `Mentee` (default: `Mentee`).
 
+#### Auth endpoint details (request/response/authentication)
+
+**POST `/api/auth/register`** (No auth)
+
+Request:
+```json
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "password": "Secret123!",
+  "role": "mentee"
+}
+```
+
+Response (example):
+```json
+{
+  "message": "Registration successful. Verify your email.",
+  "requiresVerification": true
+}
+```
+
+**POST `/api/auth/login`** (No auth)
+
+Request:
+```json
+{
+  "email": "jane@example.com",
+  "password": "Secret123!"
+}
+```
+
+Response (example):
+```json
+{
+  "token": "eyJhbGciOi...",
+  "user": {
+    "id": "65f...",
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "role": "mentee"
+  }
+}
+```
+
+**GET `/api/auth/profile`** (Bearer JWT required)
+
+Request header:
+```http
+Authorization: Bearer <jwt_token>
+```
+
+Response (example):
+```json
+{
+  "id": "65f...",
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "role": "mentee"
+}
+```
+
 ---
 
 ### Stories (Story Service)
@@ -120,6 +184,63 @@ Use the **gateway** at `http://localhost:5000` so paths below are under that hos
 
 Query params for `GET /api/stories`: `page`, `limit`, `category`, `sort`, `search`, `tag`, `author`, `from`, `to`, `featured`.
 
+#### Story endpoint details (request/response/authentication)
+
+**GET `/api/stories`** (Optional auth)
+
+Example request:
+```http
+GET /api/stories?page=1&limit=12&category=leadership&sort=-createdAt
+```
+
+Response (example):
+```json
+{
+  "stories": [
+    {
+      "_id": "660...",
+      "title": "Leading Through Uncertainty",
+      "category": "leadership",
+      "status": "published",
+      "likeCount": 12,
+      "commentCount": 4
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
+
+**POST `/api/stories`** (Bearer JWT required)
+
+Request:
+```json
+{
+  "title": "My Story",
+  "content": "<p>Hello</p>",
+  "excerpt": "Short summary",
+  "category": "leadership",
+  "tags": ["growth", "career"],
+  "status": "published"
+}
+```
+
+Response (example):
+```json
+{
+  "_id": "661...",
+  "title": "My Story",
+  "status": "published",
+  "author": {
+    "name": "Jane Doe"
+  }
+}
+```
+
 ---
 
 ### Other services
@@ -128,6 +249,80 @@ Query params for `GET /api/stories`: `page`, `limit`, `category`, `sort`, `searc
 - **Resources:** `/api/resources`
 - **Forum:** `/api/forum`
 - **Events:** (routed via gateway)
+
+#### Mentorship endpoints (summary)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/mentors` | Optional |
+| GET | `/api/mentors/:id` | Optional |
+| POST | `/api/mentorship/requests` | Bearer JWT |
+| GET | `/api/mentorship/requests` | Bearer JWT |
+| PUT | `/api/mentorship/requests/:id` | Bearer JWT |
+
+#### Resources endpoints (summary)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/resources` | Optional |
+| GET | `/api/resources/:id` | Optional |
+| POST | `/api/resources` | Bearer JWT |
+| PUT | `/api/resources/:id` | Bearer JWT |
+| DELETE | `/api/resources/:id` | Bearer JWT |
+| POST | `/api/resources/:id/bookmark` | Bearer JWT |
+
+#### Forum endpoints (summary)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/forum/topics` | Optional |
+| GET | `/api/forum/topics/:id` | Optional |
+| POST | `/api/forum/topics` | Bearer JWT |
+| PUT | `/api/forum/topics/:id` | Bearer JWT |
+| POST | `/api/forum/topics/:id/replies` | Bearer JWT |
+
+#### Events endpoints (summary)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/events` | Optional |
+| GET | `/api/events/:id` | Optional |
+| POST | `/api/events` | Bearer JWT |
+| PUT | `/api/events/:id` | Bearer JWT |
+| DELETE | `/api/events/:id` | Bearer JWT |
+
+#### Example request and response (Resources)
+
+**GET `/api/resources?type=article&page=1&limit=12`**
+
+Response:
+```json
+{
+  "resources": [
+    {
+      "_id": "662...",
+      "title": "Leadership Frameworks 101",
+      "type": "article",
+      "category": "leadership-skills"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
+
+#### Authentication requirements (global)
+
+- Public endpoints can be called without a token.
+- Protected endpoints require:
+```http
+Authorization: Bearer <jwt_token>
+```
+- Role-restricted routes (e.g., admin actions) require valid token + required role.
 
 ---
 
@@ -234,6 +429,72 @@ Optional (depending on features):
 | 5 | Verify health and API calls (auth and at least one other service, e.g. stories). |
 
 For more detail on a specific platform, see that platform documentation (e.g. [Render Docs](https://render.com/docs), [Docker Docs](https://docs.docker.com/)).
+
+---
+
+## Deployment Documentation
+
+This section is included for submission requirements and documents the current deployment setup used for this project.
+
+### Backend deployment platform and setup steps
+
+- **Platform:** Render (Docker Web Service, single-service deployment using `render-one/Dockerfile`).
+- **Service URL (backend API):** [https://leadshernew.onrender.com/](https://leadshernew.onrender.com/)
+- **Setup steps (Render):**
+  1. Create a new Render **Web Service** with **Runtime = Docker**.
+  2. Connect this repository and set **Dockerfile Path** to `render-one/Dockerfile`.
+  3. Keep root directory empty (repo root).
+  4. Add required environment variables (see list below).
+  5. Deploy and verify health at `/api/health`.
+
+### Frontend deployment platform and setup steps
+
+- **Platform:** Vercel (Vite app in `frontend/`).
+- **Service URL (frontend app):** [https://leads-her-six.vercel.app/](https://leads-her-six.vercel.app/)
+- **Setup steps (Vercel):**
+  1. Import repository into Vercel.
+  2. Set **Root Directory** to `frontend`.
+  3. Build command: `npm run build`.
+  4. Output directory: `dist`.
+  5. Add `VITE_API_URL` to point to deployed backend gateway (see below).
+  6. Redeploy.
+
+### Environment variables used (without exposing secrets)
+
+#### Backend (Render)
+
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `CLOUDINARY_CLOUD_NAME` (optional, for media)
+- `CLOUDINARY_API_KEY` (optional, for media)
+- `CLOUDINARY_API_SECRET` (optional, for media)
+- `SMTP_HOST` (optional, email)
+- `SMTP_PORT` (optional, email)
+- `SMTP_USER` (optional, email)
+- `SMTP_PASS` (optional, email)
+- `SMTP_FROM` (optional, email)
+- `SMTP_SECURE` (optional, email)
+- `SMTP_REQUIRE_TLS` (optional, email)
+- `SMTP_TLS_REJECT_UNAUTHORIZED` (optional, email)
+
+#### Frontend (Vercel)
+
+- `VITE_API_URL=https://leadshernew.onrender.com/api`
+
+### Live URLs
+
+- **Deployed backend API:** [https://leadshernew.onrender.com/](https://leadshernew.onrender.com/)
+- **Deployed frontend application:** [https://leads-her-six.vercel.app/](https://leads-her-six.vercel.app/)
+
+### Screenshots / evidence of successful deployment
+
+Include screenshots in your submission/report for:
+
+1. Render service dashboard showing deployment status.
+2. Backend health response at `https://leadshernew.onrender.com/api/health`.
+3. Vercel deployment dashboard showing successful build.
+4. Frontend pages loading from deployed URL (`/`, `/login`, `/stories`).
 
 ---
 
