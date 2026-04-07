@@ -407,32 +407,32 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
           <DashboardTopBar crumbs={[{ label: 'Dashboard' }]} />
 
           {/* Content */}
-          <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-6 lg:space-y-8 lg:p-8">
             {/* Welcome banner */}
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
+            <section className="relative overflow-hidden rounded-xl border border-outline-variant/20 bg-white p-5 dark:bg-surface-container-lowest sm:p-8">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+              <div className="relative z-10 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center md:gap-6">
                 <div className="space-y-2">
-                  <h1 className="font-serif-alt text-4xl font-bold text-on-surface">
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface sm:text-3xl lg:text-4xl">
                     Welcome back, {firstName} 👋
                   </h1>
-                  <p className="text-on-surface-variant text-sm max-w-md">
+                  <p className="max-w-md text-xs text-on-surface-variant sm:text-sm">
                     Role: <span className="text-rose-600 font-bold dark:text-rose-400">mentor</span> · {user?.email}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-[#f43f5e] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98] sm:w-auto sm:px-6 sm:py-3"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-4 py-2.5 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50 sm:min-h-[48px] sm:w-auto sm:px-6 sm:py-3"
                     >
                       + New Event
                     </Link>
@@ -441,9 +441,9 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               </div>
             </section>
 
-            <div className="grid grid-cols-12 gap-8">
+            <div className="grid grid-cols-12 gap-5 lg:gap-8">
               {/* Left column */}
-              <div className="col-span-12 lg:col-span-8 space-y-8">
+              <div className="col-span-12 space-y-5 lg:col-span-8 lg:space-y-8">
                 {/* Activity grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
@@ -476,9 +476,9 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   </div>
                 </div>
 
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Monthly Trend</h3>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
                         Last 6 months
@@ -518,13 +518,13 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   </div>
 
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Engagement Mix</h3>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
                         Likes / Comments / Views
                       </span>
                     </div>
-                    <div className="flex items-center gap-5">
+                    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-5">
                       <div
                         className="h-28 w-28 rounded-full border border-outline-variant/20"
                         style={{
@@ -546,7 +546,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   </div>
                 </section>
 
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mini Goals / Progress</h3>
@@ -594,7 +594,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               </div>
 
               {/* Right column */}
-              <div className="col-span-12 lg:col-span-4 space-y-6">
+              <div className="col-span-12 space-y-5 lg:col-span-4 lg:space-y-6">
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-black dark:text-neutral-100">calendar_today</span> Upcoming Events
@@ -661,7 +661,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
 
                 <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                     <Link
                       to="/dashboard/stories/new"
                       className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg bg-[#f43f5e] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-[#e11d48]"

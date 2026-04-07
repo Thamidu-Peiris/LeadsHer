@@ -21,7 +21,7 @@ export default function MenteeSidebar({ user, avatarSrc }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-[260px] flex-col border-r border-outline-variant/20 bg-white dark:bg-surface-container-lowest">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-outline-variant/20 bg-white dark:bg-surface-container-lowest lg:flex">
       {/* ── Profile ── */}
       <div className="flex flex-col items-center gap-3 border-b border-outline-variant/20 p-6">
         <div className="relative">

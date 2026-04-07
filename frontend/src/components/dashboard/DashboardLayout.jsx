@@ -42,7 +42,7 @@ export default function DashboardLayout() {
       .catch(() => setMentorProfile(null));
   }, [isMentor]);
 
-  const sidebarWidth = isAdmin ? 'ml-[280px]' : 'ml-[260px]';
+  const sidebarWidth = isAdmin ? 'lg:ml-[280px]' : 'lg:ml-[260px]';
 
   const mainColumnClass = isMentee
     ? `${sidebarWidth} flex-1 flex min-h-screen flex-col bg-[#ffe6f5] dark:bg-rose-950 text-on-surface`
