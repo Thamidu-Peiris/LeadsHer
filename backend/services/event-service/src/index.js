@@ -3,9 +3,9 @@ const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 const express = require('express');
-const mongoose = require('mongoose');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const connectDB = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 5006;
@@ -22,11 +22,6 @@ app.use('/uploads', express.static(uploadsRoot));
 
 app.use(helmet());
 
-// Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongo:27017/leadsher-event')
-  .then(() => console.log('✅ Event Service connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
-
 // Routes
 const eventRoutes = require('./routes/eventRoutes');
 
@@ -37,6 +32,11 @@ app.get('/api/events/health', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Event Service running on port ${PORT}`);
-});
+const start = async () => {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 Event Service running on port ${PORT}`);
+  });
+};
+
+start();
