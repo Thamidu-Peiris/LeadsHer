@@ -47,6 +47,12 @@ router.patch('/:id/cancel',      protect, restrictTo('admin', 'mentor'), eventCo
 /* ── Admin-only actions ─────────────────────────────────────────────────── */
 
 router.patch('/:id/reschedule',  protect, restrictTo('admin'), eventController.rescheduleEvent);
+router.post(
+    '/:id/send-reminder-emails',
+    protect,
+    restrictTo('admin'),
+    eventController.sendReminderEmails
+);
 router.post('/:id/certificates', protect, restrictTo('admin'), eventController.issueCertificates);
 router.get('/:id/certificates',  protect, eventController.getEventCertificates);
 

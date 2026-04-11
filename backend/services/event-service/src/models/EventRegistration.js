@@ -24,6 +24,11 @@ const eventRegistrationSchema = new mongoose.Schema(
         attendedAt: {
             type: Date
         },
+        /** Set when “~24h before start” reminder email was sent successfully (SMTP). */
+        reminderEmailSentAt: {
+            type: Date,
+            default: null,
+        },
         feedback: {
             rating: {
                 type: Number,

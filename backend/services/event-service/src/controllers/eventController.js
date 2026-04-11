@@ -4,6 +4,8 @@ const Event = require('../models/Event');
 const { getCloudinary } = require('../config/cloudinary');
 const EventRegistration = require('../models/EventRegistration');
 const Certificate = require('../models/Certificate');
+const { resolveReminderStartInstant } = require('../utils/eventStart');
+const { sendManualReminderEmails } = require('../services/eventReminderService');
 
 const catchAsync = fn => (req, res, next) => fn(req, res, next).catch(next);
 
@@ -171,6 +173,24 @@ exports.rescheduleEvent = catchAsync(async (req, res, next) => {
 });
 
 /* ── ISSUE CERTIFICATES (admin only) ────────────────────────────────────── */
+
+/* ── SEND REMINDER EMAILS (admin only, per event) ───────────────────────── */
+
+exports.sendReminderEmails = catchAsync(async (req, res, next) => {
+    const event = await Event.findById(req.params.id).lean();
+    if (!event) return next(new APIError('No event found with that ID', 404));
+    if (event.status === 'cancelled') {
+        return next(new APIError('Cannot send reminders for a cancelled event', 400));
+    }
+    if (!resolveReminderStartInstant(event)) {
+        return next(new APIError('Event has no valid date for reminders (check event date).', 400));
+    }
+
+    const force = req.query.force === 'true' || req.query.force === '1';
+    const data = await sendManualReminderEmails(event, { force });
+
+    res.status(200).json({ status: 'success', data });
+});
 
 exports.issueCertificates = catchAsync(async (req, res, next) => {
     const event = await Event.findById(req.params.id);
