@@ -226,3 +226,79 @@ describe('POST /api/events/:id/register', () => {
     expect(res.status).toBe(401);
   });
 });
+
+const eventIdFromCreate = (createRes) =>
+  createRes.body?.data?.event?._id?.toString?.() ||
+  createRes.body?.data?.event?._id ||
+  createRes.body?._id;
+
+// ── POST /api/events/:id/send-reminder-emails (admin) ──────────────────────────
+describe('POST /api/events/:id/send-reminder-emails', () => {
+  it('403 — mentor cannot trigger manual reminders', async () => {
+    const { token: mentorToken } = await createUser({ email: 'evtrmmentor@test.com', role: 'mentor' });
+    const createRes = await request(app)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${mentorToken}`)
+      .send(validEvent());
+    const eventId = eventIdFromCreate(createRes);
+
+    const res = await request(app)
+      .post(`/api/events/${eventId}/send-reminder-emails`)
+      .set('Authorization', `Bearer ${mentorToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('200 — admin can trigger manual reminders', async () => {
+    const { token: mentorToken, user: mentor } = await createUser({
+      email: 'evtrmhost@test.com',
+      role: 'mentor',
+    });
+    const { token: adminToken } = await createUser({ email: 'evtrmadmin@test.com', role: 'admin' });
+    const { token: menteeToken } = await createUser({ email: 'evtrmreg@test.com', role: 'mentee' });
+
+    const createRes = await request(app)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${mentorToken}`)
+      .send({ ...validEvent(), host: mentor._id });
+    const eventId = eventIdFromCreate(createRes);
+
+    await request(app)
+      .post(`/api/events/${eventId}/register`)
+      .set('Authorization', `Bearer ${menteeToken}`);
+
+    const res = await request(app)
+      .post(`/api/events/${eventId}/send-reminder-emails`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+    expect(res.body.data).toHaveProperty('sent');
+    expect(res.body.data).toHaveProperty('skipped');
+    expect(res.body.data).toHaveProperty('eligible');
+  });
+
+  it('400 — cancelled event', async () => {
+    const { token: mentorToken, user: mentor } = await createUser({
+      email: 'evtrmcancel@test.com',
+      role: 'mentor',
+    });
+    const { token: adminToken } = await createUser({ email: 'evtrmadmin2@test.com', role: 'admin' });
+
+    const createRes = await request(app)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${mentorToken}`)
+      .send({ ...validEvent(), host: mentor._id });
+    const eventId = eventIdFromCreate(createRes);
+
+    await request(app)
+      .patch(`/api/events/${eventId}/cancel`)
+      .set('Authorization', `Bearer ${mentorToken}`);
+
+    const res = await request(app)
+      .post(`/api/events/${eventId}/send-reminder-emails`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(400);
+  });
+});

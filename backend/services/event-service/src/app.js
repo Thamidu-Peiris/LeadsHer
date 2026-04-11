@@ -20,4 +20,15 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'event-service' });
 });
 
+/** JSON errors so clients (axios) can read `message`; do not use `err.status` (string) as HTTP code. */
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const sc = err.statusCode;
+  const code = typeof sc === 'number' && sc >= 400 && sc < 600 ? sc : 500;
+  const message =
+    code === 500 && !err.isOperational ? 'Something went wrong' : err.message || 'Request failed';
+  const bodyStatus = String(code).startsWith('5') ? 'error' : 'fail';
+  res.status(code).json({ status: bodyStatus, message });
+});
+
 module.exports = app;
