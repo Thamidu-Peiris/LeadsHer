@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Render sets PORT for the public HTTP listener (nginx). Node microservices must
+# NOT inherit it or they bind to the same port as nginx and upstreams 5001–5004 stay dead (502).
+NGINX_PORT="${PORT:-5000}"
+unset PORT
+
 # Backend services listen on fixed ports (localhost only)
 export AUTH_SERVICE_PORT=5001
 export STORY_SERVICE_PORT=5002
@@ -21,8 +26,7 @@ sleep 3
 # Nginx dirs (Alpine)
 mkdir -p /run/nginx /var/log/nginx
 
-# Render sets PORT (e.g. 10000); default for local runs
-export PORT="${PORT:-5000}"
+export PORT="$NGINX_PORT"
 envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # Nginx runs in foreground so container stays up
