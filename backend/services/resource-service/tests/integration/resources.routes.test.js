@@ -27,7 +27,7 @@ const createUser = async (overrides = {}) => {
     name: overrides.name || 'Resource User',
     email: overrides.email || `resuser_${Date.now()}@test.com`,
     password: 'Password1!',
-    role: overrides.role || 'mentor',
+    role: overrides.role || 'Mentor',
     isEmailVerified: true,
   });
   return { user, token: makeToken(user._id.toString()) };
@@ -73,8 +73,10 @@ describe('GET /api/resources', () => {
   it('200 — returns empty list when no resources', async () => {
     const res = await request(app).get('/api/resources');
     expect(res.status).toBe(200);
-    const items = res.body.data || res.body;
-    expect(Array.isArray(items)).toBe(true);
+    expect(Array.isArray(res.body.resources)).toBe(true);
+    expect(res.body.resources).toEqual([]);
+    expect(res.body.pagination).toBeDefined();
+    expect(res.body.pagination.total).toBe(0);
   });
 
   it('supports type filter', async () => {
@@ -91,7 +93,7 @@ describe('GET /api/resources', () => {
 // ── POST /api/resources ────────────────────────────────────────────────────────
 describe('POST /api/resources', () => {
   it('201 — authenticated mentor creates a resource', async () => {
-    const { token } = await createUser({ email: 'rccreate@test.com', role: 'mentor' });
+    const { token } = await createUser({ email: 'rccreate@test.com', role: 'Mentor' });
 
     const res = await request(app)
       .post('/api/resources')
@@ -149,8 +151,9 @@ describe('PUT /api/resources/:id', () => {
       .set('Authorization', `Bearer ${token}`)
       .send(validResource);
 
+    const resourceId = createRes.body._id || createRes.body.id;
     const updateRes = await request(app)
-      .put(`/api/resources/${createRes.body._id}`)
+      .put(`/api/resources/${resourceId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'Leadership Advanced' });
 
@@ -167,8 +170,9 @@ describe('PUT /api/resources/:id', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send(validResource);
 
+    const resourceId = createRes.body._id || createRes.body.id;
     const updateRes = await request(app)
-      .put(`/api/resources/${createRes.body._id}`)
+      .put(`/api/resources/${resourceId}`)
       .set('Authorization', `Bearer ${otherToken}`)
       .send({ title: 'Hijacked' });
 
@@ -185,8 +189,9 @@ describe('DELETE /api/resources/:id', () => {
       .set('Authorization', `Bearer ${token}`)
       .send(validResource);
 
+    const resourceId = createRes.body._id || createRes.body.id;
     const deleteRes = await request(app)
-      .delete(`/api/resources/${createRes.body._id}`)
+      .delete(`/api/resources/${resourceId}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(deleteRes.status).toBe(200);

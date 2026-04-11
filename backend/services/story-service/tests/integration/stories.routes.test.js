@@ -13,11 +13,22 @@ const app = require('../../src/app');
 
 let mongod;
 
-const makeToken = (id, role = 'mentee') =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+const makeToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+/** Published stories require ≥100 words (see storyService.createStoryRecord). */
+const htmlContentWithWordCount = (n) =>
+  `<p>${Array.from({ length: n }, (_, i) => `word${i + 1}`).join(' ')}</p>`;
+
+const storyIdFromCreateRes = (res) => res.body?._id || res.body?.id;
 
 const createUser = async (overrides = {}) => {
   const User = require('../../src/models/User');
+  const AppSettings = require('../../src/models/AppSettings');
+  await AppSettings.findOneAndUpdate(
+    { _id: 'singleton' },
+    { emailVerificationRequired: false },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
   const user = await User.create({
     name: overrides.name || 'Story Author',
     email: overrides.email || `author_${Date.now()}@test.com`,
@@ -88,8 +99,10 @@ describe('GET /api/stories', () => {
   it('200 — returns empty list when no stories exist', async () => {
     const res = await request(app).get('/api/stories');
     expect(res.status).toBe(200);
-    const items = res.body.data || res.body;
-    expect(Array.isArray(items)).toBe(true);
+    expect(Array.isArray(res.body.stories)).toBe(true);
+    expect(res.body.stories).toEqual([]);
+    expect(res.body.pagination).toBeDefined();
+    expect(res.body.pagination.total).toBe(0);
   });
 
   it('200 — returns published stories', async () => {
@@ -98,15 +111,15 @@ describe('GET /api/stories', () => {
     await Story.create({
       author: user._id,
       title: 'Test Story',
-      content: 'Full content here.',
+      content: htmlContentWithWordCount(100),
       status: 'published',
       publishedAt: new Date(),
     });
 
     const res = await request(app).get('/api/stories');
     expect(res.status).toBe(200);
-    const items = res.body.data || res.body;
-    expect(items.length).toBeGreaterThan(0);
+    expect(res.body.stories.length).toBeGreaterThan(0);
+    expect(res.body.pagination.total).toBeGreaterThan(0);
   });
 
   it('supports category filter', async () => {
@@ -125,7 +138,7 @@ describe('POST /api/stories', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         title: 'My Journey in Tech',
-        content: 'This is the full story content about my journey.',
+        content: htmlContentWithWordCount(100),
         category: 'STEM',
         status: 'published',
       });
@@ -150,18 +163,38 @@ describe('POST /api/stories', () => {
       .send({ category: 'STEM' });
     expect(res.status).toBe(400);
   });
+
+  it('400 — cannot publish with fewer than 100 words', async () => {
+    const { token } = await createUser({ email: 'shortpub@test.com' });
+    const res = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'Too short',
+        content: '<p>only five words here now end</p>',
+        status: 'published',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/100 words/i);
+  });
 });
 
 // ── GET /api/stories/:id ───────────────────────────────────────────────────────
 describe('GET /api/stories/:id', () => {
   it('200 — returns a single story', async () => {
-    const { user, token } = await createUser({ email: 'single@test.com' });
+    const { token } = await createUser({ email: 'single@test.com' });
     const createRes = await request(app)
       .post('/api/stories')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Single Story', content: 'Some content here.', status: 'published' });
+      .send({
+        title: 'Single Story',
+        content: htmlContentWithWordCount(100),
+        status: 'published',
+      });
 
-    const res = await request(app).get(`/api/stories/${createRes.body._id}`);
+    const id = storyIdFromCreateRes(createRes);
+    expect(id).toBeDefined();
+    const res = await request(app).get(`/api/stories/${id}`);
     expect(res.status).toBe(200);
     expect(res.body.title).toBe('Single Story');
   });
@@ -182,8 +215,9 @@ describe('PUT /api/stories/:id', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'Original Title', content: 'Content.', status: 'draft' });
 
+    const storyId = storyIdFromCreateRes(createRes);
     const updateRes = await request(app)
-      .put(`/api/stories/${createRes.body._id}`)
+      .put(`/api/stories/${storyId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'Updated Title' });
 
@@ -200,8 +234,9 @@ describe('PUT /api/stories/:id', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ title: 'Owner Story', content: 'Content.', status: 'draft' });
 
+    const storyId = storyIdFromCreateRes(createRes);
     const updateRes = await request(app)
-      .put(`/api/stories/${createRes.body._id}`)
+      .put(`/api/stories/${storyId}`)
       .set('Authorization', `Bearer ${otherToken}`)
       .send({ title: 'Hijacked Title' });
 
@@ -218,8 +253,9 @@ describe('DELETE /api/stories/:id', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ title: 'To Delete', content: 'Delete me.', status: 'draft' });
 
+    const storyId = storyIdFromCreateRes(createRes);
     const deleteRes = await request(app)
-      .delete(`/api/stories/${createRes.body._id}`)
+      .delete(`/api/stories/${storyId}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(deleteRes.status).toBe(200);
@@ -235,13 +271,33 @@ describe('POST /api/stories/:id/like', () => {
     const createRes = await request(app)
       .post('/api/stories')
       .set('Authorization', `Bearer ${authorToken}`)
-      .send({ title: 'Likable Story', content: 'Content.', status: 'published' });
+      .send({
+        title: 'Likable Story',
+        content: htmlContentWithWordCount(100),
+        status: 'published',
+      });
 
+    const storyId = storyIdFromCreateRes(createRes);
     const likeRes = await request(app)
-      .post(`/api/stories/${createRes.body._id}/like`)
+      .post(`/api/stories/${storyId}/like`)
       .set('Authorization', `Bearer ${likerToken}`);
 
     expect(likeRes.status).toBe(200);
+  });
+
+  it('400 — cannot like a draft story', async () => {
+    const { token: authorToken } = await createUser({ email: 'draftauthor@test.com' });
+    const { token: likerToken } = await createUser({ email: 'draftliker@test.com' });
+    const createRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({ title: 'Draft Only', content: 'Short draft body.', status: 'draft' });
+    const storyId = storyIdFromCreateRes(createRes);
+    const likeRes = await request(app)
+      .post(`/api/stories/${storyId}/like`)
+      .set('Authorization', `Bearer ${likerToken}`);
+    expect(likeRes.status).toBe(400);
+    expect(likeRes.body.message).toMatch(/published/i);
   });
 });
 
@@ -255,8 +311,13 @@ describe('Story comments', () => {
     const createRes = await request(app)
       .post('/api/stories')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Comment Test Story', content: 'Content.', status: 'published' });
-    storyId = createRes.body._id;
+      .send({
+        title: 'Comment Test Story',
+        content: htmlContentWithWordCount(100),
+        status: 'published',
+      });
+    storyId = storyIdFromCreateRes(createRes);
+    expect(storyId).toBeDefined();
   });
 
   it('201 — adds a comment to a story', async () => {
@@ -271,5 +332,22 @@ describe('Story comments', () => {
   it('200 — lists comments for a story', async () => {
     const res = await request(app).get(`/api/stories/${storyId}/comments`);
     expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.comments)).toBe(true);
+    expect(res.body.pagination).toBeDefined();
+  });
+
+  it('400 — cannot comment on a draft story', async () => {
+    const { token } = await createUser({ email: `draftcomment_${Date.now()}@test.com` });
+    const createRes = await request(app)
+      .post('/api/stories')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'No comments draft', content: 'Body.', status: 'draft' });
+    const id = storyIdFromCreateRes(createRes);
+    const res = await request(app)
+      .post(`/api/stories/${id}/comments`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Should fail' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/published/i);
   });
 });
