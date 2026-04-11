@@ -482,95 +482,6 @@ function RescheduleModal({ event, onClose, onSave }) {
   );
 }
 
-/* ── Certificates Modal ──────────────────────────────────────────────────── */
-
-function CertificatesModal({ event, onClose }) {
-  const [certs, setCerts]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [issuing, setIssuing] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    eventApi.getEventCertificates(event._id)
-      .then(res => setCerts(res.data?.data?.certificates || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [event._id]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleIssue = async () => {
-    setIssuing(true);
-    try {
-      const res = await eventApi.issueCertificates(event._id);
-      toast.success(`${res.data?.results || 0} certificate(s) issued!`);
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to issue certificates');
-    } finally { setIssuing(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className={`${CARD} w-full max-w-lg max-h-[80vh] flex flex-col`}>
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between shrink-0">
-          <div>
-            <h3 className="font-serif-alt text-lg font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#f43f5e] text-[20px]">workspace_premium</span>
-              Certificates
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-0.5 truncate max-w-xs">{event.title}</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-4" style={{ scrollbarWidth: 'thin' }}>
-          {loading ? (
-            <div className="flex justify-center py-10"><Spinner /></div>
-          ) : certs.length === 0 ? (
-            <EmptyState
-              icon="workspace_premium"
-              message="No certificates issued yet"
-              sub="Click 'Issue Certificates' to generate certificates for all registered attendees."
-            />
-          ) : (
-            <div className="space-y-2">
-              {certs.map(c => (
-                <div key={c._id} className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30">
-                  <span className="material-symbols-outlined text-[#f43f5e] text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-on-surface truncate">{c.user?.name || 'Unknown'}</p>
-                    <p className="text-[10px] font-mono text-slate-400 dark:text-on-surface-variant tracking-wider">{c.certificateCode}</p>
-                  </div>
-                  <p className="text-[10px] text-slate-400 dark:text-outline shrink-0">
-                    {new Date(c.issuedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-outline-variant/20 flex gap-3 shrink-0">
-          <button
-            onClick={handleIssue}
-            disabled={issuing}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
-          >
-            <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
-            {issuing ? 'Issuing…' : 'Issue Certificates'}
-          </button>
-          <button onClick={onClose} className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-slate-300 rounded-xl transition-colors">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    ROLE VIEWS
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -880,7 +791,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
   const [attendeesTarget,  setAttendeesTarget]  = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
-  const [certTarget,       setCertTarget]       = useState(null);
+  const [reminderSendingId, setReminderSendingId] = useState(null);
 
   const fetchAll = useCallback(() => {
     setLoadAll(true);
@@ -916,6 +827,35 @@ function AdminView({ onNew, refreshKey = 0 }) {
       toast.success('Event deleted');
       fetchAll();
     } catch { toast.error('Failed to delete event'); }
+  };
+
+  const handleSendReminderEmails = async (ev) => {
+    const registered = ev.registeredAttendees?.length || 0;
+    if (registered === 0) {
+      toast.error('No registered attendees for this event.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Send reminder emails to registered attendees who have not received this reminder yet? (${registered} registered.)`
+      )
+    ) {
+      return;
+    }
+    setReminderSendingId(ev._id);
+    try {
+      const res = await eventApi.sendReminderEmails(ev._id);
+      const d = res.data?.data ?? res.data;
+      const sent = d?.sent ?? 0;
+      const skipped = d?.skipped ?? 0;
+      toast.success(`Reminder emails sent: ${sent}. Skipped (no email / SMTP): ${skipped}.`);
+      fetchAll();
+      fetchCreated();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send reminder emails');
+    } finally {
+      setReminderSendingId(null);
+    }
   };
 
   const filtered = allEvents.filter(e => {
@@ -993,6 +933,17 @@ function AdminView({ onNew, refreshKey = 0 }) {
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
+                    {e.status !== 'cancelled' && (e.registeredAttendees?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendReminderEmails(e)}
+                        disabled={reminderSendingId === e._id}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-violet-200 dark:border-violet-800/40 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">mark_email_unread</span>
+                        {reminderSendingId === e._id ? 'Sending…' : 'Remind'}
+                      </button>
+                    )}
                     <Link to={`/events/${e._id}/edit`}
                       className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
@@ -1005,11 +956,6 @@ function AdminView({ onNew, refreshKey = 0 }) {
                         Reschedule
                       </button>
                     )}
-                    <button onClick={() => setCertTarget(e)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-amber-200 dark:border-amber-800/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
-                      Certs
-                    </button>
                     {e.status !== 'cancelled' && (
                       <button onClick={() => handleCancel(e)}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-orange-200 dark:border-orange-800/40 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
@@ -1058,11 +1004,17 @@ function AdminView({ onNew, refreshKey = 0 }) {
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
-                    <button onClick={() => setCertTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-amber-200 dark:border-amber-800/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
-                      Certs
-                    </button>
+                    {e.status !== 'cancelled' && (e.registeredAttendees?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendReminderEmails(e)}
+                        disabled={reminderSendingId === e._id}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-violet-200 dark:border-violet-800/40 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">mark_email_unread</span>
+                        {reminderSendingId === e._id ? 'Sending…' : 'Remind'}
+                      </button>
+                    )}
                     <Link to={`/events/${e._id}/edit`}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
@@ -1078,7 +1030,6 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {attendeesTarget  && <AttendeesModal  event={attendeesTarget}  onClose={() => setAttendeesTarget(null)} />}
       {rescheduleTarget && <RescheduleModal  event={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onSave={fetchAll} />}
-      {certTarget       && <CertificatesModal event={certTarget}      onClose={() => setCertTarget(null)} />}
     </div>
   );
 }
@@ -1627,7 +1578,7 @@ export default function DashboardEventsPage() {
                      : isMentor ? 'Events'
                      :            'My Events';
   const pageSubtitle = isAdmin
-    ? 'Create, manage, reschedule events and issue certificates across the platform.'
+    ? 'Create, manage, and reschedule events across the platform.'
     : isMentor
     ? 'Host events, manage registrations, and view attendees.'
     : 'Browse, register, and submit feedback for events.';

@@ -34,6 +34,6 @@ export const eventApi = {
 
   // Admin-only
   rescheduleEvent:   (id, data) => api.patch(`/events/${id}/reschedule`, data),
-  issueCertificates: (id) => api.post(`/events/${id}/certificates`),
-  getEventCertificates: (id) => api.get(`/events/${id}/certificates`),
+  sendReminderEmails: (id, params) =>
+    api.post(`/events/${id}/send-reminder-emails`, {}, { params }),
 };
