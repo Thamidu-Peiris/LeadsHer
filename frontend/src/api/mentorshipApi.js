@@ -12,6 +12,10 @@ export const mentorshipApi = {
   getHistory:     () => api.get('/mentorship/history'),
   getById:        (id) => api.get(`/mentorship/${id}`),
   logSession:     (id, data) => api.post(`/mentorship/${id}/sessions`, data),
+  getAgoraToken:  (mentorshipId, sessionId) =>
+    api.post(`/mentorship/${mentorshipId}/sessions/${sessionId}/agora-token`),
+  completeSessionVideoCall: (mentorshipId, sessionId) =>
+    api.put(`/mentorship/${mentorshipId}/sessions/${sessionId}/complete-call`),
   updateGoals:    (id, data) => api.put(`/mentorship/${id}/goals`, data),
   complete:       (id) => api.put(`/mentorship/${id}/complete`),
   submitFeedback: (id, data) => api.post(`/mentorship/${id}/feedback`, data),

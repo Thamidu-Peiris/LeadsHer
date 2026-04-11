@@ -754,7 +754,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   );
 }
 
-function MenteeDashboard({ user, myStories, myEvents }) {
+function MenteeDashboard({ user, myStories, myEvents, likedStoriesCount }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
   const navigate = useNavigate();
   const { logout, updateUser } = useAuth();
@@ -959,12 +959,20 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
-                    <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Saved</p>
+                    <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories liked</p>
                     <div className="flex items-end justify-between">
-                      <h4 className="text-2xl font-bold text-on-surface">0</h4>
-                      <div className="h-8 w-20 bg-tertiary/10 rounded-md" />
+                      <h4 className="text-2xl font-bold text-on-surface tabular-nums">{likedStoriesCount}</h4>
+                      <Link
+                        to="/stories"
+                        className="inline-flex h-8 items-center rounded-md bg-rose-500/10 px-2 text-rose-700 transition-colors hover:bg-rose-500/20 dark:text-rose-300"
+                        title="Browse stories"
+                      >
+                        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          favorite
+                        </span>
+                      </Link>
                     </div>
-                    <p className="text-[10px] text-outline">Wishlist (coming soon)</p>
+                    <p className="text-[10px] text-outline">Published stories you hearted</p>
                   </div>
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Reading Impact</p>
@@ -2046,6 +2054,7 @@ export default function DashboardPage() {
   const { user, canManageEvents } = useAuth();
   const [myStories, setMyStories]   = useState([]);
   const [myEvents, setMyEvents]     = useState([]);
+  const [likedStoriesCount, setLikedStoriesCount] = useState(0);
   const [loading, setLoading]       = useState(true);
 
   const userId = user?.id ?? user?._id;
@@ -2054,16 +2063,27 @@ export default function DashboardPage() {
     if (!user || !userId) return;
     const fetchAll = async () => {
       setLoading(true);
+      const roleLc = (user?.role || '').toLowerCase();
       try {
-        const [sRes, eRes] = await Promise.allSettled([
+        const reqs = [
           storyApi.getByUser(userId, { limit: 6 }),
           eventApi.getMyEvents(),
-        ]);
+        ];
+        if (roleLc === 'mentee') {
+          reqs.push(storyApi.getMyLikedCount());
+        }
+        const [sRes, eRes, lRes] = await Promise.allSettled(reqs);
         if (sRes.status === 'fulfilled') {
           setMyStories(sRes.value.data?.stories || []);
         }
         if (eRes.status === 'fulfilled') {
           setMyEvents(eRes.value.data?.data?.events || eRes.value.data?.events || []);
+        }
+        if (lRes && lRes.status === 'fulfilled') {
+          const c = lRes.value.data?.count;
+          setLikedStoriesCount(typeof c === 'number' ? c : 0);
+        } else if (roleLc === 'mentee') {
+          setLikedStoriesCount(0);
         }
       } finally {
         setLoading(false);
@@ -2100,6 +2120,7 @@ export default function DashboardPage() {
         user={user}
         myStories={myStories}
         myEvents={myEvents}
+        likedStoriesCount={likedStoriesCount}
       />
     );
   }

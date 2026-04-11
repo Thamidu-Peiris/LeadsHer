@@ -8,6 +8,7 @@ const {
   getFeaturedStories,
   getStoriesByUser,
   getMyStories,
+  getMyLikedStoriesCount,
   getStoryById,
   updateStory,
   deleteStory,
@@ -22,6 +23,7 @@ const {
 router.get('/featured', getFeaturedStories);
 router.get('/user/:userId', getStoriesByUser);
 router.get('/mine', protect, getMyStories);
+router.get('/liked/count', protect, getMyLikedStoriesCount);
 router.get('/', optionalAuth, getAllStories);
 router.get('/:id/comments', getStoryComments);
 router.get('/:id', optionalAuth, getStoryById);

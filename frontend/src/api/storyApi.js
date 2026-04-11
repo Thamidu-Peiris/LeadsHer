@@ -4,6 +4,7 @@ export const storyApi = {
   getAll: (params) => api.get('/stories', { params }),
   getFeatured: () => api.get('/stories/featured'),
   getMine: (params) => api.get('/stories/mine', { params }),
+  getMyLikedCount: () => api.get('/stories/liked/count'),
   getById: (id) => api.get(`/stories/${id}`),
   getByUser: (userId, params) => api.get(`/stories/user/${userId}`, { params }),
   uploadMedia: (formData) => api.post('/stories/upload', formData, {

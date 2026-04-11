@@ -160,7 +160,13 @@ const getMentorById = async (id) => {
     err.status = 404;
     throw err;
   }
-  return mentorProfile;
+  const activeMentorships = await Mentorship.countDocuments({
+    mentor: mentorProfile.user,
+    status: 'active',
+  });
+  const doc = mentorProfile.toObject({ virtuals: true });
+  doc.activeMentorships = activeMentorships;
+  return doc;
 };
 
 const getMentorByUserId = async (userId) => {
@@ -170,7 +176,13 @@ const getMentorByUserId = async (userId) => {
     err.status = 404;
     throw err;
   }
-  return mentorProfile;
+  const activeMentorships = await Mentorship.countDocuments({
+    mentor: mentorProfile.user,
+    status: 'active',
+  });
+  const doc = mentorProfile.toObject({ virtuals: true });
+  doc.activeMentorships = activeMentorships;
+  return doc;
 };
 
 const getMyProfile = async (userId) => {

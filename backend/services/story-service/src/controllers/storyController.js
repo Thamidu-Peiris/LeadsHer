@@ -201,6 +201,16 @@ exports.getMyStories = async (req, res) => {
   }
 };
 
+// GET /api/stories/liked/count
+exports.getMyLikedStoriesCount = async (req, res) => {
+  try {
+    const count = await storyService.countStoriesLikedByUser(req.user._id);
+    res.json({ count });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message || 'Failed to count liked stories.' });
+  }
+};
+
 // GET /api/stories/featured
 exports.getFeaturedStories = async (req, res) => {
   try {

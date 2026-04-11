@@ -89,7 +89,7 @@ function FeedbackStars({ rating, className = '', sizeClass = 'text-[20px]' }) {
 export default function MentorProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isMentee } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
@@ -148,13 +148,17 @@ export default function MentorProfilePage() {
       toast.error('Log in to send a request');
       return;
     }
+    if (!isMentee) {
+      toast.error('Only mentees can request mentorship');
+      return;
+    }
     setRequestForm({
       goals: 'Career growth, Leadership',
       preferredStartDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
       message: 'I would love to learn from your experience.',
     });
     setRequestModalOpen(true);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isMentee]);
 
   const submitMentorshipRequest = useCallback(async () => {
     if (!profile) return;
@@ -246,10 +250,14 @@ export default function MentorProfilePage() {
   const memberSince = profile.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : null;
+  const activeMentorshipCount =
+    typeof profile.activeMentorships === 'number'
+      ? profile.activeMentorships
+      : profile.availability?.currentMentees ?? 0;
   const canShowAvailable =
     profile.isAvailable &&
     profile.isVerified &&
-    (profile.availability?.currentMentees ?? 0) < (profile.availability?.maxMentees ?? 1);
+    activeMentorshipCount < (profile.availability?.maxMentees ?? 1);
 
   const scrollToSection = (sectionId) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -336,6 +344,11 @@ export default function MentorProfilePage() {
                 )}
               </div>
               <div className="flex gap-3 w-full max-w-md lg:max-w-none justify-center lg:justify-end">
+                {isAuthenticated && !isMentee ? (
+                  <p className="flex-1 lg:flex-none text-center lg:text-right text-xs text-neutral-500 max-w-xs lg:max-w-none self-center">
+                    Mentorship requests are for mentee accounts only.
+                  </p>
+                ) : (
                 <button
                   type="button"
                   onClick={openRequestModal}
@@ -343,6 +356,7 @@ export default function MentorProfilePage() {
                 >
                   Request mentorship
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setBookmarked((b) => !b)}
@@ -599,7 +613,7 @@ export default function MentorProfilePage() {
               <div className="p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Mentee slots</h3>
                 <p className="text-lg font-semibold text-neutral-900">
-                  {profile.availability?.currentMentees ?? 0} / {profile.availability?.maxMentees ?? '—'} active
+                  {activeMentorshipCount} / {profile.availability?.maxMentees ?? '—'} active mentorships
                 </p>
               </div>
               {profile.availability?.preferredTime?.length > 0 ? (

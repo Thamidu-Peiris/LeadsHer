@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { mentorApi } from '../api/mentorApi';
 import MentorSchedulePanel from '../components/mentorship/MentorSchedulePanel';
+import MentorshipVideoCallModal from '../components/mentorship/MentorshipVideoCallModal';
+import { getSessionVideoWindowInfo } from '../utils/mentorshipVideoCall';
 import {
   insertPrimaryCalendarEvent,
   readGoogleCalendarAccessTokenFromStorage,
@@ -131,6 +133,7 @@ export default function MentorDashboardMentorshipPage() {
   const [goalsInput, setGoalsInput] = useState('');
 
   const [expandedId, setExpandedId] = useState(null);
+  const [videoCall, setVideoCall] = useState(null);
 
   const [feedbackFor, setFeedbackFor] = useState(null);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
@@ -509,18 +512,52 @@ export default function MentorDashboardMentorshipPage() {
                                   </button>
                                   {isExpanded && (
                                     <div className="mt-3 space-y-2">
-                                      {(m.sessions || []).map((s, i) => (
-                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
-                                          <div className="flex items-center justify-between">
+                                      {(m.sessions || []).map((s, i) => {
+                                        const sessionKey = s._id ? String(s._id) : `idx-${i}`;
+                                        const win = getSessionVideoWindowInfo(s);
+                                        const canVideo = Boolean(s._id) && win.canJoin;
+                                        return (
+                                        <div key={sessionKey} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
-                                            <span className="text-outline">{s.duration} min</span>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-outline">{s.duration} min</span>
+                                              {s.callStatus === 'completed' ? (
+                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800 dark:bg-green-950/60 dark:text-green-300">
+                                                  Call completed
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600 dark:bg-surface-container dark:text-on-surface-variant" title={win.label}>
+                                                  {win.phase === 'too_early' ? 'Video soon' : win.phase === 'ended' ? 'Window ended' : win.phase === 'open' ? 'Video open' : '—'}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                           {s.topics?.length > 0 && (
                                             <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>
                                           )}
                                           {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                          <div className="mt-2">
+                                            <button
+                                              type="button"
+                                              disabled={!canVideo}
+                                              title={!s._id ? 'Session id missing' : win.label}
+                                              onClick={() => {
+                                                if (!s._id) return;
+                                                setVideoCall({
+                                                  mentorshipId: m._id,
+                                                  sessionId: String(s._id),
+                                                  peerName: menteeName,
+                                                });
+                                              }}
+                                              className="rounded-lg bg-sky-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-sky-600 dark:hover:bg-sky-500"
+                                            >
+                                              Join video call
+                                            </button>
+                                          </div>
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -632,7 +669,18 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'schedule' && (
-                  <MentorSchedulePanel active={active} history={history} />
+                  <MentorSchedulePanel
+                    active={active}
+                    history={history}
+                    onSessionVideoCall={(mentorshipId, session, menteeName) => {
+                      if (!session?._id) return;
+                      setVideoCall({
+                        mentorshipId,
+                        sessionId: String(session._id),
+                        peerName: menteeName || 'Mentee',
+                      });
+                    }}
+                  />
                 )}
               </>
             )}
@@ -811,6 +859,15 @@ export default function MentorDashboardMentorshipPage() {
                 </div>
               </div>
             )}
+
+            <MentorshipVideoCallModal
+              open={Boolean(videoCall)}
+              onClose={() => setVideoCall(null)}
+              mentorshipId={videoCall?.mentorshipId || ''}
+              sessionId={videoCall?.sessionId || ''}
+              peerName={videoCall?.peerName}
+              onCallEnded={() => loadAll()}
+            />
           </div>
     </>
   );
