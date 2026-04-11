@@ -15,6 +15,8 @@ router.get('/admin/reports', role('admin'), mentorshipController.adminGetReports
 
 router.get('/active', mentorshipController.getActiveMentorships);
 router.get('/history', mentorshipController.getMentorshipHistory);
+router.post('/:id/sessions/:sessionId/agora-token', mentorshipController.getSessionAgoraToken);
+router.put('/:id/sessions/:sessionId/complete-call', mentorshipController.completeSessionVideoCall);
 router.get('/:id', mentorshipController.getMentorshipById);
 router.post('/:id/sessions', validateSession, mentorshipController.logMentorshipSession);
 router.put('/:id/goals', validateGoals, mentorshipController.updateMentorshipGoals);

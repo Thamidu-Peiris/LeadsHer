@@ -1,6 +1,7 @@
 const Mentorship = require('../models/Mentorship');
 const MentorProfile = require('../models/MentorProfile');
 const { validateSessionStartAt, normalizeSessionStartInput } = require('../utils/sessionDate');
+const { agoraUidFromObjectId, buildRtcToken } = require('./agoraTokenService');
 
 /** Prefer client local YYYY-MM-DD + HH:mm; otherwise derive UTC date/time from the stored instant. */
 function sessionWallParts(sessionInstant, calendarDate, time) {
@@ -87,7 +88,10 @@ const logSession = async (mentorshipId, userId, sessionData) => {
     duration: parseInt(duration, 10),
     notes: notes || '',
     topics: topics || [],
+    callStatus: 'scheduled',
   });
+  const newSession = mentorship.sessions[mentorship.sessions.length - 1];
+  newSession.agoraChannel = `lh_${mentorship._id}_${newSession._id}`;
   await mentorship.save();
   await mentorship.populate([
     { path: 'mentor', select: 'name email avatar profilePicture' },
@@ -284,6 +288,131 @@ const terminateMentorship = async (mentorshipId, userId, reason) => {
   return mentorship;
 };
 
+const getSessionSubdoc = (mentorship, sessionId) => {
+  const s = mentorship.sessions.id(sessionId);
+  if (!s) {
+    const err = new Error('Session not found');
+    err.status = 404;
+    throw err;
+  }
+  return s;
+};
+
+const ensureSessionVideoMeta = (mentorship, sessionSub) => {
+  if (!sessionSub.agoraChannel) {
+    sessionSub.agoraChannel = `lh_${mentorship._id}_${sessionSub._id}`;
+  }
+  if (!sessionSub.callStatus) {
+    sessionSub.callStatus = 'scheduled';
+  }
+};
+
+const assertSessionInVideoCallWindow = (sessionSub) => {
+  const start = new Date(sessionSub.date).getTime();
+  if (Number.isNaN(start)) {
+    const err = new Error('Invalid session time');
+    err.status = 400;
+    throw err;
+  }
+  const durMs = (Number(sessionSub.duration) || 30) * 60 * 1000;
+  const end = start + durMs;
+  const now = Date.now();
+  const earlyMs = 15 * 60 * 1000;
+  const lateMs = 60 * 60 * 1000;
+  if (now < start - earlyMs) {
+    const err = new Error('Video call opens 15 minutes before the scheduled start time');
+    err.status = 400;
+    throw err;
+  }
+  if (now > end + lateMs) {
+    const err = new Error('This session is outside the allowed video call window');
+    err.status = 400;
+    throw err;
+  }
+};
+
+const issueAgoraRtcToken = async (mentorshipId, sessionId, userId) => {
+  const mentorship = await Mentorship.findById(mentorshipId)
+    .populate('mentor', 'name email avatar profilePicture')
+    .populate('mentee', 'name email avatar profilePicture');
+  if (!mentorship) {
+    const err = new Error('Mentorship not found');
+    err.status = 404;
+    throw err;
+  }
+  const mentorId = mentorship.mentor?._id?.toString?.() || mentorship.mentor.toString();
+  const menteeId = mentorship.mentee?._id?.toString?.() || mentorship.mentee.toString();
+  const uidStr = userId.toString();
+  if (mentorId !== uidStr && menteeId !== uidStr) {
+    const err = new Error('You do not have access to this mentorship');
+    err.status = 403;
+    throw err;
+  }
+  if (mentorship.status !== 'active') {
+    const err = new Error('Video calls are only available for active mentorships');
+    err.status = 400;
+    throw err;
+  }
+  const sessionSub = getSessionSubdoc(mentorship, sessionId);
+  ensureSessionVideoMeta(mentorship, sessionSub);
+  if (sessionSub.callStatus === 'completed') {
+    const err = new Error('This session call is already completed');
+    err.status = 400;
+    throw err;
+  }
+  assertSessionInVideoCallWindow(sessionSub);
+  if (sessionSub.callStatus === 'scheduled') {
+    sessionSub.callStatus = 'in_progress';
+    if (!sessionSub.callStartedAt) sessionSub.callStartedAt = new Date();
+  }
+  await mentorship.save();
+  const channelName = sessionSub.agoraChannel;
+  const uid = agoraUidFromObjectId(userId);
+  const built = buildRtcToken({ channelName, uid });
+  return {
+    appId: built.appId,
+    channel: channelName,
+    token: built.token,
+    uid: built.uid,
+    privilegeExpiredTs: built.privilegeExpiredTs,
+    callStatus: sessionSub.callStatus,
+  };
+};
+
+const completeSessionVideoCall = async (mentorshipId, sessionId, userId) => {
+  const mentorship = await Mentorship.findById(mentorshipId);
+  if (!mentorship) {
+    const err = new Error('Mentorship not found');
+    err.status = 404;
+    throw err;
+  }
+  const mentorId = mentorship.mentor.toString();
+  const menteeId = mentorship.mentee.toString();
+  const uidStr = userId.toString();
+  if (mentorId !== uidStr && menteeId !== uidStr) {
+    const err = new Error('You do not have access to this mentorship');
+    err.status = 403;
+    throw err;
+  }
+  if (mentorship.status !== 'active') {
+    const err = new Error('Cannot update sessions for this mentorship');
+    err.status = 400;
+    throw err;
+  }
+  const sessionSub = getSessionSubdoc(mentorship, sessionId);
+  ensureSessionVideoMeta(mentorship, sessionSub);
+  if (sessionSub.callStatus !== 'completed') {
+    sessionSub.callStatus = 'completed';
+    sessionSub.callEndedAt = new Date();
+    await mentorship.save();
+  }
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
+  return mentorship;
+};
+
 const getMentorshipHistory = async (userId, { status, role }) => {
   let filter = {};
   if (role === 'mentor') filter.mentor = userId;
@@ -309,4 +438,6 @@ module.exports = {
   resumeMentorship,
   terminateMentorship,
   getMentorshipHistory,
+  issueAgoraRtcToken,
+  completeSessionVideoCall,
 };

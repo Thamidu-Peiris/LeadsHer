@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
+import { getSessionVideoWindowInfo } from '../utils/mentorshipVideoCall';
+import MentorshipVideoCallModal from '../components/mentorship/MentorshipVideoCallModal';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
 import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
@@ -140,6 +142,7 @@ export default function MenteeDashboardMentorsPage() {
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
 
   const [expandedId, setExpandedId] = useState(null);
+  const [videoCall, setVideoCall] = useState(null);
 
   const directoryTotal = directoryPagination.total;
 
@@ -235,7 +238,11 @@ export default function MenteeDashboardMentorsPage() {
     }
     setSubmitting(true);
     try {
-      const mentorUserId = requestingMentor?.user?._id || requestingMentor?.user || requestingMentor?._id;
+      const mentorUserId = requestingMentor?.user?._id || requestingMentor?.user;
+      if (!mentorUserId) {
+        toast.error('Could not resolve mentor account. Open the mentor profile or try again.');
+        return;
+      }
       await mentorApi.sendRequest(mentorUserId, {
         goals,
         preferredStartDate: requestForm.preferredStartDate,
@@ -614,7 +621,9 @@ export default function MenteeDashboardMentorsPage() {
                 {tab === 'active' && (
                   <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentorship</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">View your active mentorship, log sessions, and update goals.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">
+                      View your active mentorship, join video calls at the scheduled time (from 15 minutes before start), and update goals.
+                    </p>
 
                     {active.length === 0 ? (
                       <p className="text-on-surface-variant">No active mentorships yet. Send a request from the Directory tab.</p>
@@ -663,16 +672,50 @@ export default function MenteeDashboardMentorsPage() {
                                   </button>
                                   {isExpanded && (
                                     <div className="mt-3 space-y-2">
-                                      {(m.sessions || []).map((s, i) => (
-                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
-                                          <div className="flex items-center justify-between">
+                                      {(m.sessions || []).map((s, i) => {
+                                        const sessionKey = s._id ? String(s._id) : `idx-${i}`;
+                                        const win = getSessionVideoWindowInfo(s);
+                                        const canVideo = Boolean(s._id) && win.canJoin;
+                                        return (
+                                        <div key={sessionKey} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
-                                            <span className="text-outline">{s.duration} min</span>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-outline">{s.duration} min</span>
+                                              {s.callStatus === 'completed' ? (
+                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800 dark:bg-green-950/60 dark:text-green-300">
+                                                  Call completed
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600 dark:bg-surface-container dark:text-on-surface-variant" title={win.label}>
+                                                  {win.phase === 'too_early' ? 'Video soon' : win.phase === 'ended' ? 'Window ended' : win.phase === 'open' ? 'Video open' : '—'}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                           {s.topics?.length > 0 && <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>}
                                           {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                          <div className="mt-2">
+                                            <button
+                                              type="button"
+                                              disabled={!canVideo}
+                                              title={!s._id ? 'Session id missing — schedule a new session' : win.label}
+                                              onClick={() => {
+                                                if (!s._id) return;
+                                                setVideoCall({
+                                                  mentorshipId: m._id,
+                                                  sessionId: String(s._id),
+                                                  peerName: mentorName,
+                                                });
+                                              }}
+                                              className="rounded-lg bg-sky-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-sky-600 dark:hover:bg-sky-500"
+                                            >
+                                              Start video call
+                                            </button>
+                                          </div>
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -954,6 +997,15 @@ export default function MenteeDashboardMentorsPage() {
                 </div>,
                 document.body
               )}
+
+            <MentorshipVideoCallModal
+              open={Boolean(videoCall)}
+              onClose={() => setVideoCall(null)}
+              mentorshipId={videoCall?.mentorshipId || ''}
+              sessionId={videoCall?.sessionId || ''}
+              peerName={videoCall?.peerName}
+              onCallEnded={() => loadMyMentorship({ showLoading: false })}
+            />
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
               <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">

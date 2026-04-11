@@ -6,7 +6,7 @@ const mentorshipRequestController = require('../controllers/mentorshipRequestCon
 
 router.use(protect);
 
-router.post('/', validateMentorshipRequest, mentorshipRequestController.createMentorshipRequest);
+router.post('/', role('mentee'), validateMentorshipRequest, mentorshipRequestController.createMentorshipRequest);
 router.get('/', mentorshipRequestController.getMentorshipRequests);
 router.get('/:id', mentorshipRequestController.getMentorshipRequestById);
 router.put('/:id/accept', role('mentor'), mentorshipRequestController.acceptMentorshipRequest);

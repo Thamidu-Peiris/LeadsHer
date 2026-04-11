@@ -81,6 +81,23 @@ describe('POST /api/mentorship/requests', () => {
 
     expect(res.status).toBe(401);
   });
+
+  it('403 — mentor cannot create a mentorship request', async () => {
+    const { token: mentorToken } = await createMentor({ email: 'mentorA403@req.com' });
+    const { user: mentorB } = await createMentor({ email: 'mentorB403@req.com' });
+
+    const res = await request(app)
+      .post('/api/mentorship/requests')
+      .set('Authorization', `Bearer ${mentorToken}`)
+      .send({
+        mentorId: mentorB._id.toString(),
+        goals: ['Career growth'],
+        preferredStartDate: futureDate(),
+        message: 'Invalid as mentor.',
+      });
+
+    expect(res.status).toBe(403);
+  });
 });
 
 // ── GET /api/mentorship/requests ──────────────────────────────────────────────

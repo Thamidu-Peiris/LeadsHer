@@ -24,6 +24,30 @@ exports.getMentorshipById = async (req, res) => {
   }
 };
 
+exports.getSessionAgoraToken = async (req, res) => {
+  try {
+    const data = await mentorshipService.issueAgoraRtcToken(req.params.id, req.params.sessionId, req.user._id);
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Error issuing Agora token:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Error issuing video token' });
+  }
+};
+
+exports.completeSessionVideoCall = async (req, res) => {
+  try {
+    const mentorship = await mentorshipService.completeSessionVideoCall(
+      req.params.id,
+      req.params.sessionId,
+      req.user._id
+    );
+    res.status(200).json({ message: 'Session video marked completed', data: mentorship });
+  } catch (error) {
+    console.error('Error completing session video:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Error completing session video' });
+  }
+};
+
 exports.logMentorshipSession = async (req, res) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
