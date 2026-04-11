@@ -550,6 +550,15 @@ const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
   return { stories: out, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
+/** Count published stories the user has liked (current user id in `likes` array). */
+const countStoriesLikedByUser = async (userId) => {
+  if (!userId) return 0;
+  return Story.countDocuments({
+    likes: userId,
+    status: 'published',
+  });
+};
+
 const getFeaturedStories = async () => {
   const raw = await Story.aggregate([
     { $match: { status: 'published', isFeatured: true } },
@@ -581,6 +590,7 @@ module.exports = {
   deleteCommentFromStory,
   getStoriesByUser,
   getMyStories,
+  countStoriesLikedByUser,
   getFeaturedStories,
   wordCount,
 };

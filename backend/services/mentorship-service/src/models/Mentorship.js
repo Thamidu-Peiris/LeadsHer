@@ -10,6 +10,16 @@ const sessionSchema = new mongoose.Schema({
   notes: { type: String, maxlength: [1000, 'Notes cannot exceed 1000 characters'] },
   topics: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now },
+  /** Agora RTC channel name (stable per session). */
+  agoraChannel: { type: String, trim: true },
+  /** Video call lifecycle for this logged session (separate from overall mentorship status). */
+  callStatus: {
+    type: String,
+    enum: ['scheduled', 'in_progress', 'completed'],
+    default: 'scheduled',
+  },
+  callStartedAt: { type: Date },
+  callEndedAt: { type: Date },
 });
 
 const feedbackSchema = new mongoose.Schema({

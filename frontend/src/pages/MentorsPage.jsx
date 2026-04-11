@@ -77,7 +77,7 @@ function StarRow({ rating, className = 'text-[15px]' }) {
 }
 
 export default function MentorsPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isMentee } = useAuth();
   const [mentors, setMentors] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -156,6 +156,10 @@ export default function MentorsPage() {
         toast.error('Log in to send a request');
         return;
       }
+      if (!isMentee) {
+        toast.error('Only mentees can request mentorship');
+        return;
+      }
       const mentorUserId = m?.user?._id || m?.user;
       if (!mentorUserId) {
         toast.error('Could not resolve mentor account');
@@ -168,7 +172,7 @@ export default function MentorsPage() {
       });
       setRequestModalMentor(m);
     },
-    [isAuthenticated]
+    [isAuthenticated, isMentee]
   );
 
   const submitMentorshipRequest = useCallback(async () => {
@@ -451,9 +455,14 @@ export default function MentorsPage() {
                         <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-rose-100/80 pt-2 dark:border-outline-variant/20">
                           <button
                             type="button"
-                            title="Request mentorship"
+                            title={
+                              isAuthenticated && !isMentee
+                                ? 'Only mentees can request mentorship'
+                                : 'Request mentorship'
+                            }
+                            disabled={isAuthenticated && !isMentee}
                             onClick={(e) => openRequestModal(e, m)}
-                            className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 dark:bg-rose-900/35 dark:text-rose-50 dark:shadow-none dark:hover:bg-rose-900/55"
+                            className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-rose-900/35 dark:text-rose-50 dark:shadow-none dark:hover:bg-rose-900/55 dark:disabled:hover:bg-rose-900/35"
                           >
                             Request
                           </button>

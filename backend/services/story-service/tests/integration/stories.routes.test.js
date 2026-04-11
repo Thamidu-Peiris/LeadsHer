@@ -53,6 +53,36 @@ describe('GET /health', () => {
   });
 });
 
+// ── GET /api/stories/liked/count ──────────────────────────────────────────────
+describe('GET /api/stories/liked/count', () => {
+  it('200 — returns count of published stories the user has liked', async () => {
+    const { user: author } = await createUser({ email: `lc_author_${Date.now()}@test.com` });
+    const { user: liker, token: likerToken } = await createUser({ email: `lc_liker_${Date.now()}@test.com` });
+    const Story = require('../../src/models/Story');
+    await Story.create({
+      author: author._id,
+      title: 'Hearted story',
+      content: '<p>Body</p>',
+      category: 'leadership',
+      status: 'published',
+      publishedAt: new Date(),
+      likes: [liker._id],
+    });
+
+    const res = await request(app)
+      .get('/api/stories/liked/count')
+      .set('Authorization', `Bearer ${likerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(1);
+  });
+
+  it('401 — unauthenticated', async () => {
+    const res = await request(app).get('/api/stories/liked/count');
+    expect(res.status).toBe(401);
+  });
+});
+
 // ── GET /api/stories ───────────────────────────────────────────────────────────
 describe('GET /api/stories', () => {
   it('200 — returns empty list when no stories exist', async () => {

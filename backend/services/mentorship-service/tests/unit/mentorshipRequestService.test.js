@@ -115,6 +115,35 @@ describe('createRequest', () => {
       mentorshipRequestService.createRequest(mentee._id, payload)
     ).rejects.toMatchObject({ status: 400 });
   });
+
+  it('throws 403 when caller is not a mentee', async () => {
+    const { user: mentor } = await createMentor({ email: 'mentor403@t.com' });
+    const { user: mentor2 } = await createMentor({ email: 'mentor2@t.com' });
+
+    await expect(
+      mentorshipRequestService.createRequest(mentor._id, {
+        mentorId: mentor2._id,
+        goals: ['Goal'],
+        preferredStartDate: futureDate(),
+        message: 'Hi',
+      })
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('accepts MentorProfile _id as mentorId and stores mentor user id', async () => {
+    const { user: mentee } = await createUser({ role: 'mentee' });
+    const { user: mentor, profile } = await createMentor();
+
+    const req = await mentorshipRequestService.createRequest(mentee._id, {
+      mentorId: profile._id,
+      goals: ['Learn'],
+      preferredStartDate: futureDate(),
+      message: 'Hi',
+    });
+
+    const mentorRef = req.mentor._id ? req.mentor._id.toString() : req.mentor.toString();
+    expect(mentorRef).toBe(mentor._id.toString());
+  });
 });
 
 // ── getRequests ───────────────────────────────────────────────────────────────
