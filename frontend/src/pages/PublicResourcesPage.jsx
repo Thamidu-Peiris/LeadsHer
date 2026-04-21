@@ -8,7 +8,7 @@ import ResourcePreviewModal from '../components/common/ResourcePreviewModal';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
-const RESOURCES_HERO_IMAGE = '/images/resources-hero.jpg';
+const RESOURCES_HERO_IMAGE = '/images/resources-hero.png';
 
 const TYPES = ['article', 'ebook', 'video', 'podcast', 'tool', 'guide'];
 
@@ -33,13 +33,14 @@ const SORTS = [
   { value: '-downloads',     label: 'Most Downloaded' },
 ];
 
+/* Match mentee dashboard /dashboard/resources card visuals */
 const TYPE_CFG = {
-  article: { icon: 'article',       label: 'Article',  thumb: 'from-slate-700 to-slate-900',    badge: 'bg-slate-800/80' },
-  ebook:   { icon: 'menu_book',     label: 'Ebook',    thumb: 'from-violet-700 to-purple-900',  badge: 'bg-violet-800/80' },
-  video:   { icon: 'play_circle',   label: 'Video',    thumb: 'from-red-700 to-rose-900',       badge: 'bg-red-800/80' },
-  podcast: { icon: 'podcasts',      label: 'Podcast',  thumb: 'from-amber-600 to-orange-800',   badge: 'bg-amber-700/80' },
-  tool:    { icon: 'build',         label: 'Tool',     thumb: 'from-emerald-700 to-teal-900',   badge: 'bg-emerald-800/80' },
-  guide:   { icon: 'local_library', label: 'Guide',    thumb: 'from-[#6242a3] to-[#3a1f7a]',   badge: 'bg-[#6242a3]/80' },
+  article: { icon: 'article',       label: 'Article', thumb: 'from-slate-700 to-slate-900',   badge: 'bg-slate-800/80'  },
+  ebook:   { icon: 'menu_book',     label: 'Ebook',   thumb: 'from-violet-700 to-purple-900', badge: 'bg-violet-800/80' },
+  video:   { icon: 'play_circle',   label: 'Video',   thumb: 'from-red-700 to-rose-900',      badge: 'bg-red-800/80'    },
+  podcast: { icon: 'podcasts',      label: 'Podcast', thumb: 'from-amber-600 to-orange-800',  badge: 'bg-amber-700/80'  },
+  tool:    { icon: 'build',         label: 'Tool',    thumb: 'from-emerald-700 to-teal-900',  badge: 'bg-emerald-800/80'},
+  guide:   { icon: 'local_library', label: 'Guide',   thumb: 'from-[#6242a3] to-[#3a1f7a]',    badge: 'bg-[#6242a3]/80'  },
 };
 
 const DIFF_BADGE = {
@@ -83,7 +84,7 @@ function RateModal({ resource, onClose, onSave }) {
               <button key={star} type="button"
                 onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
                 onClick={() => setRating(star)} className="hover:scale-110 transition-transform">
-                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline'}`}>
+                <span className={`material-symbols-outlined text-[36px] ${star <= (hovered || rating) ? 'text-rose-600 dark:text-rose-400' : 'text-slate-200 dark:text-outline'}`}>
                   {star <= (hovered || rating) ? 'star' : 'star_border'}
                 </span>
               </button>
@@ -95,7 +96,7 @@ function RateModal({ resource, onClose, onSave }) {
           <div>
             <label className="block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5">Review (optional)</label>
             <textarea
-              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg px-3 py-2 text-sm text-on-surface h-20 resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/40"
               value={review} onChange={(e) => setReview(e.target.value)}
               placeholder="Share your thoughts..." maxLength={500}
             />
@@ -107,7 +108,7 @@ function RateModal({ resource, onClose, onSave }) {
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving || !rating}
-            className="px-6 py-2.5 text-sm font-bold bg-gold-accent text-white hover:opacity-90 disabled:opacity-50 rounded-lg transition-all">
+            className="rounded-lg bg-rose-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 dark:bg-rose-500">
             {saving ? 'Submitting…' : 'Submit Rating'}
           </button>
         </div>
@@ -119,104 +120,105 @@ function RateModal({ resource, onClose, onSave }) {
 /* ─── Resource Card ──────────────────────────────────────────────────────── */
 
 function ResourceCard({ resource, isAuthenticated, bookmarkedIds, onBookmark, onAccess, onRate }) {
-  const cfg        = TYPE_CFG[resource.type] || TYPE_CFG.article;
-  const diffBadge  = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
+  const cfg = TYPE_CFG[resource.type] || TYPE_CFG.article;
+  const diffBadge = DIFF_BADGE[resource.difficulty] || DIFF_BADGE.beginner;
   const isBookmarked = bookmarkedIds.has(resource._id);
 
   return (
-    <div className="group bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/40 rounded-xl overflow-hidden hover:border-gold-accent/50 hover:shadow-lg transition-all duration-300 flex flex-col">
-
-      {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden flex-shrink-0">
+    <div className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white transition-all duration-300 hover:border-rose-500/50 dark:border-outline-variant/40 dark:bg-surface-container-lowest">
+      {/* Thumbnail — same as mentee: clean image + compact bookmark */}
+      <div className="relative aspect-video flex-shrink-0 overflow-hidden">
         {resource.thumbnail ? (
           <img
             src={resource.thumbnail}
             alt={resource.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${cfg.thumb} flex items-center justify-center group-hover:scale-105 transition-transform duration-500`}>
-            <span className="material-symbols-outlined text-white/25 text-[64px]">{cfg.icon}</span>
+          <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${cfg.thumb} transition-transform duration-500 group-hover:scale-105`}>
+            <span className="material-symbols-outlined text-[48px] text-white/30">{cfg.icon}</span>
           </div>
         )}
 
-        {/* Type + Difficulty badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          <span className={`px-2 py-1 ${cfg.badge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {cfg.label}
-          </span>
-          <span className={`px-2 py-1 ${diffBadge} backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded`}>
-            {resource.difficulty}
-          </span>
-          {resource.isPremium && (
-            <span className="px-2 py-1 bg-gold-accent/80 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
-              Premium
-            </span>
-          )}
-        </div>
-
-        {/* Bookmark button */}
         <button
-          onClick={() => onBookmark(resource._id)}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onBookmark(resource._id);
+          }}
+          className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition-all ${
             isBookmarked
-              ? 'bg-gold-accent text-white'
-              : 'bg-black/20 text-white hover:bg-gold-accent hover:text-white'
+              ? 'bg-black text-white'
+              : 'bg-black/20 text-white hover:bg-black hover:text-white'
           }`}
           title={isAuthenticated ? (isBookmarked ? 'Remove bookmark' : 'Bookmark') : 'Sign in to bookmark'}
         >
-          <span className="material-symbols-outlined text-[18px]">
+          <span className="material-symbols-outlined text-[16px]">
             {isBookmarked ? 'bookmark' : 'bookmark_border'}
           </span>
         </button>
       </div>
 
-      {/* Card body */}
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        <h3 className="text-base font-bold leading-snug text-on-surface line-clamp-2 group-hover:text-gold-accent transition-colors">
+      {/* Body — badges below thumb, typography + stats row like mentee */}
+      <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white ${cfg.badge}`}>
+            {cfg.label}
+          </span>
+          <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white ${diffBadge}`}>
+            {resource.difficulty}
+          </span>
+          {resource.isPremium && (
+            <span className="rounded bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+              Premium
+            </span>
+          )}
+        </div>
+
+        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-on-surface transition-colors group-hover:text-rose-500">
           {resource.title}
         </h3>
-        <p className="text-sm text-slate-500 dark:text-on-surface-variant line-clamp-2 flex-1">
+        <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-slate-500 dark:text-on-surface-variant">
           {resource.description}
         </p>
 
-        {/* Author + date */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-outline">
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">person</span>
-            {resource.author || resource.uploadedBy?.name || 'LeadsHer'}
-          </span>
-          <span>{fmtDate(resource.createdAt)}</span>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-outline-variant/20">
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 font-semibold text-gold-accent">
-              <span className="material-symbols-outlined text-[14px]">download</span>
-              {fmt(resource.downloads)}
+        <div className="flex min-w-0 items-center justify-between gap-2 border-t border-slate-100 pt-2 dark:border-outline-variant/20">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums text-blue-800 dark:text-blue-300" title="Downloads">
+              <span className="material-symbols-outlined text-[17px] leading-none text-blue-800 dark:text-blue-300">download</span>
+              {fmt(resource.downloads ?? 0)}
             </span>
-            <span className="flex items-center gap-1 font-semibold text-yellow-500">
-              <span className="material-symbols-outlined text-[14px]">star</span>
-              {resource.averageRating ? resource.averageRating.toFixed(1) : '—'}
-              {resource.ratingCount > 0 && (
-                <span className="text-slate-400 font-normal">({resource.ratingCount})</span>
-              )}
+            <span className="flex shrink-0 items-center gap-1 text-xs font-bold tabular-nums text-amber-500 dark:text-amber-400">
+              <span className="material-symbols-outlined text-[17px] leading-none text-amber-500 dark:text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>
+                star
+              </span>
+              {(Number(resource.averageRating) || 0).toFixed(1)}
+              <span className="font-normal text-slate-400 dark:text-slate-500">({resource.ratingCount ?? 0})</span>
             </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onRate(resource);
+              }}
+              className="flex shrink-0 items-center gap-0.5 text-[10px] text-slate-400 transition-colors hover:text-rose-500 dark:text-outline"
+            >
+              <span className="material-symbols-outlined text-[12px]">star_border</span>
+              Rate
+            </button>
           </div>
-          <button
-            onClick={() => onRate(resource)}
-            className="text-[11px] text-slate-400 dark:text-outline hover:text-gold-accent transition-colors flex items-center gap-0.5"
-          >
-            <span className="material-symbols-outlined text-[13px]">star_border</span>
-            Rate
-          </button>
+          <span className="shrink-0 tabular-nums text-[10px] text-slate-400 dark:text-outline">
+            {fmtDate(resource.createdAt)}
+          </span>
         </div>
 
-        {/* Access button */}
         <button
-          onClick={() => onAccess(resource)}
-          className="w-full py-2 rounded-lg border border-gold-accent/40 text-gold-accent text-sm font-bold hover:bg-gold-accent hover:text-white transition-all"
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onAccess(resource);
+          }}
+          className="w-full rounded-md border border-rose-500/40 py-1.5 text-xs font-bold text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
         >
           Access Resource
         </button>
@@ -361,41 +363,33 @@ export default function PublicResourcesPage() {
       {/* Hero */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-2">
         <section
-          className="relative mb-6 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-none"
+          className="relative mb-6 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100 dark:border-outline-variant/25 dark:bg-surface-container-lowest"
           aria-labelledby="resources-hero-heading"
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
             <div
-              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] opacity-90 sm:bg-[82%_25%] dark:opacity-35"
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] sm:bg-[82%_25%] dark:opacity-40"
               style={{ backgroundImage: `url(${RESOURCES_HERO_IMAGE})` }}
             />
           </div>
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white/92 to-amber-50/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/92 dark:to-amber-950/40"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-white via-white/88 to-transparent sm:via-white/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/85 dark:to-transparent"
-            aria-hidden
-          />
           <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
             <header className="mb-6 max-w-3xl text-left">
               <h1
                 id="resources-hero-heading"
-                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface"
+                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface [text-shadow:0_0_20px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.9)] dark:[text-shadow:none]"
               >
                 Leadership Resource Library
               </h1>
-              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant">
+              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant [text-shadow:0_0_12px_rgba(255,255,255,0.9)] dark:[text-shadow:none]">
                 Curated guides, ebooks, videos, and tools designed to accelerate your growth as a visionary leader.
               </p>
             </header>
             {/* Hero search */}
             <form onSubmit={handleSearch} className="max-w-[600px]">
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gold-accent text-[22px]">search</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-rose-600 dark:text-rose-400 text-[22px]">search</span>
                 <input
-                  className="w-full h-14 pl-12 pr-4 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-xl text-base placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-gold-accent/50 focus:border-gold-accent/50 transition-all shadow-sm"
+                  className="w-full h-14 pl-12 pr-4 bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-xl text-base placeholder:text-slate-400 dark:placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500/50 transition-all shadow-sm"
                   placeholder="Search for articles, workshops, or mentors..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -414,8 +408,8 @@ export default function PublicResourcesPage() {
             onClick={() => handleTypeChange(pill.key)}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
               activeType === pill.key
-                ? 'bg-gold-accent text-white shadow-md shadow-gold-accent/20'
-                : 'bg-transparent border border-slate-200 dark:border-outline-variant/40 text-slate-600 dark:text-on-surface-variant hover:border-gold-accent/50 hover:text-gold-accent'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25 dark:bg-rose-500'
+                : 'border border-slate-200 bg-transparent text-slate-600 hover:border-rose-400/50 hover:text-rose-600 dark:border-outline-variant/40 dark:text-on-surface-variant dark:hover:text-rose-400'
             }`}
           >
             {pill.label}
@@ -432,7 +426,7 @@ export default function PublicResourcesPage() {
             <select
               value={filterCategory}
               onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
             >
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -463,7 +457,7 @@ export default function PublicResourcesPage() {
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); setPage(1); }}
-              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-gold-accent/40 focus:outline-none cursor-pointer"
+              className="w-full bg-white dark:bg-surface-container border border-slate-200 dark:border-outline-variant/40 text-on-surface rounded-lg px-4 py-2 text-sm appearance-none focus:ring-2 focus:ring-rose-500/40 focus:outline-none cursor-pointer"
             >
               {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
@@ -485,7 +479,7 @@ export default function PublicResourcesPage() {
         {isAuthenticated ? (
           <Link
             to="/dashboard/resources"
-            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-gold-accent/20"
+            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-black hover:bg-neutral-900 text-white px-6 py-2.5 rounded-lg font-bold text-sm active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">dashboard</span>
             My Library
@@ -493,7 +487,7 @@ export default function PublicResourcesPage() {
         ) : (
           <Link
             to="/register"
-            className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gold-accent text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-gold-accent/20"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/25 transition-all hover:opacity-90 active:scale-95 dark:bg-rose-500 lg:w-auto"
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
             Join to Upload
@@ -515,7 +509,7 @@ export default function PublicResourcesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {resources.map((resource) => (
               <ResourceCard
                 key={resource._id}
@@ -536,7 +530,7 @@ export default function PublicResourcesPage() {
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-500 transition-all hover:border-rose-400/50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-outline-variant/40 dark:bg-surface-container dark:text-on-surface-variant dark:hover:text-rose-400"
             >
               ← Previous
             </button>
@@ -546,7 +540,7 @@ export default function PublicResourcesPage() {
             <button
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="px-5 py-2 text-sm font-semibold border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-500 dark:text-on-surface-variant rounded-lg hover:border-gold-accent/40 hover:text-gold-accent disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-500 transition-all hover:border-rose-400/50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-outline-variant/40 dark:bg-surface-container dark:text-on-surface-variant dark:hover:text-rose-400"
             >
               Next →
             </button>
@@ -564,7 +558,7 @@ export default function PublicResourcesPage() {
 
       {/* Guest CTA banner */}
       {!isAuthenticated && (
-        <div className="bg-gradient-to-r from-primary/5 via-gold-accent/5 to-tertiary/5 border-t border-slate-200 dark:border-outline-variant/40 py-12 px-6 text-center">
+        <div className="bg-gradient-to-r from-primary/5 via-rose-500/10 to-tertiary/5 border-t border-slate-200 dark:border-outline-variant/40 py-12 px-6 text-center">
           <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-2">
             Unlock the Full Library
           </h2>
@@ -573,11 +567,11 @@ export default function PublicResourcesPage() {
           </p>
           <div className="flex justify-center gap-3">
             <Link to="/register"
-              className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-md shadow-gold-accent/20">
+              className="rounded-lg bg-rose-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/25 transition-all hover:opacity-90 dark:bg-rose-500">
               Create Free Account
             </Link>
             <Link to="/login"
-              className="border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container text-slate-600 dark:text-on-surface-variant px-6 py-3 rounded-lg font-bold text-sm hover:border-gold-accent/40 hover:text-gold-accent transition-all">
+              className="rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-600 transition-all hover:border-rose-400/50 hover:text-rose-600 dark:border-outline-variant/40 dark:bg-surface-container dark:text-on-surface-variant dark:hover:text-rose-400">
               Sign In
             </Link>
           </div>

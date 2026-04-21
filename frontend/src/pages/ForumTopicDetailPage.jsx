@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
 import Spinner from '../components/common/Spinner';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -70,7 +71,7 @@ function ReportModal({ postId, postType, onClose, onSubmit }) {
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-blue-900/40"
             >
               {REPORT_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
@@ -85,7 +86,7 @@ function ReportModal({ postId, postType, onClose, onSubmit }) {
               rows={3}
               maxLength={500}
               placeholder="Describe the issue…"
-              className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+              className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-none focus:outline-none focus:ring-2 focus:ring-blue-900/40"
             />
           </div>
         </div>
@@ -165,9 +166,7 @@ function ReplyCard({
 
   const isOwn    = user && (user.id === reply.author?._id || user._id === reply.author?._id);
   const isAdmin  = user?.role === 'admin';
-  const avatarSrc =
-    reply.author?.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.author?.name || 'U')}&background=c9a84c&color=fff&size=40`;
+  const avatarSrc = userDisplayPhoto(reply.author, { size: 40 });
 
   const handleSave = async () => {
     if (!content.trim()) return;
@@ -227,7 +226,7 @@ function ReplyCard({
                 <>
                   <button
                     onClick={() => { setContent(reply.content); setEditing(true); }}
-                    className="text-xs text-outline hover:text-gold-accent border border-transparent hover:border-gold-accent/30 px-2 py-1 rounded-lg transition-all"
+                    className="text-xs text-outline hover:text-blue-900 border border-transparent hover:border-blue-900/30 px-2 py-1 rounded-lg transition-all"
                   >
                     <span className="material-symbols-outlined text-[14px]">edit</span>
                   </button>
@@ -259,13 +258,13 @@ function ReplyCard({
                 onChange={(e) => setContent(e.target.value)}
                 rows={4}
                 maxLength={1000}
-                className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-y focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-y focus:outline-none focus:ring-2 focus:ring-blue-900/40"
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
                   disabled={saving || !content.trim()}
-                  className="px-3 py-1.5 text-xs font-bold bg-gold-accent hover:bg-gold-accent/90 text-white rounded-lg disabled:opacity-60 transition-colors"
+                  className="px-3 py-1.5 text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white rounded-lg disabled:opacity-60 transition-colors"
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
@@ -300,7 +299,7 @@ function ReplyCard({
                 <button
                   type="button"
                   onClick={() => setReplyOpen(true)}
-                  className="text-xs text-outline hover:text-gold-accent transition-colors flex items-center gap-1"
+                  className="text-xs text-outline hover:text-blue-900 transition-colors flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-[14px]">reply</span>
                   Reply
@@ -314,14 +313,14 @@ function ReplyCard({
                     maxLength={1000}
                     placeholder="Write your reply…"
                     autoFocus
-                    className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-none focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
+                    className="w-full border border-outline-variant/30 rounded-lg px-3 py-2 text-sm bg-white dark:bg-surface text-on-surface resize-none focus:outline-none focus:ring-2 focus:ring-blue-900/40"
                   />
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handleInlineReply}
                       disabled={replySubmitting || !replyText.trim()}
-                      className="px-3 py-1.5 text-xs font-bold bg-gold-accent hover:bg-gold-accent/90 text-white rounded-lg disabled:opacity-60 transition-colors"
+                      className="px-3 py-1.5 text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white rounded-lg disabled:opacity-60 transition-colors"
                     >
                       {replySubmitting ? 'Posting…' : 'Post Reply'}
                     </button>
@@ -544,9 +543,7 @@ export default function ForumTopicDetailPage() {
   if (!topic) return null;
 
   const catColor = CAT_COLORS[topic.category] || CAT_COLORS.general;
-  const avatarSrc =
-    topic.author?.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(topic.author?.name || 'U')}&background=c9a84c&color=fff&size=48`;
+  const avatarSrc = userDisplayPhoto(topic.author, { size: 48 });
 
   return (
     <div className="min-h-screen bg-surface">
@@ -560,21 +557,23 @@ export default function ForumTopicDetailPage() {
         />
       )}
 
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-4 pt-20 pb-10 sm:pt-24">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-outline mb-6">
-          <Link to="/forum" className="hover:text-gold-accent transition-colors">Forum</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-on-surface line-clamp-1">{topic.title}</span>
+        <nav className="flex items-center gap-2.5 text-sm sm:text-base text-outline mb-6">
+          <Link to="/forum" className="font-medium hover:text-blue-900 transition-colors">Forum</Link>
+          <span className="material-symbols-outlined text-[18px] sm:text-[22px] shrink-0">chevron_right</span>
+          <span className="text-on-surface font-semibold line-clamp-1">{topic.title}</span>
         </nav>
 
-        {/* Topic */}
-        <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl p-6 mb-6">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-start">
+        {/* Left: topic + description (~2/3 width) */}
+        <div className="lg:col-span-2 min-w-0">
+        <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl p-6">
           {/* Badges + admin actions */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex flex-wrap items-center gap-2">
               {topic.isPinned && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gold-accent bg-gold-accent/10 border border-gold-accent/25 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-blue-900 bg-blue-900/10 border border-blue-900/25 px-2 py-0.5 rounded-full">
                   <span className="material-symbols-outlined text-[12px]">push_pin</span>
                   Pinned
                 </span>
@@ -598,8 +597,8 @@ export default function ForumTopicDetailPage() {
                   disabled={togglingPin}
                   className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all disabled:opacity-60 ${
                     topic.isPinned
-                      ? 'bg-gold-accent/10 text-gold-accent border-gold-accent/30 hover:bg-gold-accent/20'
-                      : 'text-outline border-outline-variant/30 hover:text-gold-accent hover:border-gold-accent/30'
+                      ? 'bg-blue-900/10 text-blue-900 border-blue-900/30 hover:bg-blue-900/20'
+                      : 'text-outline border-outline-variant/30 hover:text-blue-900 hover:border-blue-900/30'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[14px]">push_pin</span>
@@ -623,7 +622,7 @@ export default function ForumTopicDetailPage() {
               {isOwner && (
                 <Link
                   to={`/forum/${id}/edit`}
-                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 text-outline hover:text-gold-accent hover:border-gold-accent/30 transition-all"
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 text-outline hover:text-blue-900 hover:border-blue-900/30 transition-all"
                 >
                   <span className="material-symbols-outlined text-[14px]">edit</span>
                   Edit
@@ -703,8 +702,62 @@ export default function ForumTopicDetailPage() {
           </div>
         </div>
 
-        {/* Replies */}
-        <div className="mb-6">
+        {/* Post a reply — under topic & description */}
+        <div className="mt-6">
+          {topic.isClosed ? (
+            <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/20 rounded-xl text-sm text-on-surface-variant">
+              <span className="material-symbols-outlined text-[20px] text-outline">lock</span>
+              This topic is closed. No new replies can be added.
+            </div>
+          ) : user ? (
+            <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl p-6">
+              <h3 className="text-sm font-bold text-outline uppercase tracking-widest mb-4">Post a Reply</h3>
+              <form onSubmit={handleSubmitReply}>
+                <textarea
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  rows={5}
+                  maxLength={1000}
+                  placeholder="Share your thoughts, advice, or experience…"
+                  className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface resize-y focus:outline-none focus:ring-2 focus:ring-blue-900/40 focus:border-blue-900 transition-all placeholder:text-outline/60"
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-outline">{replyContent.length}/1000</span>
+                  <button
+                    type="submit"
+                    disabled={submitting || !replyContent.trim()}
+                    className="flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                        Posting…
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-[16px]">send</span>
+                        Post Reply
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl">
+              <p className="text-on-surface-variant mb-3">Join the conversation</p>
+              <Link to="/login" className="btn-primary inline-flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">login</span>
+                Log in to reply
+              </Link>
+            </div>
+          )}
+        </div>
+        </div>
+
+        {/* Right: replies (~1/3 width) */}
+        <div className="lg:col-span-1 flex flex-col min-w-0">
+        <div>
           <h2 className="text-sm font-bold text-outline uppercase tracking-widest mb-4">
             {topic.replyCount || 0} {(topic.replyCount || 0) === 1 ? 'Reply' : 'Replies'}
           </h2>
@@ -779,56 +832,8 @@ export default function ForumTopicDetailPage() {
             </div>
           )}
         </div>
-
-        {/* Reply Form */}
-        {topic.isClosed ? (
-          <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-surface-container border border-slate-200 dark:border-outline-variant/20 rounded-xl text-sm text-on-surface-variant">
-            <span className="material-symbols-outlined text-[20px] text-outline">lock</span>
-            This topic is closed. No new replies can be added.
-          </div>
-        ) : user ? (
-          <div className="bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl p-6">
-            <h3 className="text-sm font-bold text-outline uppercase tracking-widest mb-4">Post a Reply</h3>
-            <form onSubmit={handleSubmitReply}>
-              <textarea
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                rows={5}
-                maxLength={1000}
-                placeholder="Share your thoughts, advice, or experience…"
-                className="w-full border border-outline-variant/30 rounded-lg px-4 py-3 text-sm text-on-surface bg-white dark:bg-surface resize-y focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all placeholder:text-outline/60"
-              />
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-outline">{replyContent.length}/1000</span>
-                <button
-                  type="submit"
-                  disabled={submitting || !replyContent.trim()}
-                  className="flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold text-sm px-5 py-2.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (
-                    <>
-                      <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                      Posting…
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[16px]">send</span>
-                      Post Reply
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl">
-            <p className="text-on-surface-variant mb-3">Join the conversation</p>
-            <Link to="/login" className="btn-primary inline-flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">login</span>
-              Log in to reply
-            </Link>
-          </div>
-        )}
+        </div>
+        </div>
       </div>
     </div>
   );

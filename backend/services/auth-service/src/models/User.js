@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema(
     suspendedReason: { type: String, default: '' },
     emailVerificationToken: { type: String, select: false },
     emailVerificationExpires: { type: Date, select: false },
+    emailVerificationCodeHash: { type: String, select: false },
+    emailVerificationCodeExpires: { type: Date, select: false },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
     googleId: { type: String, sparse: true, select: false },

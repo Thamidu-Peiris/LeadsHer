@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import Pagination from '../components/common/Pagination';
@@ -7,7 +9,10 @@ import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
+import { getSessionVideoWindowInfo } from '../utils/mentorshipVideoCall';
+import MentorshipVideoCallModal from '../components/mentorship/MentorshipVideoCallModal';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 function mentorsFromResponse(body) {
   if (!body) return [];
@@ -38,6 +43,7 @@ function StarRow({ rating, className = 'text-[15px]' }) {
 function safeList(res) {
   const data = res?.data;
   if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.mentorships)) return data.mentorships;
   if (Array.isArray(data?.mentors)) return data.mentors;
   if (Array.isArray(data?.data?.mentors)) return data.data.mentors;
   if (Array.isArray(data?.requests)) return data.requests;
@@ -55,6 +61,44 @@ function formatDate(d) {
   }
 }
 
+/** Avatar from populated mentor user (User.profilePicture / avatar) or name fallback. */
+function MentorFace({ mentor, displayName, size = 'md' }) {
+  const user =
+    mentor && typeof mentor === 'object'
+      ? mentor
+      : { name: displayName || 'Mentor' };
+  const dim = size === 'lg' ? 'h-14 w-14' : size === 'sm' ? 'h-10 w-10' : 'h-12 w-12';
+  const px = size === 'lg' ? 128 : size === 'sm' ? 80 : 96;
+  return (
+    <img
+      src={userDisplayPhoto(user, { size: px })}
+      alt=""
+      className={`${dim} shrink-0 rounded-full border border-outline-variant/25 bg-surface-container-lowest object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/20`}
+    />
+  );
+}
+
+function FeedbackSubmittedStars({ rating }) {
+  const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return (
+    <span
+      className="inline-flex items-center gap-px text-[14px] leading-none tracking-tight"
+      role="img"
+      aria-label={`${r} out of 5 stars`}
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span
+          key={i}
+          className={i < r ? 'text-amber-400' : 'text-neutral-300 dark:text-neutral-500'}
+          aria-hidden
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function localYmd(d) {
   const x = d instanceof Date ? d : new Date(d);
   if (isNaN(x.getTime())) return '';
@@ -67,16 +111,8 @@ function localYmd(d) {
 export default function MenteeDashboardMentorsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
 
-  const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState('directory'); // directory | requests | active | history
-
-
-  const menteeAvatarSrc =
-    user?.profilePicture || user?.avatar ||
-    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
-
 
   const [loading, setLoading] = useState(true);
   const [mentorsLoading, setMentorsLoading] = useState(false);
@@ -106,6 +142,7 @@ export default function MenteeDashboardMentorsPage() {
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
 
   const [expandedId, setExpandedId] = useState(null);
+  const [videoCall, setVideoCall] = useState(null);
 
   const directoryTotal = directoryPagination.total;
 
@@ -135,31 +172,34 @@ export default function MenteeDashboardMentorsPage() {
     });
   }, [directoryPage, appliedSearch, sortBy]);
 
-  const loadMyMentorship = async () => {
-    const [r, a, h] = await Promise.allSettled([
-      mentorshipApi.getRequests(),
-      mentorshipApi.getActive(),
-      mentorshipApi.getHistory(),
-    ]);
-    if (r.status === 'fulfilled') setRequests(safeList(r.value));
-    if (a.status === 'fulfilled') setActive(safeList(a.value));
-    if (h.status === 'fulfilled') setHistory(safeList(h.value));
-  };
+  const loadMyMentorship = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
+    if (showLoading) setLoading(true);
+    try {
+      const [r, a, h] = await Promise.allSettled([
+        mentorshipApi.getRequests(),
+        mentorshipApi.getActive(),
+        mentorshipApi.getHistory(),
+      ]);
+      if (r.status === 'fulfilled') setRequests(safeList(r.value));
+      if (a.status === 'fulfilled') setActive(safeList(a.value));
+      if (h.status === 'fulfilled') setHistory(safeList(h.value));
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        await loadMyMentorship();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    loadMyMentorship({ showLoading: true });
+  }, [loadMyMentorship]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadMyMentorship({ showLoading: false });
     };
-  }, []);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadMyMentorship]);
 
   useEffect(() => {
     if (tab !== 'directory') return;
@@ -192,9 +232,17 @@ export default function MenteeDashboardMentorsPage() {
       toast.error('Choose a preferred start date');
       return;
     }
+    if (new Date(requestForm.preferredStartDate) <= new Date()) {
+      toast.error('Preferred start date must be in the future');
+      return;
+    }
     setSubmitting(true);
     try {
-      const mentorUserId = requestingMentor?.user?._id || requestingMentor?.user || requestingMentor?._id;
+      const mentorUserId = requestingMentor?.user?._id || requestingMentor?.user;
+      if (!mentorUserId) {
+        toast.error('Could not resolve mentor account. Open the mentor profile or try again.');
+        return;
+      }
       await mentorApi.sendRequest(mentorUserId, {
         goals,
         preferredStartDate: requestForm.preferredStartDate,
@@ -262,124 +310,11 @@ export default function MenteeDashboardMentorsPage() {
   // Sessions are read-only for mentees (mentors log sessions).
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-4 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard',           icon: 'dashboard',     label: 'Dashboard'  },
-              { to: '/dashboard/mentors',   icon: 'groups',        label: 'Mentorship' },
-              { to: '/dashboard/events',              icon: 'event',         label: 'Events'     },
-              { to: '/dashboard/stories',   icon: 'auto_stories',  label: 'Stories'    },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources'  },
-              { to: '/dashboard/settings',  icon: 'settings',      label: 'Settings'   },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="p-4 mt-auto border-t border-outline-variant/20">
-            <Link
-              to="/dashboard/mentors"
-              className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
-              onClick={() => setTab('directory')}
-            >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              FIND A MENTOR
-            </Link>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Mentorship</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                >
-                  <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
-                </button>
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentee'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-                    <Link
-                      to="/dashboard/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
-                      role="menuitem"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+    <>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Find Mentors' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentorship</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -399,8 +334,8 @@ export default function MenteeDashboardMentorsPage() {
                     onClick={() => setTab(t.key)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                       tab === t.key
-                        ? 'border-gold-accent bg-gold-accent/10 text-on-surface'
-                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-gold-accent/40'
+                        ? 'border-rose-400 bg-rose-50 text-on-surface dark:border-rose-400 dark:bg-rose-950/35'
+                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-rose-300 dark:hover:border-rose-500/50'
                     }`}
                   >
                     {t.label} <span className="text-outline font-semibold">({t.count})</span>
@@ -414,7 +349,7 @@ export default function MenteeDashboardMentorsPage() {
             ) : (
               <>
                 {tab === 'directory' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-neutral-200/90 editorial-shadow rounded-xl overflow-hidden">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-neutral-200/90 rounded-xl overflow-hidden">
                     <div className="border-b border-neutral-200/80 bg-gradient-to-br from-white via-white to-rose-50/40 px-4 py-5 sm:px-6">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="relative min-w-0 flex-1">
@@ -430,13 +365,13 @@ export default function MenteeDashboardMentorsPage() {
                             onChange={(e) => setSearchInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleDirectorySearch()}
                             placeholder="Search by name, expertise, or industry…"
-                            className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 shadow-sm outline-none transition-shadow placeholder:text-neutral-400 focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                            className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 outline-none transition-shadow placeholder:text-neutral-400 focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={handleDirectorySearch}
-                          className="shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors hover:bg-neutral-800"
+                          className="shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-neutral-800"
                         >
                           Search
                         </button>
@@ -459,7 +394,7 @@ export default function MenteeDashboardMentorsPage() {
                           <select
                             value={sortBy}
                             onChange={handleDirectorySortChange}
-                            className="w-full cursor-pointer appearance-none rounded-md border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-neutral-900 outline-none transition-colors hover:border-neutral-300 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-200 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
+                            className="w-full cursor-pointer appearance-none rounded-md border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-semibold text-neutral-900 outline-none transition-colors hover:border-rose-300 focus:border-rose-400 focus:ring-1 focus:ring-rose-200 dark:border-outline-variant/25 dark:bg-surface-container dark:text-on-surface"
                             aria-label="Sort mentors"
                           >
                             {DIRECTORY_SORT_OPTIONS.map((opt) => (
@@ -468,7 +403,7 @@ export default function MenteeDashboardMentorsPage() {
                               </option>
                             ))}
                           </select>
-                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600">
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-rose-500 dark:text-rose-400">
                             <span className="material-symbols-outlined text-[20px] leading-none">expand_more</span>
                           </span>
                         </div>
@@ -487,8 +422,7 @@ export default function MenteeDashboardMentorsPage() {
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {mentors.map((m) => {
                               const displayName = m.user?.name || 'Mentor';
-                              const avatarSrc = m.user?.profilePicture || m.user?.avatar;
-                              const initial = displayName[0]?.toUpperCase() || 'M';
+                              const avatarSrc = userDisplayPhoto(m.user || { name: displayName }, { size: 80 });
                               const industries = m.industries || [];
                               const areas = m.mentoringAreas || [];
                               const roleLine =
@@ -506,20 +440,14 @@ export default function MenteeDashboardMentorsPage() {
                               return (
                                 <article
                                   key={m._id}
-                                  className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 shadow-sm transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-md dark:border-outline-variant/20 dark:bg-surface-container-lowest"
+                                  className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 transition-[border-color] hover:border-neutral-300 dark:border-outline-variant/20 dark:bg-surface-container-lowest"
                                 >
                                   <div className="flex gap-2.5">
-                                    {avatarSrc ? (
-                                      <img
-                                        src={avatarSrc}
-                                        alt=""
-                                        className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80"
-                                      />
-                                    ) : (
-                                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[13px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80">
-                                        {initial}
-                                      </div>
-                                    )}
+                                    <img
+                                      src={avatarSrc}
+                                      alt=""
+                                      className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80"
+                                    />
                                     <div className="min-w-0 flex-1">
                                       <div className="flex min-w-0 items-center gap-1">
                                         <h2 className="font-serif-alt text-[17px] font-semibold leading-tight text-neutral-900 line-clamp-1 dark:text-on-surface">
@@ -594,7 +522,7 @@ export default function MenteeDashboardMentorsPage() {
                                           message: 'I would love to learn from your experience.',
                                         });
                                       }}
-                                      className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:hover:bg-rose-900/50"
+                                      className="rounded-md bg-rose-500 py-2 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-500 dark:text-white dark:hover:bg-rose-400"
                                     >
                                       Request
                                     </button>
@@ -624,23 +552,28 @@ export default function MenteeDashboardMentorsPage() {
                 )}
 
                 {tab === 'requests' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">My Requests</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Track and cancel pending requests.</p>
                     {requests.length === 0 ? (
                       <p className="text-on-surface-variant">No requests yet.</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {requests.map((r) => (
+                        {requests.map((r) => {
+                          const mentorName = r?.mentor?.name || 'Mentor';
+                          return (
                           <div key={r._id} className="border border-outline-variant/20 rounded-xl p-6">
                             <div className="flex items-start justify-between gap-4">
-                              <div>
+                              <div className="flex min-w-0 flex-1 gap-4">
+                                <MentorFace mentor={r?.mentor} displayName={mentorName} size="lg" />
+                                <div className="min-w-0">
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                <p className="font-semibold text-on-surface">{r?.mentor?.name || 'Mentor'}</p>
+                                <p className="font-semibold text-on-surface">{mentorName}</p>
                                 <p className="text-xs text-outline mt-1">Preferred start: {formatDate(r?.preferredStartDate)}</p>
                                 <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">
                                   {r?.message || 'No request message.'}
                                 </p>
+                                </div>
                               </div>
                               <span
                                 className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
@@ -678,16 +611,19 @@ export default function MenteeDashboardMentorsPage() {
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
 
                 {tab === 'active' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentorship</h2>
-                    <p className="text-on-surface-variant text-sm mb-6">View your active mentorship, log sessions, and update goals.</p>
+                    <p className="text-on-surface-variant text-sm mb-6">
+                      View your active mentorship, join video calls at the scheduled time (from 15 minutes before start), and update goals.
+                    </p>
 
                     {active.length === 0 ? (
                       <p className="text-on-surface-variant">No active mentorships yet. Send a request from the Directory tab.</p>
@@ -697,14 +633,18 @@ export default function MenteeDashboardMentorsPage() {
                           const sessionCount = m?.sessions?.length || 0;
                           const goals = m?.goals || [];
                           const isExpanded = expandedId === m._id;
+                          const mentorName = m?.mentor?.name || 'Mentor';
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MentorFace mentor={m?.mentor} displayName={mentorName} size="lg" />
+                                  <div className="min-w-0">
                                   <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  <p className="font-semibold text-on-surface text-lg">{mentorName}</p>
                                   {m?.mentor?.email && <p className="text-xs text-outline">{m.mentor.email}</p>}
                                   <p className="text-xs text-outline mt-1">Started: {formatDate(m?.startDate)} · Sessions: {sessionCount}</p>
+                                  </div>
                                 </div>
                                 <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
                                   {m?.status || 'active'}
@@ -715,7 +655,7 @@ export default function MenteeDashboardMentorsPage() {
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
                                 <div className="flex flex-wrap gap-2">
                                   {goals.length ? goals.map((g) => (
-                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                    <span key={g} className="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-900 dark:border-rose-500/30 dark:bg-rose-950/40 dark:text-rose-100">{g}</span>
                                   )) : <span className="text-sm text-on-surface-variant">No goals set yet.</span>}
                                 </div>
                               </div>
@@ -725,23 +665,57 @@ export default function MenteeDashboardMentorsPage() {
                                   <button
                                     type="button"
                                     onClick={() => setExpandedId(isExpanded ? null : m._id)}
-                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                    className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
                                   >
                                     <span className="material-symbols-outlined text-[16px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
                                     {isExpanded ? 'Hide' : 'View'} sessions ({sessionCount})
                                   </button>
                                   {isExpanded && (
                                     <div className="mt-3 space-y-2">
-                                      {(m.sessions || []).map((s, i) => (
-                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
-                                          <div className="flex items-center justify-between">
+                                      {(m.sessions || []).map((s, i) => {
+                                        const sessionKey = s._id ? String(s._id) : `idx-${i}`;
+                                        const win = getSessionVideoWindowInfo(s);
+                                        const canVideo = Boolean(s._id) && win.canJoin;
+                                        return (
+                                        <div key={sessionKey} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
-                                            <span className="text-outline">{s.duration} min</span>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-outline">{s.duration} min</span>
+                                              {s.callStatus === 'completed' ? (
+                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800 dark:bg-green-950/60 dark:text-green-300">
+                                                  Call completed
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600 dark:bg-surface-container dark:text-on-surface-variant" title={win.label}>
+                                                  {win.phase === 'too_early' ? 'Video soon' : win.phase === 'ended' ? 'Window ended' : win.phase === 'open' ? 'Video open' : '—'}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                           {s.topics?.length > 0 && <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>}
                                           {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                          <div className="mt-2">
+                                            <button
+                                              type="button"
+                                              disabled={!canVideo}
+                                              title={!s._id ? 'Session id missing — schedule a new session' : win.label}
+                                              onClick={() => {
+                                                if (!s._id) return;
+                                                setVideoCall({
+                                                  mentorshipId: m._id,
+                                                  sessionId: String(s._id),
+                                                  peerName: mentorName,
+                                                });
+                                              }}
+                                              className="rounded-lg bg-sky-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-sky-600 dark:hover:bg-sky-500"
+                                            >
+                                              Start video call
+                                            </button>
+                                          </div>
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -751,7 +725,7 @@ export default function MenteeDashboardMentorsPage() {
                                 <button
                                   type="button"
                                   onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  className="rounded-lg bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 dark:hover:bg-rose-400"
                                 >
                                   Set goals
                                 </button>
@@ -765,7 +739,7 @@ export default function MenteeDashboardMentorsPage() {
                 )}
 
                 {tab === 'history' && (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Past mentorships — submit feedback on completed ones.</p>
 
@@ -775,16 +749,20 @@ export default function MenteeDashboardMentorsPage() {
                       <div className="space-y-4">
                         {history.map((m) => {
                           const hasMenteeFeedback = !!m?.feedback?.menteeRating;
+                          const mentorName = m?.mentor?.name || 'Mentor';
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MentorFace mentor={m?.mentor} displayName={mentorName} size="lg" />
+                                  <div className="min-w-0">
                                   <p className="text-xs uppercase tracking-widest text-outline font-bold">Mentor</p>
-                                  <p className="font-semibold text-on-surface text-lg">{m?.mentor?.name || 'Mentor'}</p>
+                                  <p className="font-semibold text-on-surface text-lg">{mentorName}</p>
                                   <p className="text-xs text-outline mt-1">
                                     Started: {formatDate(m?.startDate)} · {m?.completedAt ? `Completed: ${formatDate(m.completedAt)}` : `Ended: ${formatDate(m?.endDate)}`}
                                   </p>
                                   <p className="text-xs text-outline">Sessions: {m?.sessions?.length || 0}</p>
+                                  </div>
                                 </div>
                                 <span className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border shrink-0 ${
                                   m?.status === 'completed' ? 'border-green-300 text-green-700 bg-green-50' :
@@ -799,14 +777,17 @@ export default function MenteeDashboardMentorsPage() {
                                   <button
                                     type="button"
                                     onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
-                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                    className="rounded-lg bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 dark:hover:bg-rose-400"
                                   >
                                     Submit feedback
                                   </button>
                                 </div>
                               )}
                               {hasMenteeFeedback && (
-                                <p className="mt-3 text-xs text-green-700 font-semibold">✓ Feedback submitted (Rating: {m.feedback.menteeRating}/5)</p>
+                                <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-green-700 dark:text-green-400">
+                                  <span>✓ Feedback submitted</span>
+                                  <FeedbackSubmittedStars rating={m.feedback.menteeRating} />
+                                </p>
                               )}
                             </div>
                           );
@@ -818,160 +799,221 @@ export default function MenteeDashboardMentorsPage() {
               </>
             )}
 
-            {/* Request modal */}
-            {requestingMentor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Request Mentorship</h3>
-                      <p className="text-xs text-outline">Mentor: {requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}</p>
+            {/* Request modal — portaled so backdrop covers sticky top bar (avoids parent stacking context) */}
+            {requestingMentor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setRequestingMentor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-xl rounded-2xl border border-outline-variant/20 bg-white p-6 shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.35),0_25px_50px_-12px_rgba(0,0,0,0.35),0_0_0_1px_rgba(0,0,0,0.06)] dark:bg-surface-container"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="request-mentorship-title"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace
+                          mentor={requestingMentor?.user}
+                          displayName={requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}
+                          size="md"
+                        />
+                        <div className="min-w-0">
+                        <h3 id="request-mentorship-title" className="font-serif-alt text-xl font-bold text-on-surface">
+                          Request Mentorship
+                        </h3>
+                        <p className="text-xs text-outline">
+                          Mentor: {requestingMentor?.user?.name || requestingMentor?.name || 'Mentor'}
+                        </p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setRequestingMentor(null)} className="shrink-0 text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setRequestingMentor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Preferred start date</label>
-                      <input
-                        type="date"
-                        value={requestForm.preferredStartDate}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Preferred start date</label>
+                        <input
+                          type="date"
+                          min={localYmd(new Date())}
+                          value={requestForm.preferredStartDate}
+                          onChange={(e) => setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Goals (comma-separated)</label>
+                        <input
+                          value={requestForm.goals}
+                          onChange={(e) => setRequestForm((f) => ({ ...f, goals: e.target.value }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Message</label>
+                      <textarea
+                        value={requestForm.message}
+                        onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
+                        className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        rows={4}
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Goals (comma-separated)</label>
-                      <input
-                        value={requestForm.goals}
-                        onChange={(e) => setRequestForm((f) => ({ ...f, goals: e.target.value }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      />
+
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setRequestingMentor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={actuallySendRequest}
+                        className="rounded-md bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+                      >
+                        {submitting ? 'Sending…' : 'Send request'}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-3">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Message</label>
-                    <textarea
-                      value={requestForm.message}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
-                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setRequestingMentor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={actuallySendRequest}
-                      className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-60"
-                    >
-                      {submitting ? 'Sending…' : 'Send request'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
 
             {/* Goals modal */}
-            {goalsFor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
-                      <p className="text-xs text-outline">Mentor: {goalsFor?.mentor?.name || 'Mentor'}</p>
+            {goalsFor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setGoalsFor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-xl border border-outline-variant/20 bg-white p-6 dark:bg-surface-container"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace mentor={goalsFor?.mentor} displayName={goalsFor?.mentor?.name || 'Mentor'} size="md" />
+                        <div className="min-w-0">
+                        <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Mentorship Goals</h3>
+                        <p className="text-xs text-outline">Mentor: {goalsFor?.mentor?.name || 'Mentor'}</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setGoalsFor(null)} className="shrink-0 text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Goals (comma-separated)</label>
-                  <input
-                    value={goalsInput}
-                    onChange={(e) => setGoalsInput(e.target.value)}
-                    className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm"
-                    placeholder="Leadership, confidence, career growth…"
-                  />
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Goals (comma-separated)</label>
+                    <input
+                      value={goalsInput}
+                      onChange={(e) => setGoalsInput(e.target.value)}
+                      className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-3 text-sm text-on-surface dark:bg-surface-container"
+                      placeholder="Leadership, confidence, career growth…"
+                    />
 
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setGoalsFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button type="button" onClick={updateGoals} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
-                      Save goals
-                    </button>
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setGoalsFor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={updateGoals} className="bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-rose-600 dark:hover:bg-rose-400">
+                        Save goals
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
 
             {/* Feedback modal */}
-            {feedbackFor && (
-              <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
-                      <p className="text-xs text-outline">Mentor: {feedbackFor?.mentor?.name || 'Mentor'}</p>
+            {feedbackFor &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-6"
+                  role="presentation"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setFeedbackFor(null);
+                  }}
+                >
+                  <div
+                    className="w-full max-w-lg border border-outline-variant/20 bg-white p-6 dark:bg-surface-container"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <MentorFace mentor={feedbackFor?.mentor} displayName={feedbackFor?.mentor?.name || 'Mentor'} size="md" />
+                        <div className="min-w-0">
+                        <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
+                        <p className="text-xs text-outline">Mentor: {feedbackFor?.mentor?.name || 'Mentor'}</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setFeedbackFor(null)} className="shrink-0 text-outline hover:text-on-surface">
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Rating (1-5)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={5}
-                        value={feedbackForm.rating}
-                        onChange={(e) => setFeedbackForm((f) => ({ ...f, rating: Number(e.target.value) }))}
-                        className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Rating (1-5)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={5}
+                          value={feedbackForm.rating}
+                          onChange={(e) => setFeedbackForm((f) => ({ ...f, rating: Number(e.target.value) }))}
+                          className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-outline">Comment</label>
+                      <textarea
+                        value={feedbackForm.comment}
+                        onChange={(e) => setFeedbackForm((f) => ({ ...f, comment: e.target.value }))}
+                        className="w-full rounded-lg border border-outline-variant/25 bg-white px-4 py-2 text-sm text-on-surface dark:bg-surface-container"
+                        rows={4}
                       />
                     </div>
-                  </div>
 
-                  <div className="mt-3">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Comment</label>
-                    <textarea
-                      value={feedbackForm.comment}
-                      onChange={(e) => setFeedbackForm((f) => ({ ...f, comment: e.target.value }))}
-                      className="w-full bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-2 text-sm"
-                      rows={4}
-                    />
+                    <div className="mt-5 flex justify-end gap-2">
+                      <button type="button" onClick={() => setFeedbackFor(null)} className="border border-outline-variant/25 px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={submitFeedback} className="bg-rose-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-rose-600 dark:hover:bg-rose-400">
+                        Submit
+                      </button>
+                    </div>
                   </div>
+                </div>,
+                document.body
+              )}
 
-                  <div className="mt-5 flex gap-2 justify-end">
-                    <button type="button" onClick={() => setFeedbackFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
-                      Cancel
-                    </button>
-                    <button type="button" onClick={submitFeedback} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
-                      Submit
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <MentorshipVideoCallModal
+              open={Boolean(videoCall)}
+              onClose={() => setVideoCall(null)}
+              mentorshipId={videoCall?.mentorshipId || ''}
+              sessionId={videoCall?.sessionId || ''}
+              peerName={videoCall?.peerName}
+              onCallEnded={() => loadMyMentorship({ showLoading: false })}
+            />
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
-              <p className="text-[10px] text-outline tracking-widest uppercase">
+              <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">
                 © {new Date().getFullYear()} LeadsHer. Built for brilliance.
               </p>
             </footer>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 

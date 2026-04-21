@@ -1,7 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { eventApi } from '../api/eventApi';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
+import { authApi } from '../api/authApi';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
 
@@ -22,7 +25,14 @@ const CAT_STYLE = {
   'panel-discussion': 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
 };
 
-const CARD = 'bg-white dark:bg-surface-container-lowest rounded-2xl border border-slate-100 dark:border-outline-variant/20 shadow-sm';
+const CARD =
+  'bg-white dark:bg-white rounded-xl border border-outline-variant/20 shadow-sm dark:border-outline-variant/20';
+
+/** Event row: solid rose (View) + rose outline + gold ring (Unregister) */
+const EVENT_ROW_BTN_VIEW =
+  'px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white border border-rose-500 hover:bg-rose-600 hover:border-rose-600 dark:bg-rose-600 dark:border-rose-600 dark:hover:bg-rose-500 dark:hover:border-rose-500 transition-colors';
+const EVENT_ROW_BTN_UNREGISTER =
+  'px-3 py-1.5 text-xs font-bold rounded-lg border border-rose-400 text-rose-600 bg-white dark:border-rose-500/50 dark:text-rose-400 dark:bg-transparent ring-1 ring-gold-accent/30 ring-offset-0 hover:bg-rose-50 hover:border-rose-500 hover:ring-gold-accent/50 dark:hover:bg-rose-950/25 dark:hover:border-rose-400 transition-all';
 
 function label(val) {
   return (val || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -31,12 +41,36 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/** Sort key: event date + startTime (soonest first). Invalid dates sort last. */
+function eventStartTimestamp(e) {
+  const d = new Date(e?.date);
+  if (Number.isNaN(d.getTime())) return Number.POSITIVE_INFINITY;
+  let ms = d.getTime();
+  if (e?.startTime && typeof e.startTime === 'string') {
+    const parts = e.startTime.trim().split(':').map((p) => Number(p));
+    if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+      ms += ((parts[0] * 60 + parts[1]) * 60 + (parts[2] || 0)) * 1000;
+    }
+  }
+  return ms;
+}
+
+function eventRowCoverUrl(e) {
+  const raw =
+    typeof e.coverImage === 'string'
+      ? e.coverImage
+      : typeof e.cover_image === 'string'
+        ? e.cover_image
+        : '';
+  return raw?.trim() ? absolutePhotoUrl(raw.trim()) : '';
+}
+
 /* ── Stat Card ───────────────────────────────────────────────────────────── */
 
-function StatCard({ icon, title, value, accent = 'text-gold-accent' }) {
+function StatCard({ icon, title, value, accent = 'text-[#f43f5e]' }) {
   return (
     <div className={`${CARD} p-5 flex items-center gap-4`}>
-      <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-surface-container flex items-center justify-center shrink-0">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-900/20">
         <span className={`material-symbols-outlined text-[22px] ${accent}`}>{icon}</span>
       </div>
       <div>
@@ -51,28 +85,25 @@ function StatCard({ icon, title, value, accent = 'text-gold-accent' }) {
 
 function TabBar({ tabs, active, onChange }) {
   return (
-    <div className="flex gap-1 p-1 bg-slate-100 dark:bg-surface-container rounded-xl w-fit flex-wrap">
+    <div
+      className="flex w-fit flex-wrap gap-1 rounded-xl border-2 border-outline-variant/30 bg-slate-50/80 p-1 shadow-inner dark:border-outline-variant/40 dark:bg-slate-900/40"
+      role="tablist"
+    >
       {tabs.map(t => (
         <button
           key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={active === t.key}
           onClick={() => onChange(t.key)}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+          className={`flex min-h-[40px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/40 focus-visible:ring-offset-2 ${
             active === t.key
-              ? 'bg-white dark:bg-surface-container-lowest text-on-surface shadow-sm'
-              : 'text-slate-400 dark:text-on-surface-variant hover:text-on-surface'
+              ? 'bg-[#f43f5e] text-white shadow-sm ring-1 ring-black/10'
+              : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 dark:bg-surface-container-lowest'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
           {t.label}
-          {t.count !== undefined && (
-            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-              active === t.key
-                ? 'bg-gold-accent/15 text-gold-accent'
-                : 'bg-slate-200 dark:bg-surface-container-high text-slate-500 dark:text-on-surface-variant'
-            }`}>
-              {t.count}
-            </span>
-          )}
         </button>
       ))}
     </div>
@@ -85,46 +116,83 @@ function EventRow({ event, actions }) {
   const st = STATUS_STYLE[event.status] || STATUS_STYLE.upcoming;
   const registered = event.registeredAttendees?.length || 0;
   const d = new Date(event.date);
+  const coverUrl = eventRowCoverUrl(event);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-slate-100 dark:border-outline-variant/20 bg-white dark:bg-surface-container-lowest hover:border-gold-accent/30 transition-all">
-      {/* Date block */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl bg-gold-accent/10 dark:bg-gold-accent/5 shrink-0">
-          <span className="text-xl font-bold text-gold-accent leading-none">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white transition-all hover:border-rose-300/80 dark:border-outline-variant/20 dark:bg-surface-container-lowest dark:hover:border-rose-500/40 sm:flex-row sm:items-stretch">
+      {/* Left rail: date column + square cover (cover height follows row, width = height) */}
+      <div className="flex min-h-[92px] shrink-0 border-b border-slate-100 dark:border-outline-variant/20 sm:min-h-[100px] sm:border-b-0">
+        <div className="flex w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 border-r border-rose-200/50 bg-rose-100/95 px-1 py-3 dark:border-rose-900/35 dark:bg-rose-950/45 sm:w-[4.25rem]">
+          <span className="text-2xl font-bold leading-none text-rose-700 dark:text-rose-300">
             {d.toLocaleDateString('en-US', { day: '2-digit' })}
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-gold-accent/70">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600/90 dark:text-rose-400/95">
             {d.toLocaleDateString('en-US', { month: 'short' })}
           </span>
-          <span className="text-[9px] text-slate-400 dark:text-on-surface-variant">
+          <span className="text-[9px] text-slate-500 dark:text-on-surface-variant">
             {d.getFullYear()}
           </span>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${st.bg} ${st.text}`}>
-              <span className={`w-1 h-1 rounded-full ${st.dot}`} />
-              {event.status}
-            </span>
-            {event.category && (
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider ${CAT_STYLE[event.category] || 'bg-slate-100 text-slate-600'}`}>
-                {label(event.category)}
+        <div className="relative min-h-[92px] min-w-[92px] shrink-0 self-stretch border-r border-slate-100 bg-slate-100 dark:border-outline-variant/20 dark:bg-slate-800 sm:min-h-[100px] sm:min-w-[100px] sm:aspect-square sm:w-auto">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+              aria-hidden
+            >
+              <span className="material-symbols-outlined text-[32px] text-rose-200 dark:text-rose-800/70 sm:text-[36px]">
+                event
               </span>
-            )}
-          </div>
-          <h4 className="font-semibold text-on-surface text-sm leading-snug truncate">{event.title}</h4>
-          <p className="text-[11px] text-slate-400 dark:text-on-surface-variant mt-0.5 flex items-center gap-2 flex-wrap">
-            {event.startTime && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span>{event.startTime}</span>}
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">{event.type === 'virtual' ? 'videocam' : 'location_on'}</span>{label(event.type)}</span>
-            {event.capacity && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">group</span>{registered}/{event.capacity}</span>}
-          </p>
+            </div>
+          )}
         </div>
       </div>
 
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-4 py-3 sm:py-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${st.bg} ${st.text}`}>
+            <span className={`h-1 w-1 rounded-full ${st.dot}`} />
+            {event.status}
+          </span>
+          {event.category && (
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${CAT_STYLE[event.category] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+              {label(event.category)}
+            </span>
+          )}
+        </div>
+        <h4 className="text-sm font-bold leading-snug text-on-surface line-clamp-2">{event.title}</h4>
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-on-surface-variant">
+          {event.startTime && (
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">schedule</span>
+              {event.startTime}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">
+              {event.type === 'virtual' ? 'videocam' : 'location_on'}
+            </span>
+            {label(event.type)}
+          </span>
+          {event.capacity != null && (
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px] text-slate-400 dark:text-on-surface-variant">group</span>
+              {registered}/{event.capacity}
+            </span>
+          )}
+        </p>
+      </div>
+
       {actions && (
-        <div className="flex flex-wrap items-center gap-1.5 shrink-0 ml-1">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 dark:border-outline-variant/20 sm:border-t-0 sm:border-l sm:px-4 sm:pl-4 sm:pr-5">
           {actions}
         </div>
       )}
@@ -137,9 +205,9 @@ function EventRow({ event, actions }) {
 function SectionCard({ icon, title, action, children }) {
   return (
     <div className={`${CARD} overflow-hidden`}>
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-          <span className={`material-symbols-outlined text-gold-accent text-[18px]`}>{icon}</span>
+      <div className="flex items-center justify-between border-b border-outline-variant/20 px-5 py-4">
+        <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-on-surface">
+          <span className="material-symbols-outlined text-[18px] text-[#f43f5e]">{icon}</span>
           {title}
         </h3>
         {action}
@@ -152,7 +220,7 @@ function SectionCard({ icon, title, action, children }) {
 function EmptyState({ icon, message, sub, cta }) {
   return (
     <div className="text-center py-12">
-      <span className="material-symbols-outlined text-[44px] text-slate-200 dark:text-outline mb-3 block">{icon}</span>
+      <span className="material-symbols-outlined mb-3 block text-[44px] text-[#f43f5e]/25">{icon}</span>
       <p className="text-sm font-medium text-slate-500 dark:text-on-surface-variant mb-1">{message}</p>
       {sub && <p className="text-xs text-slate-400 dark:text-outline mb-5">{sub}</p>}
       {cta}
@@ -212,14 +280,14 @@ function FeedbackModal({ event, onClose, onSave }) {
                   className="hover:scale-110 transition-transform"
                 >
                   <span
-                    className={`material-symbols-outlined text-[34px] transition-colors ${s <= (hovered || rating) ? 'text-gold-accent' : 'text-slate-200 dark:text-outline-variant/40'}`}
+                    className={`material-symbols-outlined text-[34px] transition-colors ${s <= (hovered || rating) ? 'text-[#f43f5e]' : 'text-slate-200 dark:text-outline-variant/40'}`}
                     style={{ fontVariationSettings: "'FILL' 1" }}
                   >star</span>
                 </button>
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-xs text-gold-accent font-semibold mt-2">
+              <p className="text-xs text-[#f43f5e] font-semibold mt-2">
                 {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
               </p>
             )}
@@ -233,7 +301,7 @@ function FeedbackModal({ event, onClose, onSave }) {
               rows={3}
               maxLength={500}
               placeholder="Share your experience with this event…"
-              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all resize-none"
+              className="w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all resize-none"
             />
             <p className="text-[10px] text-slate-300 dark:text-outline text-right mt-1">{comment.length}/500</p>
           </div>
@@ -243,7 +311,7 @@ function FeedbackModal({ event, onClose, onSave }) {
           <button
             onClick={handleSubmit}
             disabled={saving || !rating}
-            className="flex-1 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
+            className="flex-1 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
           >
             {saving ? 'Submitting…' : 'Submit Feedback'}
           </button>
@@ -294,10 +362,10 @@ function AttendeesModal({ event, onClose }) {
                 const st = STATUS_STYLE[a.status] || STATUS_STYLE.upcoming;
                 return (
                   <div key={a._id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-surface-container border border-slate-100 dark:border-outline-variant/20">
-                    <div className="w-9 h-9 rounded-full bg-gold-accent/10 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 rounded-full bg-[#f43f5e]/10 flex items-center justify-center shrink-0 overflow-hidden">
                       {u.profilePicture
                         ? <img src={u.profilePicture} alt={u.name} className="w-full h-full object-cover" />
-                        : <span className="material-symbols-outlined text-gold-accent text-[18px]">person</span>
+                        : <span className="material-symbols-outlined text-[#f43f5e] text-[18px]">person</span>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
@@ -308,7 +376,7 @@ function AttendeesModal({ event, onClose }) {
                       {a.status}
                     </span>
                     {a.feedback?.rating && (
-                      <span className="flex items-center gap-0.5 text-xs text-gold-accent font-bold ml-1">
+                      <span className="flex items-center gap-0.5 text-xs text-[#f43f5e] font-bold ml-1">
                         <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                         {a.feedback.rating}
                       </span>
@@ -342,7 +410,7 @@ function RescheduleModal({ event, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
 
-  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+  const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 transition-all';
   const lbl = 'block text-[10px] font-bold text-slate-400 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
 
   const handleSubmit = async () => {
@@ -400,102 +468,13 @@ function RescheduleModal({ event, onClose, onSave }) {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#f43f5e] hover:bg-[#e11d48] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
           >
             <span className="material-symbols-outlined text-[16px]">schedule_send</span>
             {saving ? 'Saving…' : 'Reschedule Event'}
           </button>
           <button onClick={onClose} className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-slate-300 rounded-xl transition-colors">
             Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Certificates Modal ──────────────────────────────────────────────────── */
-
-function CertificatesModal({ event, onClose }) {
-  const [certs, setCerts]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [issuing, setIssuing] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    eventApi.getEventCertificates(event._id)
-      .then(res => setCerts(res.data?.data?.certificates || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [event._id]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleIssue = async () => {
-    setIssuing(true);
-    try {
-      const res = await eventApi.issueCertificates(event._id);
-      toast.success(`${res.data?.results || 0} certificate(s) issued!`);
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to issue certificates');
-    } finally { setIssuing(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className={`${CARD} w-full max-w-lg max-h-[80vh] flex flex-col`}>
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-center justify-between shrink-0">
-          <div>
-            <h3 className="font-serif-alt text-lg font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-gold-accent text-[20px]">workspace_premium</span>
-              Certificates
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-0.5 truncate max-w-xs">{event.title}</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-on-surface transition-colors">
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-4" style={{ scrollbarWidth: 'thin' }}>
-          {loading ? (
-            <div className="flex justify-center py-10"><Spinner /></div>
-          ) : certs.length === 0 ? (
-            <EmptyState
-              icon="workspace_premium"
-              message="No certificates issued yet"
-              sub="Click 'Issue Certificates' to generate certificates for all registered attendees."
-            />
-          ) : (
-            <div className="space-y-2">
-              {certs.map(c => (
-                <div key={c._id} className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30">
-                  <span className="material-symbols-outlined text-gold-accent text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-on-surface truncate">{c.user?.name || 'Unknown'}</p>
-                    <p className="text-[10px] font-mono text-slate-400 dark:text-on-surface-variant tracking-wider">{c.certificateCode}</p>
-                  </div>
-                  <p className="text-[10px] text-slate-400 dark:text-outline shrink-0">
-                    {new Date(c.issuedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-outline-variant/20 flex gap-3 shrink-0">
-          <button
-            onClick={handleIssue}
-            disabled={issuing}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all"
-          >
-            <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
-            {issuing ? 'Issuing…' : 'Issue Certificates'}
-          </button>
-          <button onClick={onClose} className="px-5 py-2.5 text-sm font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-slate-300 rounded-xl transition-colors">
-            Close
           </button>
         </div>
       </div>
@@ -538,8 +517,14 @@ function MenteeView() {
     }
   };
 
-  const upcoming = events.filter(e => e.status === 'upcoming' || e.status === 'ongoing');
-  const past     = events.filter(e => e.status === 'completed' || e.status === 'cancelled');
+  const upcoming = useMemo(
+    () =>
+      events
+        .filter((e) => e.status === 'upcoming' || e.status === 'ongoing')
+        .sort((a, b) => eventStartTimestamp(a) - eventStartTimestamp(b)),
+    [events]
+  );
+  const past = events.filter(e => e.status === 'completed' || e.status === 'cancelled');
 
   return (
     <div className="space-y-6">
@@ -547,7 +532,7 @@ function MenteeView() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard icon="event" title="Registered" value={events.length} />
         <StatCard icon="upcoming" title="Upcoming" value={upcoming.length} accent="text-emerald-500" />
-        <StatCard icon="history" title="Past Events" value={past.length} accent="text-slate-400" />
+        <StatCard icon="history" title="Past Events" value={past.length} />
       </div>
 
       {loading ? (
@@ -559,7 +544,7 @@ function MenteeView() {
             message="No registered events"
             sub="Browse upcoming events and register to get started."
             cta={
-              <Link to="/events" className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+              <Link to="/events" className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">
                 <span className="material-symbols-outlined text-[16px]">search</span>
                 Browse Events
               </Link>
@@ -574,13 +559,11 @@ function MenteeView() {
                 {upcoming.map(e => (
                   <EventRow key={e._id} event={e} actions={
                     <>
-                      <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                         View
                       </Link>
                       {e.status === 'upcoming' && (
-                        <button onClick={() => handleUnregister(e)}
-                          className="px-3 py-1.5 text-xs font-bold border border-red-200 dark:border-red-800/40 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <button type="button" onClick={() => handleUnregister(e)} className={EVENT_ROW_BTN_UNREGISTER}>
                           Unregister
                         </button>
                       )}
@@ -597,13 +580,12 @@ function MenteeView() {
                 {past.map(e => (
                   <EventRow key={e._id} event={e} actions={
                     <>
-                      <Link to={`/events/${e._id}`}
-                        className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                         View
                       </Link>
                       {e.status === 'completed' && (
                         <button onClick={() => setFeedbackTarget(e)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gold-accent/10 border border-gold-accent/20 text-gold-accent hover:bg-gold-accent hover:text-white rounded-lg transition-all">
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white rounded-lg transition-all">
                           <span className="material-symbols-outlined text-[12px]">star</span>
                           Feedback
                         </button>
@@ -681,37 +663,25 @@ function MentorView({ onNew, refreshKey = 0 }) {
   };
 
   const tabs = [
-    { key: 'created',    label: 'My Events',   icon: 'event',      count: created.length    },
-    { key: 'registered', label: 'Registered',  icon: 'how_to_reg', count: registered.length },
+    { key: 'created',    label: 'My Events',   icon: 'event' },
+    { key: 'registered', label: 'Registered',  icon: 'how_to_reg' },
   ];
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon="event"    title="Created"   value={created.length} />
-        <StatCard icon="upcoming" title="Upcoming"  value={created.filter(e => e.status === 'upcoming').length} accent="text-emerald-500" />
-        <StatCard icon="group"    title="Total Attendees" value={created.reduce((a, e) => a + (e.registeredAttendees?.length || 0), 0)} accent="text-blue-500" />
-        <StatCard icon="how_to_reg" title="Registered" value={registered.length} accent="text-purple-500" />
+        <StatCard icon="event"      title="Created"         value={created.length} />
+        <StatCard icon="upcoming"   title="Upcoming"        value={created.filter(e => e.status === 'upcoming').length} />
+        <StatCard icon="group"      title="Total Attendees" value={created.reduce((a, e) => a + (e.registeredAttendees?.length || 0), 0)} />
+        <StatCard icon="how_to_reg" title="Registered"      value={registered.length} />
       </div>
 
       <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
       {/* Created events */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -722,8 +692,8 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
                   Create Event
                 </button>
               }
@@ -734,12 +704,12 @@ function MentorView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <>
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -772,26 +742,24 @@ function MentorView({ onNew, refreshKey = 0 }) {
               icon="event_busy"
               message="No registered events"
               sub="Browse all events to find sessions you'd like to attend."
-              cta={<Link to="/events" className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">Browse Events</Link>}
+              cta={<Link to="/events" className="inline-flex items-center gap-2 bg-rose-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500">Browse Events</Link>}
             />
           ) : (
             <div className="space-y-3">
               {registered.map(e => (
                 <EventRow key={e._id} event={e} actions={
                   <>
-                    <Link to={`/events/${e._id}`}
-                      className="px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                    <Link to={`/events/${e._id}`} className={EVENT_ROW_BTN_VIEW}>
                       View
                     </Link>
                     {e.status === 'upcoming' && (
-                      <button onClick={() => handleUnregister(e)}
-                        className="px-3 py-1.5 text-xs font-bold border border-red-200 dark:border-red-800/40 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                      <button type="button" onClick={() => handleUnregister(e)} className={EVENT_ROW_BTN_UNREGISTER}>
                         Unregister
                       </button>
                     )}
                     {e.status === 'completed' && (
                       <button onClick={() => setFeedbackTarget(e)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-gold-accent/10 border border-gold-accent/20 text-gold-accent hover:bg-gold-accent hover:text-white rounded-lg transition-all">
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white rounded-lg transition-all">
                         <span className="material-symbols-outlined text-[12px]">star</span>
                         Feedback
                       </button>
@@ -823,7 +791,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
   const [attendeesTarget,  setAttendeesTarget]  = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
-  const [certTarget,       setCertTarget]       = useState(null);
+  const [reminderSendingId, setReminderSendingId] = useState(null);
 
   const fetchAll = useCallback(() => {
     setLoadAll(true);
@@ -861,6 +829,35 @@ function AdminView({ onNew, refreshKey = 0 }) {
     } catch { toast.error('Failed to delete event'); }
   };
 
+  const handleSendReminderEmails = async (ev) => {
+    const registered = ev.registeredAttendees?.length || 0;
+    if (registered === 0) {
+      toast.error('No registered attendees for this event.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Send reminder emails to registered attendees who have not received this reminder yet? (${registered} registered.)`
+      )
+    ) {
+      return;
+    }
+    setReminderSendingId(ev._id);
+    try {
+      const res = await eventApi.sendReminderEmails(ev._id);
+      const d = res.data?.data ?? res.data;
+      const sent = d?.sent ?? 0;
+      const skipped = d?.skipped ?? 0;
+      toast.success(`Reminder emails sent: ${sent}. Skipped (no email / SMTP): ${skipped}.`);
+      fetchAll();
+      fetchCreated();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send reminder emails');
+    } finally {
+      setReminderSendingId(null);
+    }
+  };
+
   const filtered = allEvents.filter(e => {
     const matchSearch = !search || e.title.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || e.status === statusFilter;
@@ -875,8 +872,8 @@ function AdminView({ onNew, refreshKey = 0 }) {
   };
 
   const tabs = [
-    { key: 'all',     label: 'All Events',  icon: 'dashboard', count: allEvents.length },
-    { key: 'created', label: 'My Created',  icon: 'event',     count: created.length   },
+    { key: 'all',     label: 'All Events', icon: 'dashboard' },
+    { key: 'created', label: 'My Created', icon: 'event' },
   ];
 
   const statusOpts = ['all', 'upcoming', 'ongoing', 'completed', 'cancelled'];
@@ -895,41 +892,29 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* All events tab */}
       {tab === 'all' && (
-        <SectionCard
-          icon="dashboard"
-          title="All Platform Events"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="dashboard" title="All Platform Events">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="mb-4 flex w-full flex-wrap items-center gap-2">
             {statusOpts.map(s => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${
                   statusFilter === s
-                    ? 'bg-gold-accent text-white border-gold-accent'
+                    ? 'bg-[#f43f5e] text-white border-[#f43f5e]'
                     : 'border-slate-200 dark:border-outline-variant/40 text-slate-500 dark:text-on-surface-variant'
                 }`}
               >
                 {s === 'all' ? 'All' : label(s)}
               </button>
             ))}
-            <div className="relative ml-auto">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
+            <div className="relative ml-auto w-full min-w-0 sm:min-w-[18rem] md:min-w-[22rem] lg:max-w-2xl lg:flex-1">
+              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[14px]">search</span>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search events…"
-                className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-lg focus:outline-none focus:ring-1 focus:ring-gold-accent/30 text-on-surface"
+                className="min-h-[40px] w-full rounded-lg border-2 border-outline-variant/30 bg-white py-2 pl-8 pr-3 text-sm text-on-surface focus:border-[#f43f5e] focus:outline-none focus:ring-0 dark:bg-surface-container-low"
               />
             </div>
           </div>
@@ -944,12 +929,23 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <div className="flex flex-wrap gap-1.5">
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
+                    {e.status !== 'cancelled' && (e.registeredAttendees?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendReminderEmails(e)}
+                        disabled={reminderSendingId === e._id}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-violet-200 dark:border-violet-800/40 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">mark_email_unread</span>
+                        {reminderSendingId === e._id ? 'Sending…' : 'Remind'}
+                      </button>
+                    )}
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -960,11 +956,6 @@ function AdminView({ onNew, refreshKey = 0 }) {
                         Reschedule
                       </button>
                     )}
-                    <button onClick={() => setCertTarget(e)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-amber-200 dark:border-amber-800/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
-                      Certs
-                    </button>
                     {e.status !== 'cancelled' && (
                       <button onClick={() => handleCancel(e)}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold border border-orange-200 dark:border-orange-800/40 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
@@ -987,19 +978,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {/* My created tab */}
       {tab === 'created' && (
-        <SectionCard
-          icon="event"
-          title="Events You Created"
-          action={
-            <button
-              type="button"
-              onClick={onNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-accent hover:opacity-90 text-white text-xs font-bold rounded-lg transition-all">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              New Event
-            </button>
-          }
-        >
+        <SectionCard icon="event" title="Events You Created">
           {loadC ? <div className="flex justify-center py-10"><Spinner /></div>
           : created.length === 0 ? (
             <EmptyState
@@ -1009,7 +988,7 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <button
                   type="button"
                   onClick={onNew}
-                  className="inline-flex items-center gap-2 bg-gold-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                  className="inline-flex items-center gap-2 bg-[#f43f5e] text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   Create Event
                 </button>
@@ -1021,17 +1000,23 @@ function AdminView({ onNew, refreshKey = 0 }) {
                 <EventRow key={e._id} event={e} actions={
                   <>
                     <button onClick={() => setAttendeesTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">group</span>
                       Attendees
                     </button>
-                    <button onClick={() => setCertTarget(e)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-amber-200 dark:border-amber-800/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">workspace_premium</span>
-                      Certs
-                    </button>
+                    {e.status !== 'cancelled' && (e.registeredAttendees?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendReminderEmails(e)}
+                        disabled={reminderSendingId === e._id}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-violet-200 dark:border-violet-800/40 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">mark_email_unread</span>
+                        {reminderSendingId === e._id ? 'Sending…' : 'Remind'}
+                      </button>
+                    )}
                     <Link to={`/events/${e._id}/edit`}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-gold-accent/40 hover:text-gold-accent rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border border-slate-200 dark:border-outline-variant/40 text-slate-500 hover:border-[#f43f5e]/40 hover:text-[#f43f5e] rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[13px]">edit</span>
                       Edit
                     </Link>
@@ -1045,7 +1030,6 @@ function AdminView({ onNew, refreshKey = 0 }) {
 
       {attendeesTarget  && <AttendeesModal  event={attendeesTarget}  onClose={() => setAttendeesTarget(null)} />}
       {rescheduleTarget && <RescheduleModal  event={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onSave={fetchAll} />}
-      {certTarget       && <CertificatesModal event={certTarget}      onClose={() => setCertTarget(null)} />}
     </div>
   );
 }
@@ -1060,12 +1044,12 @@ const TYPES      = ['virtual', 'physical', 'hybrid'];
 const EMPTY_FORM = {
   title: '', description: '', category: 'webinar', type: 'virtual',
   date: '', startTime: '', endTime: '', duration: '', timezone: 'UTC',
-  capacity: '', status: 'upcoming', tags: '',
+  capacity: '', status: 'upcoming', tags: '', coverImage: '',
   location: { virtualLink: '', venue: '', address: '', city: '', country: '' },
 };
 
 const lbl = 'block text-[10px] font-bold text-slate-500 dark:text-on-surface-variant uppercase tracking-widest mb-1.5';
-const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-accent/30 focus:border-gold-accent/50 transition-all';
+const inp = 'w-full border border-slate-200 dark:border-outline-variant/40 bg-white dark:bg-surface-container-low rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/35 focus:border-rose-400/80 dark:focus:border-rose-500/60 transition-all';
 
 /* ── helpers for time math ───────────────────────────────────────────────── */
 function timeToMinutes(t) {
@@ -1082,6 +1066,14 @@ function CreateEventModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState({});   // tracks which fields the user has interacted with
   const [fieldErr, setFieldErr] = useState({}); // per-field error messages
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    };
+  }, [coverPreview]);
 
   /* ── auto-compute duration whenever startTime or endTime changes ── */
   const computeDuration = (start, end) => {
@@ -1165,6 +1157,21 @@ function CreateEventModal({ onClose, onCreated }) {
     setFieldErr(prev => ({ ...prev, [name]: validateField(name, value, form) }));
   };
 
+  const handleCoverFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(file);
+    setCoverPreview(file ? URL.createObjectURL(file) : '');
+    e.target.value = '';
+  };
+
+  const clearCover = () => {
+    if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(null);
+    setCoverPreview('');
+    setForm((f) => ({ ...f, coverImage: '' }));
+  };
+
   const inpClass = (name) => {
     const hasErr = touched[name] && fieldErr[name];
     const isOk   = touched[name] && !fieldErr[name] && form[name];
@@ -1199,11 +1206,23 @@ function CreateEventModal({ onClose, onCreated }) {
 
     setSaving(true);
     try {
+      let coverImageVal = (form.coverImage || '').trim();
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('cover', coverFile);
+        const up = await eventApi.uploadCover(fd);
+        coverImageVal = (up.data?.url || coverImageVal).trim();
+        if (coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+        setCoverFile(null);
+        setCoverPreview('');
+      }
+
       const payload = {
         ...form,
         duration: Number(form.duration),
         capacity: Number(form.capacity),
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+        coverImage: coverImageVal,
       };
       await eventApi.create(payload);
       toast.success('Event created successfully!');
@@ -1232,7 +1251,7 @@ function CreateEventModal({ onClose, onCreated }) {
         <div className="px-6 py-5 border-b border-slate-100 dark:border-outline-variant/20 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-serif-alt text-xl font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-gold-accent text-[22px]">add_circle</span>
+              <span className="material-symbols-outlined text-rose-500 text-[22px] dark:text-rose-400">add_circle</span>
               Create New Event
             </h2>
             <p className="text-xs text-slate-400 dark:text-on-surface-variant mt-1">
@@ -1250,7 +1269,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Basic Info ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">info</span>
               Basic Information
             </h3>
@@ -1269,6 +1288,45 @@ function CreateEventModal({ onClose, onCreated }) {
                   className={`${inpClass('description')} h-24 resize-y`}
                   placeholder="Describe what attendees will gain…" />
                 <FieldError name="description" />
+              </div>
+              <div>
+                <label className={lbl}>Hero background image</label>
+                <p className="mb-2 text-[11px] text-slate-500 dark:text-on-surface-variant">
+                  Optional. Blurred backdrop on the public event page. Uploaded via Cloudinary when configured (same as full create form).
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <div className="aspect-video w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-outline-variant/40 dark:bg-surface-container">
+                    {coverPreview || form.coverImage ? (
+                      <img
+                        alt=""
+                        src={coverPreview || absolutePhotoUrl(form.coverImage)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex min-h-[100px] items-center justify-center px-2 text-center text-[10px] text-slate-400 dark:text-outline">
+                        Preview
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-on-surface transition-colors hover:border-rose-400 hover:bg-rose-50 dark:border-outline-variant/40 dark:hover:bg-rose-950/30">
+                      <span className="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+                      {coverFile || form.coverImage ? 'Change image' : 'Choose image'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleCoverFile}
+                      />
+                    </label>
+                    {(form.coverImage || coverPreview) && (
+                      <button type="button" onClick={clearCover} className="w-fit text-left text-[11px] font-semibold text-red-600 hover:underline dark:text-red-400">
+                        Remove cover
+                      </button>
+                    )}
+                    <p className="text-[10px] text-slate-400 dark:text-outline">Max 8MB · saved when you create the event</p>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1295,7 +1353,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Schedule ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
               Schedule
             </h3>
@@ -1336,7 +1394,7 @@ function CreateEventModal({ onClose, onCreated }) {
                   <label className={lbl}>
                     Duration (min) <span className="text-red-400">*</span>
                     {durationLabel && (
-                      <span className="ml-1 normal-case text-gold-accent font-semibold tracking-normal">· {durationLabel}</span>
+                      <span className="ml-1 normal-case text-rose-600 dark:text-rose-400 font-semibold tracking-normal">· {durationLabel}</span>
                     )}
                   </label>
                   <input type="number" name="duration" value={form.duration}
@@ -1358,7 +1416,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Location ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">location_on</span>
               Location
             </h3>
@@ -1401,7 +1459,7 @@ function CreateEventModal({ onClose, onCreated }) {
 
           {/* ── Settings ── */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gold-accent mb-4 flex items-center gap-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-[14px]">tune</span>
               Settings
             </h3>
@@ -1433,7 +1491,7 @@ function CreateEventModal({ onClose, onCreated }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 bg-gold-accent hover:opacity-90 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md shadow-gold-accent/20"
+              className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-sm py-3 rounded-xl transition-colors dark:bg-rose-600 dark:hover:bg-rose-500"
             >
               {saving ? (
                 <><Spinner size="sm" /> Creating…</>
@@ -1495,16 +1553,23 @@ const ADMIN_NAV = [
 ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function DashboardEventsPage() {
-  const { user, isAdmin, isMentor, isMentee, canManageEvents, logout } = useAuth();
+  const { user, isAdmin, isMentor, isMentee, canManageEvents, logout, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [profileOpen, setProfileOpen]   = useState(false);
   const [createOpen, setCreateOpen]     = useState(false);
   const [refreshKey, setRefreshKey]     = useState(0);
 
   const handleCreated = () => setRefreshKey(k => k + 1);
 
-  const firstName = user?.name?.split(' ')?.[0] || 'User';
-  const avatarSrc = user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=C9A84C&color=fff`;
+  // Refresh user profile to get the latest profile picture
+  useEffect(() => {
+    authApi.getProfile()
+      .then((res) => {
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      })
+      .catch(() => {});
+  }, []);
+
 
   const roleLabel = isAdmin ? 'Admin' : isMentor ? 'Mentor' : 'Mentee';
   const sidebarNav = isAdmin ? ADMIN_NAV : isMentor ? MENTOR_NAV : MENTEE_NAV;
@@ -1513,129 +1578,53 @@ export default function DashboardEventsPage() {
                      : isMentor ? 'Events'
                      :            'My Events';
   const pageSubtitle = isAdmin
-    ? 'Create, manage, reschedule events and issue certificates across the platform.'
+    ? 'Create, manage, and reschedule events across the platform.'
     : isMentor
     ? 'Host events, manage registrations, and view attendees.'
     : 'Browse, register, and submit feedback for events.';
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
+    <>
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-        {/* Profile */}
-        <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-              <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={avatarSrc} />
-            </div>
-          </div>
-          <div className="text-center">
-            <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-            <div className="mt-1 flex justify-center">
-              <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                {roleLabel}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {sidebarNav.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/dashboard'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                  isActive
-                    ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                    : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                }`
-              }
-            >
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-sm font-medium">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      {/* ── Main ─────────────────────────────────────────────────────────── */}
-      <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-
-        {/* Header / Breadcrumb */}
-        <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-            <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-on-surface">Events</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen(v => !v)}
-                className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-              >
-                <img alt="Avatar" className="w-full h-full object-cover rounded-full" src={avatarSrc} />
-              </button>
-              {profileOpen && (
-                <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                  <div className="px-5 py-4 border-b border-outline-variant/15">
-                    <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'User'}</p>
-                    <p className="font-sans-modern text-xs text-outline line-clamp-1">{user?.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try { await logout(); toast.success('You have signed out.'); }
-                      finally { setProfileOpen(false); navigate('/'); }
-                    }}
-                    className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                    role="menuitem"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+        <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Events' }]} />
 
         {/* Page content */}
-        <div className="flex-1 bg-slate-50 dark:bg-surface">
-          {/* Page header */}
-          <div className="bg-white dark:bg-surface-container-lowest border-b border-outline-variant/20 px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
-              <p className="text-sm text-on-surface-variant mt-1">{pageSubtitle}</p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <Link to="/events"
-                className="flex items-center gap-2 px-4 py-2 border border-outline-variant/40 text-on-surface-variant text-sm font-bold rounded-lg hover:border-gold-accent/40 hover:text-gold-accent transition-colors">
-                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                Browse All
-              </Link>
-              {canManageEvents && (
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gold-accent hover:opacity-90 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-gold-accent/20">
-                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                  Create Event
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Role-based content */}
+        <div className="flex-1 bg-transparent">
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+            {/* Page header — same white card shell as stats / sections */}
+            <div
+              className={`${CARD} px-5 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`}
+            >
+              <div>
+                <h1 className="font-serif-alt text-2xl font-bold text-on-surface">{pageTitle}</h1>
+                <p className="text-sm text-on-surface-variant mt-1">{pageSubtitle}</p>
+              </div>
+              <div className="flex flex-wrap gap-3 shrink-0">
+                <Link
+                  to="/events"
+                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${
+                    isMentee
+                      ? 'bg-rose-500 text-white shadow-sm hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500'
+                      : 'bg-black text-white hover:bg-neutral-900 dark:hover:bg-neutral-800'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                  Browse All
+                </Link>
+                {canManageEvents && (
+                  <button
+                    type="button"
+                    onClick={() => setCreateOpen(true)}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500 text-white text-sm font-bold rounded-xl shadow-sm transition-colors hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                    Create Event
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Role-based content */}
             {isAdmin              && <AdminView  onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
             {isMentor && !isAdmin && <MentorView onNew={() => setCreateOpen(true)} refreshKey={refreshKey} />}
             {isMentee             && <MenteeView />}
@@ -1644,14 +1633,12 @@ export default function DashboardEventsPage() {
                 <EmptyState
                   icon="lock"
                   message="Please log in to view your events"
-                  cta={<Link to="/login" className="inline-block bg-gold-accent text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all">Log In</Link>}
+                  cta={<Link to="/login" className="inline-block bg-[#f43f5e] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#e11d48] transition-all">Log In</Link>}
                 />
               </div>
             )}
           </div>
         </div>
-      </main>
-
       {/* Create Event Modal */}
       {createOpen && (
         <CreateEventModal
@@ -1659,6 +1646,6 @@ export default function DashboardEventsPage() {
           onCreated={handleCreated}
         />
       )}
-    </div>
+    </>
   );
 }

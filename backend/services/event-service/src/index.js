@@ -1,36 +1,40 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
+const connectDB = require('./config/db');
+const app = require('./app');
+const { runEventStartReminders } = require('./services/eventReminderService');
 
-const app = express();
 const PORT = process.env.PORT || 5006;
 
-// Middleware
-app.use(express.json());
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
+const REMINDER_INTERVAL_MS = Math.max(
+  5 * 60 * 1000,
+  Number(process.env.EVENT_REMINDER_INTERVAL_MS) || 30 * 60 * 1000
+);
 
-// Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongo:27017/leadsher-event')
-  .then(() => console.log('✅ Event Service connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+const start = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Event Service running on port ${PORT}`);
+    });
 
-// Routes
-const eventRoutes = require('./routes/eventRoutes');
+    if (process.env.EVENT_REMINDER_ENABLED === 'false') {
+      console.log('[event-reminder] disabled (EVENT_REMINDER_ENABLED=false)');
+    } else {
+      const tick = () => {
+        runEventStartReminders().catch((e) => console.error('[event-reminder]', e.message || e));
+      };
+      setTimeout(tick, 20_000);
+      setInterval(tick, REMINDER_INTERVAL_MS);
+      console.log(
+        `[event-reminder] scheduler every ${Math.round(REMINDER_INTERVAL_MS / 60000)} min (EVENT_REMINDER_INTERVAL_MS)`
+      );
+    }
+  } catch (err) {
+    console.error('[server] Failed to start:', err.message);
+    process.exit(1);
+  }
+};
 
-app.use('/api/events', eventRoutes);
-
-app.get('/api/events/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'event-service' });
-});
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Event Service running on port ${PORT}`);
-});
+start();

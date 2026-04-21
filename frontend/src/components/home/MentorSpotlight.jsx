@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { mentorApi } from '../../api/mentorApi';
-import toast from 'react-hot-toast';
-import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 const FALLBACK_MENTORS = [
   { _id: '1', name: 'Dr. Seraphina Hall',  specialty: 'Organizational Psychology', tags: ['Conflict Res', 'Team Culture'],   initials: 'SH' },
@@ -26,7 +23,6 @@ const MENTOR_IMAGES = [
 ];
 
 export default function MentorSpotlight() {
-  const { isAuthenticated } = useAuth();
   const [mentors, setMentors] = useState(FALLBACK_MENTORS);
 
   useEffect(() => {
@@ -38,31 +34,21 @@ export default function MentorSpotlight() {
       .catch(() => {});
   }, []);
 
-  const handleRequest = async (mentorId) => {
-    if (!isAuthenticated) { toast.error('Sign in to request mentorship'); return; }
-    try {
-      await mentorApi.sendRequest(mentorId, { message: 'I would love to connect!' });
-      toast.success('Mentorship request sent!');
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to send request'));
-    }
-  };
-
   return (
-    <section className="py-32 bg-[#F1EFEA] dark:bg-surface-container-lowest">
+    <section className="py-32 bg-[#fff4fa] dark:bg-[#140f1d]">
       <div className="container mx-auto px-8 md:px-12">
         <div className="flex flex-col md:flex-row justify-between items-center mb-16">
           <div>
-            <h2 className="font-headline text-5xl mb-2">Mentor Spotlight</h2>
-            <p className="font-label text-[10px] tracking-widest uppercase text-on-surface-variant/70">
+            <h2 className="font-headline text-5xl mb-2 text-on-surface dark:text-rose-50">Mentor Spotlight</h2>
+            <p className="font-label text-[10px] tracking-widest uppercase text-on-surface-variant/70 dark:text-rose-100/70">
               The Women Shaping Tomorrow
             </p>
           </div>
           <div className="flex gap-4 mt-8 md:mt-0">
-            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
+            <button className="w-12 h-12 border border-outline-variant dark:border-rose-300/35 flex items-center justify-center hover:bg-surface-container-low dark:hover:bg-[#251834] transition-colors">
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
-            <button className="w-12 h-12 border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
+            <button className="w-12 h-12 border border-outline-variant dark:border-rose-300/35 flex items-center justify-center hover:bg-surface-container-low dark:hover:bg-[#251834] transition-colors">
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>
@@ -76,7 +62,7 @@ export default function MentorSpotlight() {
             return (
               <div
                 key={m._id}
-                className="min-w-[300px] md:min-w-[340px] bg-surface-container-lowest p-8 editorial-shadow border border-outline-variant/10 flex-shrink-0"
+                className="min-w-[300px] md:min-w-[340px] bg-white dark:bg-[#24162f] p-8 editorial-shadow border border-outline-variant/10 dark:border-rose-300/25 flex-shrink-0"
               >
                 {/* Framed portrait */}
                 <div className="relative w-36 mx-auto mb-8">
@@ -97,8 +83,8 @@ export default function MentorSpotlight() {
                 </div>
 
                 <div className="text-center mb-6">
-                  <h4 className="font-serif-alt text-2xl mb-1">{m.name}</h4>
-                  <p className="font-label text-[10px] tracking-widest uppercase text-primary mb-4">{specialty}</p>
+                  <h4 className="font-serif-alt text-2xl mb-1 text-on-surface dark:text-rose-50">{m.name}</h4>
+                  <p className="font-label text-[10px] tracking-widest uppercase text-primary dark:text-rose-300 mb-4">{specialty}</p>
                   <div className="flex justify-center gap-1 text-[#D4AF37]">
                     {[...Array(5)].map((_, j) => (
                       <span key={j} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -112,21 +98,14 @@ export default function MentorSpotlight() {
                       key={tag}
                       className={`font-label text-[10px] tracking-wider uppercase px-3 py-1 ${
                         ti % 2 === 0
-                          ? 'bg-secondary-container/20 text-secondary'
-                          : 'bg-primary-container/10 text-primary'
+                          ? 'bg-secondary-container/20 dark:bg-rose-400/20 text-secondary dark:text-rose-200'
+                          : 'bg-primary-container/10 dark:bg-rose-500/20 text-primary dark:text-rose-100'
                       }`}
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-
-                <button
-                  onClick={() => handleRequest(m._id)}
-                  className="w-full border border-primary text-primary py-4 font-label text-xs tracking-widest uppercase hover:bg-secondary-container/20 transition-all"
-                >
-                  Request Guidance
-                </button>
               </div>
             );
           })}

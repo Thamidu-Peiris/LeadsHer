@@ -7,6 +7,7 @@ import Pagination from '../components/common/Pagination';
 import MentorFilterSidebar, { defaultFilters } from '../components/mentors/MentorFilterSidebar';
 import toast from 'react-hot-toast';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 /** Backend returns { data: MentorProfile[], pagination: { page, pages, ... } } */
 function mentorsFromResponse(body) {
@@ -31,13 +32,22 @@ const CATEGORY_CHIPS = [
 const PAGE_LIMIT = 6;
 
 /** Blurred hero background (public/images — replace file to customize) */
-const MENTORS_HERO_IMAGE = '/images/mentors-hero.jpg';
+const MENTORS_HERO_IMAGE = '/images/mentors-hero.png';
 
 const SORT_OPTIONS = [
   { value: '-rating', label: 'Best match' },
   { value: '-createdAt', label: 'Newest' },
   { value: 'createdAt', label: 'Oldest' },
 ];
+
+function localYmd(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(x.getTime())) return '';
+  const y = x.getFullYear();
+  const mo = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
 
 function buildListParams(page, search, applied, sort, category) {
   const expertiseFromSidebar = applied.expertise.length ? applied.expertise.join(',') : undefined;
@@ -67,7 +77,7 @@ function StarRow({ rating, className = 'text-[15px]' }) {
 }
 
 export default function MentorsPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isMentee } = useAuth();
   const [mentors, setMentors] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -146,6 +156,10 @@ export default function MentorsPage() {
         toast.error('Log in to send a request');
         return;
       }
+      if (!isMentee) {
+        toast.error('Only mentees can request mentorship');
+        return;
+      }
       const mentorUserId = m?.user?._id || m?.user;
       if (!mentorUserId) {
         toast.error('Could not resolve mentor account');
@@ -158,7 +172,7 @@ export default function MentorsPage() {
       });
       setRequestModalMentor(m);
     },
-    [isAuthenticated]
+    [isAuthenticated, isMentee]
   );
 
   const submitMentorshipRequest = useCallback(async () => {
@@ -178,6 +192,10 @@ export default function MentorsPage() {
     }
     if (!requestForm.preferredStartDate) {
       toast.error('Choose a preferred start date');
+      return;
+    }
+    if (new Date(requestForm.preferredStartDate) <= new Date()) {
+      toast.error('Preferred start date must be in the future');
       return;
     }
     setSubmittingRequest(true);
@@ -206,32 +224,24 @@ export default function MentorsPage() {
     <div className="min-h-screen bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgb(237_233_254/0.85),rgb(255_255_255)_42%,rgb(249_250_251))] text-neutral-900 dark:bg-none dark:bg-surface dark:text-on-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-14">
         <section
-          className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.06)] dark:border-outline-variant/25 dark:bg-surface-container-lowest dark:shadow-none"
+          className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-100 dark:border-outline-variant/25 dark:bg-surface-container-lowest"
           aria-labelledby="mentors-hero-heading"
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden>
             <div
-              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] opacity-90 sm:bg-[82%_25%] dark:opacity-35"
+              className="absolute inset-0 bg-cover bg-no-repeat bg-[85%_center] sm:bg-[82%_25%] dark:opacity-40"
               style={{ backgroundImage: `url(${MENTORS_HERO_IMAGE})` }}
             />
           </div>
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white/92 to-rose-50/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/92 dark:to-rose-950/40"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-white via-white/88 to-transparent sm:via-white/75 dark:from-surface-container-lowest dark:via-surface-container-lowest/85 dark:to-transparent"
-            aria-hidden
-          />
           <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10">
             <header className="mb-8 max-w-3xl text-left">
               <h1
                 id="mentors-hero-heading"
-                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface"
+                className="font-serif-alt text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-on-surface [text-shadow:0_0_20px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.9)] dark:[text-shadow:none]"
               >
                 Find a Mentor
               </h1>
-              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant">
+              <p className="mt-3 text-base leading-relaxed text-slate-600 dark:text-on-surface-variant [text-shadow:0_0_12px_rgba(255,255,255,0.9)] dark:[text-shadow:none]">
                 Connect with experienced women leaders who can guide your journey
               </p>
             </header>
@@ -357,8 +367,7 @@ export default function MentorsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {mentors.map((m) => {
                     const displayName = m.user?.name || 'Mentor';
-                    const avatarSrc = m.user?.profilePicture || m.user?.avatar;
-                    const initial = displayName[0]?.toUpperCase() || 'M';
+                    const avatarSrc = userDisplayPhoto(m.user || { name: displayName }, { size: 80 });
                     const industries = m.industries || [];
                     const areas = m.mentoringAreas || [];
                     const roleLine =
@@ -378,17 +387,11 @@ export default function MentorsPage() {
                         className="group flex h-full min-h-0 flex-col rounded-[10px] border border-neutral-200 bg-white p-3 shadow-sm transition-[box-shadow,border-color] hover:border-neutral-300 hover:shadow-md dark:border-outline-variant/20 dark:bg-surface-container-lowest dark:hover:border-outline-variant/40"
                       >
                         <div className="flex gap-2.5">
-                          {avatarSrc ? (
-                            <img
-                              src={avatarSrc}
-                              alt=""
-                              className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/30"
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[13px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80 dark:bg-surface-container-high dark:text-on-surface-variant dark:ring-outline-variant/30">
-                              {initial}
-                            </div>
-                          )}
+                          <img
+                            src={avatarSrc}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-neutral-200/80 dark:ring-outline-variant/30"
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 items-center gap-1">
                               <h2 className="font-serif-alt text-[17px] font-semibold leading-tight text-neutral-900 line-clamp-1 dark:text-on-surface">
@@ -452,9 +455,14 @@ export default function MentorsPage() {
                         <div className="mt-2 grid grid-cols-2 gap-1.5 border-t border-rose-100/80 pt-2 dark:border-outline-variant/20">
                           <button
                             type="button"
-                            title="Request mentorship"
+                            title={
+                              isAuthenticated && !isMentee
+                                ? 'Only mentees can request mentorship'
+                                : 'Request mentorship'
+                            }
+                            disabled={isAuthenticated && !isMentee}
                             onClick={(e) => openRequestModal(e, m)}
-                            className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 dark:bg-rose-900/35 dark:text-rose-50 dark:shadow-none dark:hover:bg-rose-900/55"
+                            className="rounded-md bg-rose-100 py-2 text-[10px] font-semibold uppercase tracking-wide text-black shadow-sm shadow-rose-200/60 transition-colors hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-rose-900/35 dark:text-rose-50 dark:shadow-none dark:hover:bg-rose-900/55 dark:disabled:hover:bg-rose-900/35"
                           >
                             Request
                           </button>
@@ -524,6 +532,7 @@ export default function MentorsPage() {
                 </label>
                 <input
                   type="date"
+                  min={localYmd(new Date())}
                   value={requestForm.preferredStartDate}
                   onChange={(e) =>
                     setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))
@@ -569,7 +578,7 @@ export default function MentorsPage() {
                 type="button"
                 disabled={submittingRequest}
                 onClick={submitMentorshipRequest}
-                className="rounded-lg bg-gold-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-gold-accent/25 transition-all hover:brightness-95 disabled:opacity-60"
+                className="rounded-lg bg-rose-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-rose-500/25 transition-all hover:bg-rose-600 disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Send request'}
               </button>

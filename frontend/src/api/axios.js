@@ -16,10 +16,28 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+    const p = window.location.pathname;
+    const publicAuth =
+      p.startsWith('/login') ||
+      p.startsWith('/register') ||
+      p.startsWith('/verify-email') ||
+      p.startsWith('/forgot-password') ||
+      p.startsWith('/reset-password');
+    if (err.response?.status === 401 && !publicAuth) {
       localStorage.removeItem('leadsher_token');
       localStorage.removeItem('leadsher_user');
       window.location.href = '/login';
+    }
+    if (err.response?.status === 403 && err.response?.data?.code === 'EMAIL_NOT_VERIFIED' && !publicAuth) {
+      const u = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('leadsher_user') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      const q = u.email ? `?email=${encodeURIComponent(u.email)}` : '';
+      window.location.href = `/verify-email${q}`;
     }
     return Promise.reject(err);
   }

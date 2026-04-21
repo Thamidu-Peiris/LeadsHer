@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorApi } from '../api/mentorApi';
 import { authApi } from '../api/authApi';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 function toList(value) {
   if (!value) return [];
@@ -29,20 +31,26 @@ function isProfileComplete(p) {
 }
 
 export default function MentorDashboardSettingsPage() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser, isAdmin, isMentor } = useAuth();
   const navigate = useNavigate();
-  const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
+  /** Admins use this page for account + platform tools only — no public mentor listing. */
+  const adminProfileMode = isAdmin && !isMentor;
 
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
+  const [loading, setLoading] = useState(!adminProfileMode);
   const [saving, setSaving] = useState(false);
-  const [pictureSaving, setPictureSaving] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [pictureFile, setPictureFile] = useState(null);
   const [picturePreview, setPicturePreview] = useState('');
+  const [profileName, setProfileName] = useState(user?.name || '');
   const [resetEmail, setResetEmail] = useState(user?.email || '');
 
   const [profile, setProfile] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({
     expertise: '',
     yearsOfExperience: 0,
@@ -59,6 +67,10 @@ export default function MentorDashboardSettingsPage() {
     user?.profilePicture ||
     user?.avatar ||
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
+
+  useEffect(() => {
+    setProfileName(user?.name || '');
+  }, [user?.name]);
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
@@ -88,35 +100,41 @@ export default function MentorDashboardSettingsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (adminProfileMode) {
+      setLoading(false);
+      return;
+    }
+    load();
+  }, [adminProfileMode]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    setSettingsLoading(true);
+    authApi
+      .getRegistrationConfig()
+      .then((res) => setEmailVerificationRequired(!!res.data?.emailVerificationRequired))
+      .catch(() => {})
+      .finally(() => setSettingsLoading(false));
+  }, [isAdmin]);
+
+  const savePlatformSettings = async () => {
+    setSettingsSaving(true);
+    try {
+      await authApi.adminUpdateAppSettings({ emailVerificationRequired });
+      toast.success('Platform settings saved');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to save settings');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const handlePictureFile = (e) => {
     const file = e.target.files?.[0] || null;
     setPictureFile(file);
     if (file) setPicturePreview(URL.createObjectURL(file));
     else setPicturePreview('');
-  };
-
-  const saveProfilePicture = async () => {
-    if (!pictureFile) {
-      toast.error('Choose a profile image first');
-      return;
-    }
-    setPictureSaving(true);
-    try {
-      const fd = new FormData();
-      fd.append('profilePicture', pictureFile);
-      const res = await authApi.updateProfileMultipart(fd);
-      const u = res.data?.user || res.data;
-      if (u) updateUser(u);
-      toast.success('Profile image updated');
-      setPictureFile(null);
-      setPicturePreview('');
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Failed to update profile image');
-    } finally {
-      setPictureSaving(false);
-    }
   };
 
   const sendPasswordReset = async (e) => {
@@ -137,6 +155,45 @@ export default function MentorDashboardSettingsPage() {
   };
 
   const save = async () => {
+    const trimmedName = profileName.trim();
+    if (!trimmedName) {
+      toast.error('Name is required');
+      return;
+    }
+
+    if (adminProfileMode) {
+      setSaving(true);
+      try {
+        let updated = false;
+        if (pictureFile) {
+          const fd = new FormData();
+          fd.append('name', trimmedName);
+          fd.append('profilePicture', pictureFile);
+          const res = await authApi.updateProfileMultipart(fd);
+          const u = res.data?.user || res.data;
+          if (u) updateUser(u);
+          updated = true;
+        } else if (trimmedName !== String(user?.name || '').trim()) {
+          const res = await authApi.updateProfile({ name: trimmedName });
+          const u = res.data?.user || res.data;
+          if (u) updateUser(u);
+          updated = true;
+        }
+        if (updated) {
+          toast.success('Admin profile saved');
+          setPictureFile(null);
+          setPicturePreview('');
+        } else {
+          toast.success('Nothing to save');
+        }
+      } catch (e) {
+        toast.error(e.response?.data?.message || 'Failed to save profile');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const payload = {
       expertise: toList(form.expertise),
       yearsOfExperience: Number(form.yearsOfExperience),
@@ -152,8 +209,22 @@ export default function MentorDashboardSettingsPage() {
     };
     setSaving(true);
     try {
+      if (pictureFile) {
+        const fd = new FormData();
+        fd.append('name', trimmedName);
+        fd.append('profilePicture', pictureFile);
+        const res = await authApi.updateProfileMultipart(fd);
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      } else if (trimmedName !== String(user?.name || '').trim()) {
+        const res = await authApi.updateProfile({ name: trimmedName });
+        const u = res.data?.user || res.data;
+        if (u) updateUser(u);
+      }
       await mentorApi.upsertProfile(payload);
       toast.success('Mentor profile saved');
+      setPictureFile(null);
+      setPicturePreview('');
       localStorage.setItem(`leadsher_onboarding_mentorprofile_${user?._id}`, '1');
       await load();
     } catch (e) {
@@ -163,190 +234,161 @@ export default function MentorDashboardSettingsPage() {
     }
   };
 
+  const emptyForm = {
+    expertise: '',
+    yearsOfExperience: 0,
+    industries: '',
+    mentoringAreas: '',
+    bio: '',
+    achievements: '',
+    maxMentees: 3,
+    preferredTime: '',
+    timezone: 'UTC',
+  };
+
+  const deleteMentorProfile = async () => {
+    setDeleting(true);
+    try {
+      await mentorApi.deleteMyProfile();
+      toast.success('Mentor profile deleted');
+      setDeleteDialogOpen(false);
+      setProfile(null);
+      setForm(emptyForm);
+      if (user?._id) localStorage.removeItem(`leadsher_onboarding_mentorprofile_${user._id}`);
+      navigate('/dashboard');
+    } catch (e) {
+      toast.error(getApiErrorMessage(e, 'Could not delete mentor profile'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src={avatarSrc}
-                />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                  profile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={profile?.isAvailable ? 'Available' : 'Unavailable'}
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
+    <>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Settings' }]} />
 
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Settings</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src={avatarSrc}
-                  />
-                </button>
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 px-8 py-8">
+            {isAdmin && (
+              <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 border-l-4 border-l-rose-500">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h2 className="font-serif-alt text-xl font-bold text-on-surface">Platform: email verification</h2>
+                    <p className="text-sm text-on-surface-variant mt-1 max-w-xl">
+                      When enabled, new users must enter a 6-digit code sent by email (Brevo SMTP) before they can sign
+                      in or use the dashboard. When disabled, accounts are activated immediately on registration.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Off</span>
                     <button
                       type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
-
-          <div className="p-8 space-y-6 max-w-[1000px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-              <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
-                <div>
-                  <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentor Profile</h1>
-                  <p className="text-on-surface-variant text-sm mt-1">
-                    {complete ? 'Your profile is complete.' : 'Complete your profile to receive better mentorship matches.'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border ${
-                        profile?.isAvailable
-                          ? 'bg-green-500/10 text-green-700 border-green-500/20'
-                          : 'bg-outline-variant/20 text-outline border-outline-variant/30'
+                      role="switch"
+                      aria-checked={emailVerificationRequired}
+                      disabled={settingsLoading || settingsSaving}
+                      onClick={() => setEmailVerificationRequired((v) => !v)}
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors disabled:opacity-60 ${
+                        emailVerificationRequired
+                          ? 'bg-rose-500/30 border-rose-500/50'
+                          : 'bg-outline-variant/25 border-outline-variant/40'
                       }`}
                     >
-                      {profile?.isAvailable ? 'Available' : 'Unavailable'}
-                    </span>
-                    <label className="inline-flex items-center gap-2 select-none">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Off</span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={!!profile?.isAvailable}
-                        disabled={loading || saving}
-                        onClick={async () => {
-                          try {
-                            await mentorApi.toggleAvailability();
-                            await load();
-                            toast.success(`Availability set to ${!profile?.isAvailable ? 'available' : 'unavailable'}`);
-                          } catch (e) {
-                            toast.error(e.response?.data?.message || 'Failed to toggle availability');
-                          }
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors disabled:opacity-60 ${
-                          profile?.isAvailable
-                            ? 'bg-green-500/20 border-green-500/30'
-                            : 'bg-outline-variant/25 border-outline-variant/40'
+                      <span
+                        className={`inline-block h-7 w-7 transform rounded-full bg-white shadow transition-transform ${
+                          emailVerificationRequired ? 'translate-x-7' : 'translate-x-0.5'
                         }`}
-                        title={profile?.isAvailable ? 'Turn off availability' : 'Turn on availability'}
-                      >
-                        <span
-                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                            profile?.isAvailable ? 'translate-x-5' : 'translate-x-0.5'
-                          }`}
-                        />
-                      </button>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-outline">On</span>
-                    </label>
+                      />
+                    </button>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Required</span>
+                    <button
+                      type="button"
+                      disabled={settingsSaving || settingsLoading}
+                      onClick={savePlatformSettings}
+                      className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-60"
+                    >
+                      {settingsSaving ? 'Saving…' : 'Save'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={save}
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
-                  >
-                    {saving ? 'Saving…' : 'Save changes'}
-                  </button>
                 </div>
+                {settingsLoading && <p className="text-xs text-outline mt-3">Loading current setting…</p>}
+              </section>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 lg:col-span-2">
+              <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center">
+                <div>
+                  <h1 className="font-serif-alt text-3xl font-bold text-on-surface">
+                    {adminProfileMode ? 'Admin Profile' : 'Mentor Profile'}
+                  </h1>
+                  <p className="text-on-surface-variant text-sm mt-1">
+                    {adminProfileMode
+                      ? 'Update your name and photo. Platform-wide options are in the section above.'
+                      : complete
+                        ? 'Your profile is complete.'
+                        : 'Complete your profile to receive better mentorship matches.'}
+                  </p>
+                </div>
+                {!adminProfileMode && (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border ${
+                          profile?.isAvailable
+                            ? 'bg-green-500/10 text-green-700 border-green-500/20'
+                            : 'bg-outline-variant/20 text-outline border-outline-variant/30'
+                        }`}
+                      >
+                        {profile?.isAvailable ? 'Available' : 'Unavailable'}
+                      </span>
+                      <label className="inline-flex items-center gap-2 select-none">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-outline">Off</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={!!profile?.isAvailable}
+                          disabled={loading || saving}
+                          onClick={async () => {
+                            try {
+                              await mentorApi.toggleAvailability();
+                              await load();
+                              toast.success(`Availability set to ${!profile?.isAvailable ? 'available' : 'unavailable'}`);
+                            } catch (e) {
+                              toast.error(e.response?.data?.message || 'Failed to toggle availability');
+                            }
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors disabled:opacity-60 ${
+                            profile?.isAvailable
+                              ? 'bg-green-500/20 border-green-500/30'
+                              : 'bg-outline-variant/25 border-outline-variant/40'
+                          }`}
+                          title={profile?.isAvailable ? 'Turn off availability' : 'Turn on availability'}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                              profile?.isAvailable ? 'translate-x-5' : 'translate-x-0.5'
+                            }`}
+                          />
+                        </button>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-outline">On</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {loading ? (
                 <div className="flex justify-center py-16"><Spinner size="lg" /></div>
               ) : (
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Name *</label>
+                    <input
+                      className="w-full input"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Your name"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Profile picture</label>
                     <div className="flex items-center gap-4">
@@ -355,76 +397,100 @@ export default function MentorDashboardSettingsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 transition-colors cursor-pointer">
+                          <label className="inline-flex items-center justify-center px-4 py-2 border border-outline-variant/40 text-sm font-medium text-on-surface hover:border-rose-500 hover:bg-rose-500/5 transition-colors cursor-pointer">
                             Choose image
                             <input type="file" accept="image/*" onChange={handlePictureFile} className="hidden" />
                           </label>
-                          <button
-                            type="button"
-                            disabled={pictureSaving}
-                            onClick={saveProfilePicture}
-                            className="bg-gold-accent text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 uppercase tracking-wider"
-                          >
-                            {pictureSaving ? 'Uploading…' : 'Upload'}
-                          </button>
                           <span className="text-xs text-outline truncate">{pictureFile?.name || 'No file chosen'}</span>
                         </div>
-                        <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB. Uploaded to Cloudinary.</p>
+                        <p className="text-[11px] text-outline mt-1">JPG/PNG/WebP, max 5MB. Image uploads when you click Save changes.</p>
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Expertise *</label>
-                    <input className="w-full input" value={form.expertise} onChange={(e) => setForm((f) => ({ ...f, expertise: e.target.value }))} placeholder="Leadership, Technology, Strategy" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Years of Experience *</label>
-                    <input type="number" min={0} className="w-full input" value={form.yearsOfExperience} onChange={(e) => setForm((f) => ({ ...f, yearsOfExperience: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Industries *</label>
-                    <input className="w-full input" value={form.industries} onChange={(e) => setForm((f) => ({ ...f, industries: e.target.value }))} placeholder="FinTech, Education, Health" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Mentoring Areas *</label>
-                    <input className="w-full input" value={form.mentoringAreas} onChange={(e) => setForm((f) => ({ ...f, mentoringAreas: e.target.value }))} placeholder="Career growth, Negotiation, Confidence" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Bio *</label>
-                    <textarea className="w-full input h-32 resize-y" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
-                  </div>
+                  {!adminProfileMode && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Expertise *</label>
+                        <input className="w-full input" value={form.expertise} onChange={(e) => setForm((f) => ({ ...f, expertise: e.target.value }))} placeholder="Leadership, Technology, Strategy" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Years of Experience *</label>
+                        <input type="number" min={0} className="w-full input" value={form.yearsOfExperience} onChange={(e) => setForm((f) => ({ ...f, yearsOfExperience: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Industries *</label>
+                        <input className="w-full input" value={form.industries} onChange={(e) => setForm((f) => ({ ...f, industries: e.target.value }))} placeholder="FinTech, Education, Health" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Mentoring Areas *</label>
+                        <input className="w-full input" value={form.mentoringAreas} onChange={(e) => setForm((f) => ({ ...f, mentoringAreas: e.target.value }))} placeholder="Career growth, Negotiation, Confidence" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Bio *</label>
+                        <textarea className="w-full input h-32 resize-y" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
+                      </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">
-                      Achievements (comma-separated)
-                    </label>
-                    <input
-                      className="w-full input"
-                      value={form.achievements}
-                      onChange={(e) => setForm((f) => ({ ...f, achievements: e.target.value }))}
-                      placeholder="Awards, Certifications, Key milestones"
-                    />
-                  </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">
+                          Achievements (comma-separated)
+                        </label>
+                        <input
+                          className="w-full input"
+                          value={form.achievements}
+                          onChange={(e) => setForm((f) => ({ ...f, achievements: e.target.value }))}
+                          placeholder="Awards, Certifications, Key milestones"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Max mentees</label>
-                    <input type="number" min={1} max={10} className="w-full input" value={form.maxMentees} onChange={(e) => setForm((f) => ({ ...f, maxMentees: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Timezone</label>
-                    <input className="w-full input" value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="Asia/Colombo" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Preferred time (comma-separated)</label>
-                    <input className="w-full input" value={form.preferredTime} onChange={(e) => setForm((f) => ({ ...f, preferredTime: e.target.value }))} placeholder="Weeknights, Weekends" />
-                  </div>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Max mentees</label>
+                        <input type="number" min={1} max={10} className="w-full input" value={form.maxMentees} onChange={(e) => setForm((f) => ({ ...f, maxMentees: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Timezone</label>
+                        <input className="w-full input" value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="Asia/Colombo" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-outline uppercase tracking-widest mb-2">Preferred time (comma-separated)</label>
+                        <input className="w-full input" value={form.preferredTime} onChange={(e) => setForm((f) => ({ ...f, preferredTime: e.target.value }))} placeholder="Weeknights, Weekends" />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
+              <div className="mt-8 border-t border-outline-variant/20 pt-5 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                {profile && !loading && !adminProfileMode ? (
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-red-700 dark:text-red-400">Danger zone</p>
+                    <p className="text-sm text-on-surface-variant mt-1 max-w-md">
+                      Remove your public mentor profile. You need no active mentorships. This does not delete your account.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={saving || deleting}
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="mt-3 border border-red-300 bg-red-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-800 hover:bg-red-100 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70 disabled:opacity-50"
+                    >
+                      Delete mentor profile
+                    </button>
+                  </div>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  disabled={saving || loading}
+                  onClick={save}
+                  className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60 shrink-0 self-end sm:self-center"
+                >
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
             </section>
 
-            <section className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4 max-w-[900px]">
+            <section className="bg-white border border-outline-variant/20 rounded-xl p-6 space-y-4 lg:col-span-1">
                 <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-gold-accent text-2xl">lock_reset</span>
+                  <span className="material-symbols-outlined text-rose-500 text-2xl">lock_reset</span>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-on-surface text-lg">Forgot / reset password</h2>
                     <p className="text-sm text-on-surface-variant mt-1">
@@ -437,13 +503,13 @@ export default function MentorDashboardSettingsPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         autoComplete="email"
-                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-gold-accent outline-none"
+                        className="w-full border border-outline-variant/40 rounded-lg px-4 py-2.5 text-sm focus:border-rose-500 outline-none"
                         placeholder="you@example.com"
                       />
                       <button
                         type="submit"
                         disabled={sendingReset}
-                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-gold-accent hover:bg-gold-accent/5 disabled:opacity-50"
+                        className="w-full sm:w-auto border border-outline-variant px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-on-surface hover:border-rose-500 hover:bg-rose-500/5 disabled:opacity-50"
                       >
                         {sendingReset ? 'Sending…' : 'Send reset link'}
                       </button>
@@ -451,10 +517,54 @@ export default function MentorDashboardSettingsPage() {
                   </div>
                 </div>
             </section>
+            </div>
           </div>
-        </main>
-      </div>
-    </div>
+
+          {deleteDialogOpen && (
+            <div
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-6"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget && !deleting) setDeleteDialogOpen(false);
+              }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-mentor-profile-title"
+                className="w-full max-w-md border border-outline-variant/20 bg-white p-6 shadow-lg dark:bg-surface-container"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <h2 id="delete-mentor-profile-title" className="font-serif-alt text-xl font-bold text-on-surface">
+                  Delete mentor profile?
+                </h2>
+                <p className="mt-3 text-sm text-on-surface-variant">
+                  Your mentor listing and settings will be removed. You cannot do this while you have{' '}
+                  <span className="font-semibold text-on-surface">active</span> mentorships — finish or terminate them on{' '}
+                  <span className="font-semibold text-on-surface">Mentorship</span> first. Your login account stays the same.
+                </p>
+                <div className="mt-6 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => setDeleteDialogOpen(false)}
+                    className="border border-outline-variant/30 px-4 py-2 text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={deleteMentorProfile}
+                    className="bg-red-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleting ? 'Deleting…' : 'Delete profile'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+    </>
   );
 }
 

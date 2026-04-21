@@ -1,20 +1,67 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
 import toast from 'react-hot-toast';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { mentorshipApi } from '../api/mentorshipApi';
 import { mentorApi } from '../api/mentorApi';
 import MentorSchedulePanel from '../components/mentorship/MentorSchedulePanel';
+import MentorshipVideoCallModal from '../components/mentorship/MentorshipVideoCallModal';
+import { getSessionVideoWindowInfo } from '../utils/mentorshipVideoCall';
 import {
   insertPrimaryCalendarEvent,
   readGoogleCalendarAccessTokenFromStorage,
 } from '../utils/googleCalendarClient';
 import { formatSessionWhen } from '../utils/mentorshipSessionDisplay';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 function safeList(res) {
   const data = res?.data;
-  return data?.data || data?.requests || data?.mentorships || data?.items || [];
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.requests)) return data.requests;
+  if (Array.isArray(data?.mentorships)) return data.mentorships;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+/** Avatar for mentee on mentor dashboard (populated user or fallback initial from name). */
+function MenteeFace({ mentee, displayName, size = 'md' }) {
+  const user =
+    mentee && typeof mentee === 'object'
+      ? mentee
+      : { name: displayName || 'Mentee' };
+  const dim = size === 'lg' ? 'h-14 w-14' : size === 'sm' ? 'h-10 w-10' : 'h-12 w-12';
+  const px = size === 'lg' ? 128 : size === 'sm' ? 80 : 96;
+  return (
+    <img
+      src={userDisplayPhoto(user, { size: px })}
+      alt=""
+      className={`${dim} rounded-full object-cover border border-outline-variant/25 bg-surface-container-lowest shrink-0`}
+    />
+  );
+}
+
+/** Submitted feedback rating: filled stars amber/yellow, empty stars gray. */
+function FeedbackSubmittedStars({ rating }) {
+  const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return (
+    <span
+      className="inline-flex items-center gap-px text-[14px] leading-none tracking-tight"
+      role="img"
+      aria-label={`${r} out of 5 stars`}
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span
+          key={i}
+          className={i < r ? 'text-amber-400' : 'text-neutral-300 dark:text-neutral-500'}
+          aria-hidden
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function formatDate(d) {
@@ -68,9 +115,7 @@ function minSessionStartMs(mentorship) {
 export default function MentorDashboardMentorshipPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
 
-  const [profileOpen, setProfileOpen] = useState(false);
   const [mentorProfile, setMentorProfile] = useState(null);
   const [tab, setTab] = useState('requests'); // requests | active | history | schedule
 
@@ -80,7 +125,6 @@ export default function MentorDashboardMentorshipPage() {
   const [history, setHistory] = useState([]);
 
   const [respondingId, setRespondingId] = useState('');
-  const [responseMessage, setResponseMessage] = useState('');
 
   const [sessionFor, setSessionFor] = useState(null);
   const [sessionForm, setSessionForm] = useState({ startAt: '', duration: 30, notes: '', topics: '' });
@@ -89,6 +133,7 @@ export default function MentorDashboardMentorshipPage() {
   const [goalsInput, setGoalsInput] = useState('');
 
   const [expandedId, setExpandedId] = useState(null);
+  const [videoCall, setVideoCall] = useState(null);
 
   const [feedbackFor, setFeedbackFor] = useState(null);
   const [feedbackForm, setFeedbackForm] = useState({ rating: 5, comment: '' });
@@ -108,8 +153,9 @@ export default function MentorDashboardMentorshipPage() {
     schedule: scheduleSessionCount,
   }), [requests.length, active.length, history.length, scheduleSessionCount]);
 
-  const loadAll = async () => {
-    setLoading(true);
+  const loadAll = useCallback(async (options = {}) => {
+    const { showLoading = false } = options;
+    if (showLoading) setLoading(true);
     try {
       const [r, a, h] = await Promise.allSettled([
         mentorshipApi.getRequests({ status: 'pending', type: 'received' }),
@@ -120,11 +166,21 @@ export default function MentorDashboardMentorshipPage() {
       if (a.status === 'fulfilled') setActive(safeList(a.value));
       if (h.status === 'fulfilled') setHistory(safeList(h.value));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll({ showLoading: true });
+  }, [loadAll]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadAll();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadAll]);
 
   useEffect(() => {
     const userId = user?.id ?? user?._id;
@@ -145,9 +201,8 @@ export default function MentorDashboardMentorshipPage() {
   const accept = async (id) => {
     setRespondingId(id);
     try {
-      await mentorshipApi.acceptRequest(id, responseMessage ? { responseMessage } : undefined);
+      await mentorshipApi.acceptRequest(id, undefined);
       toast.success('Request accepted');
-      setResponseMessage('');
       await loadAll();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to accept');
@@ -159,9 +214,8 @@ export default function MentorDashboardMentorshipPage() {
   const reject = async (id) => {
     setRespondingId(id);
     try {
-      await mentorshipApi.rejectRequest(id, responseMessage ? { responseMessage } : undefined);
+      await mentorshipApi.rejectRequest(id, undefined);
       toast.success('Request rejected');
-      setResponseMessage('');
       await loadAll();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to reject');
@@ -294,116 +348,11 @@ export default function MentorDashboardMentorshipPage() {
       sessionStart.getTime() < sessionMinMs);
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src={avatarSrc}
-                />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {SidebarNav.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">Home</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <Link className="hover:text-gold-accent transition-colors" to="/dashboard">Dashboard</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Mentorship</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src={avatarSrc}
-                  />
-                </button>
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+    <>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard', to: '/dashboard' }, { label: 'Mentorship' }]} />
 
           <div className="p-8 space-y-6 max-w-[1400px] mx-auto w-full">
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="font-serif-alt text-3xl font-bold text-on-surface">Mentorship</h1>
                 <p className="text-on-surface-variant text-sm mt-1">
@@ -423,8 +372,8 @@ export default function MentorDashboardMentorshipPage() {
                     onClick={() => setTab(t.key)}
                     className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                       tab === t.key
-                        ? 'border-gold-accent bg-gold-accent/10 text-on-surface'
-                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-gold-accent/40'
+                        ? 'border-rose-500 bg-rose-500/10 text-on-surface'
+                        : 'border-outline-variant/25 bg-white dark:bg-surface-container hover:border-rose-500/40'
                     }`}
                   >
                     {t.label} <span className="text-outline font-semibold">({t.count})</span>
@@ -438,19 +387,10 @@ export default function MentorDashboardMentorshipPage() {
             ) : (
               <>
                 {tab === 'requests' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                    <div className="flex items-start justify-between gap-4 flex-col md:flex-row md:items-center mb-6">
-                      <div>
-                        <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Requests</h2>
-                        <p className="text-on-surface-variant text-sm">Accept or reject incoming mentorship requests.</p>
-                      </div>
-                      <textarea
-                        value={responseMessage}
-                        onChange={(e) => setResponseMessage(e.target.value)}
-                        placeholder="Optional response message…"
-                        className="w-full md:w-[420px] bg-white dark:bg-surface-container border border-outline-variant/25 text-on-surface rounded-lg px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-gold-accent/40"
-                        rows={2}
-                      />
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
+                    <div className="mb-6">
+                      <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Mentorship Requests</h2>
+                      <p className="text-on-surface-variant text-sm">Accept or reject incoming mentorship requests.</p>
                     </div>
 
                     {requests.length === 0 ? (
@@ -464,7 +404,9 @@ export default function MentorDashboardMentorshipPage() {
                           return (
                             <div key={r._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MenteeFace mentee={r?.mentee} displayName={menteeName} size="lg" />
+                                  <div className="min-w-0">
                                   <p className="text-xs uppercase tracking-widest text-outline font-bold">From</p>
                                   <h3 className="font-serif-alt text-xl font-bold text-on-surface line-clamp-1">
                                     {menteeName}
@@ -480,8 +422,9 @@ export default function MentorDashboardMentorshipPage() {
                                   <p className="text-xs text-outline mt-3">
                                     Preferred start: <span className="font-semibold text-on-surface">{formatDate(r?.preferredStartDate)}</span>
                                   </p>
+                                  </div>
                                 </div>
-                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline">
+                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
                                   {status}
                                 </span>
                               </div>
@@ -491,7 +434,7 @@ export default function MentorDashboardMentorshipPage() {
                                   type="button"
                                   disabled={respondingId === r._id}
                                   onClick={() => accept(r._id)}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 disabled:opacity-60"
+                                  className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90 disabled:opacity-60"
                                 >
                                   {respondingId === r._id ? 'Working…' : 'Accept'}
                                 </button>
@@ -513,7 +456,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'active' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Active Mentees</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Schedule sessions, update goals, mark complete, and submit feedback.</p>
 
@@ -531,12 +474,15 @@ export default function MentorDashboardMentorshipPage() {
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MenteeFace mentee={m?.mentee} displayName={menteeName} size="lg" />
+                                  <div className="min-w-0">
                                   <h3 className="font-serif-alt text-xl font-bold text-on-surface">{menteeName}</h3>
                                   {menteeEmail && <p className="text-xs text-outline">{menteeEmail}</p>}
                                   <p className="text-xs text-outline mt-1">Started: {started || '—'} · Sessions logged: {sessionCount}</p>
+                                  </div>
                                 </div>
-                                <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-outline-variant/25 text-outline shrink-0">
+                                <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-green-300 bg-green-50 text-green-800 shrink-0 dark:border-green-600/50 dark:bg-green-950/50 dark:text-green-400">
                                   {m?.status || 'active'}
                                 </span>
                               </div>
@@ -546,7 +492,7 @@ export default function MentorDashboardMentorshipPage() {
                                 <p className="text-xs uppercase tracking-widest text-outline font-bold mb-2">Goals</p>
                                 <div className="flex flex-wrap gap-2">
                                   {goals.length ? goals.map((g) => (
-                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-gold-accent/5 border border-gold-accent/20 rounded-lg">{g}</span>
+                                    <span key={g} className="inline-flex px-3 py-1 text-xs bg-rose-500/5 border border-rose-500/20 rounded-lg">{g}</span>
                                   )) : <span className="text-sm text-on-surface-variant">No goals set</span>}
                                 </div>
                               </div>
@@ -557,7 +503,7 @@ export default function MentorDashboardMentorshipPage() {
                                   <button
                                     type="button"
                                     onClick={() => setExpandedId(isExpanded ? null : m._id)}
-                                    className="text-xs text-gold-accent font-bold uppercase tracking-wider flex items-center gap-1"
+                                    className="text-xs text-rose-500 font-bold uppercase tracking-wider flex items-center gap-1"
                                   >
                                     <span className="material-symbols-outlined text-[16px]">
                                       {isExpanded ? 'expand_less' : 'expand_more'}
@@ -566,18 +512,52 @@ export default function MentorDashboardMentorshipPage() {
                                   </button>
                                   {isExpanded && (
                                     <div className="mt-3 space-y-2">
-                                      {(m.sessions || []).map((s, i) => (
-                                        <div key={i} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
-                                          <div className="flex items-center justify-between">
+                                      {(m.sessions || []).map((s, i) => {
+                                        const sessionKey = s._id ? String(s._id) : `idx-${i}`;
+                                        const win = getSessionVideoWindowInfo(s);
+                                        const canVideo = Boolean(s._id) && win.canJoin;
+                                        return (
+                                        <div key={sessionKey} className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg px-4 py-3 text-sm">
+                                          <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-on-surface">{formatSessionWhen(s)}</span>
-                                            <span className="text-outline">{s.duration} min</span>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-outline">{s.duration} min</span>
+                                              {s.callStatus === 'completed' ? (
+                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800 dark:bg-green-950/60 dark:text-green-300">
+                                                  Call completed
+                                                </span>
+                                              ) : (
+                                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-600 dark:bg-surface-container dark:text-on-surface-variant" title={win.label}>
+                                                  {win.phase === 'too_early' ? 'Video soon' : win.phase === 'ended' ? 'Window ended' : win.phase === 'open' ? 'Video open' : '—'}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                           {s.topics?.length > 0 && (
                                             <p className="text-xs text-outline mt-1">Topics: {s.topics.join(', ')}</p>
                                           )}
                                           {s.notes && <p className="text-xs text-on-surface-variant mt-1">{s.notes}</p>}
+                                          <div className="mt-2">
+                                            <button
+                                              type="button"
+                                              disabled={!canVideo}
+                                              title={!s._id ? 'Session id missing' : win.label}
+                                              onClick={() => {
+                                                if (!s._id) return;
+                                                setVideoCall({
+                                                  mentorshipId: m._id,
+                                                  sessionId: String(s._id),
+                                                  peerName: menteeName,
+                                                });
+                                              }}
+                                              className="rounded-lg bg-sky-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-sky-600 dark:hover:bg-sky-500"
+                                            >
+                                              Join video call
+                                            </button>
+                                          </div>
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -597,21 +577,21 @@ export default function MentorDashboardMentorshipPage() {
                                       topics: '',
                                     });
                                   }}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white dark:bg-surface-container"
                                 >
                                   Schedule session
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => { setGoalsFor(m); setGoalsInput(goals.join(', ')); }}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white"
                                 >
                                   Set goals
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => complete(m._id)}
-                                  className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                  className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
                                 >
                                   Mark complete
                                 </button>
@@ -625,7 +605,7 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'history' && (
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface mb-1">Mentorship History</h2>
                     <p className="text-on-surface-variant text-sm mb-6">Completed and past mentorships.</p>
 
@@ -639,7 +619,13 @@ export default function MentorDashboardMentorshipPage() {
                           return (
                             <div key={m._id} className="border border-outline-variant/20 rounded-xl p-6">
                               <div className="flex items-start justify-between gap-4">
-                                <div>
+                                <div className="flex min-w-0 flex-1 gap-4">
+                                  <MenteeFace
+                                    mentee={m?.mentee}
+                                    displayName={m?.mentee?.name || 'Mentee'}
+                                    size="lg"
+                                  />
+                                  <div className="min-w-0">
                                   <h3 className="font-serif-alt text-xl font-bold text-on-surface">
                                     {m?.mentee?.name || 'Mentee'}
                                   </h3>
@@ -647,6 +633,7 @@ export default function MentorDashboardMentorshipPage() {
                                     Started: {formatDate(m?.startDate)} · {m?.completedAt ? `Completed: ${formatDate(m.completedAt)}` : `Ended: ${formatDate(m?.endDate)}`}
                                   </p>
                                   <p className="text-xs text-outline">Sessions: {sessionCount}</p>
+                                  </div>
                                 </div>
                                 <span className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border text-outline shrink-0 ${
                                   m?.status === 'completed' ? 'border-green-300 text-green-700 bg-green-50' :
@@ -661,14 +648,17 @@ export default function MentorDashboardMentorshipPage() {
                                   <button
                                     type="button"
                                     onClick={() => { setFeedbackFor(m); setFeedbackForm({ rating: 5, comment: '' }); }}
-                                    className="bg-gold-accent text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
+                                    className="bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase hover:opacity-90"
                                   >
                                     Submit feedback
                                   </button>
                                 </div>
                               )}
                               {hasMentorFeedback && (
-                                <p className="mt-3 text-xs text-green-700 font-semibold">✓ Feedback submitted (Rating: {m.feedback.mentorRating}/5)</p>
+                                <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-green-700 dark:text-green-400">
+                                  <span>✓ Feedback submitted</span>
+                                  <FeedbackSubmittedStars rating={m.feedback.mentorRating} />
+                                </p>
                               )}
                             </div>
                           );
@@ -679,7 +669,18 @@ export default function MentorDashboardMentorshipPage() {
                 )}
 
                 {tab === 'schedule' && (
-                  <MentorSchedulePanel active={active} history={history} />
+                  <MentorSchedulePanel
+                    active={active}
+                    history={history}
+                    onSessionVideoCall={(mentorshipId, session, menteeName) => {
+                      if (!session?._id) return;
+                      setVideoCall({
+                        mentorshipId,
+                        sessionId: String(session._id),
+                        peerName: menteeName || 'Mentee',
+                      });
+                    }}
+                  />
                 )}
               </>
             )}
@@ -687,11 +688,14 @@ export default function MentorDashboardMentorshipPage() {
             {/* Goals modal */}
             {goalsFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <MenteeFace mentee={goalsFor?.mentee} displayName={goalsFor?.mentee?.name || 'Mentee'} size="md" />
+                      <div className="min-w-0">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Set Goals</h3>
                       <p className="text-xs text-outline">Mentee: {goalsFor?.mentee?.name || 'Mentee'}</p>
+                      </div>
                     </div>
                     <button type="button" onClick={() => setGoalsFor(null)} className="text-outline hover:text-on-surface">
                       <span className="material-symbols-outlined">close</span>
@@ -708,7 +712,7 @@ export default function MentorDashboardMentorshipPage() {
                     <button type="button" onClick={() => setGoalsFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
                       Cancel
                     </button>
-                    <button type="button" onClick={updateGoals} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
+                    <button type="button" onClick={updateGoals} className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
                       Save goals
                     </button>
                   </div>
@@ -719,13 +723,16 @@ export default function MentorDashboardMentorshipPage() {
             {/* Session modal */}
             {sessionFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <MenteeFace mentee={sessionFor?.mentee} displayName={sessionFor?.mentee?.name || 'Mentee'} size="md" />
+                      <div className="min-w-0">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Schedule session</h3>
                       <p className="text-xs text-outline">Mentee: {sessionFor?.mentee?.name || 'Mentee'}</p>
+                      </div>
                     </div>
-                    <button type="button" onClick={() => setSessionFor(null)} className="text-outline hover:text-on-surface">
+                    <button type="button" onClick={() => setSessionFor(null)} className="text-outline hover:text-on-surface shrink-0">
                       <span className="material-symbols-outlined">close</span>
                     </button>
                   </div>
@@ -791,7 +798,7 @@ export default function MentorDashboardMentorshipPage() {
                         sessionDateInvalid ||
                         Number(sessionForm.duration) < 15
                       }
-                      className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Schedule session
                     </button>
@@ -803,13 +810,18 @@ export default function MentorDashboardMentorshipPage() {
             {/* Feedback modal */}
             {feedbackFor && (
               <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-6">
-                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-6">
+                <div className="w-full max-w-lg bg-white dark:bg-surface-container border border-outline-variant/20 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <MenteeFace mentee={feedbackFor?.mentee} displayName={feedbackFor?.mentee?.name || 'Mentee'} size="md" />
+                      <div className="min-w-0">
                       <h3 className="font-serif-alt text-xl font-bold text-on-surface">Submit Feedback</h3>
-                      <p className="text-xs text-outline">Rate your mentee’s progress.</p>
+                      <p className="text-xs text-outline">
+                        {feedbackFor?.mentee?.name || 'Mentee'} — rate their progress.
+                      </p>
+                      </div>
                     </div>
-                    <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface">
+                    <button type="button" onClick={() => setFeedbackFor(null)} className="text-outline hover:text-on-surface shrink-0">
                       <span className="material-symbols-outlined">close</span>
                     </button>
                   </div>
@@ -840,17 +852,24 @@ export default function MentorDashboardMentorshipPage() {
                     <button type="button" onClick={() => setFeedbackFor(null)} className="px-4 py-2 text-xs font-bold tracking-wider uppercase border border-outline-variant/25">
                       Cancel
                     </button>
-                    <button type="button" onClick={submitFeedback} className="bg-gold-accent text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
+                    <button type="button" onClick={submitFeedback} className="bg-rose-500 text-white px-4 py-2 text-xs font-bold tracking-wider uppercase">
                       Submit
                     </button>
                   </div>
                 </div>
               </div>
             )}
+
+            <MentorshipVideoCallModal
+              open={Boolean(videoCall)}
+              onClose={() => setVideoCall(null)}
+              mentorshipId={videoCall?.mentorshipId || ''}
+              sessionId={videoCall?.sessionId || ''}
+              peerName={videoCall?.peerName}
+              onCallEnded={() => loadAll()}
+            />
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 

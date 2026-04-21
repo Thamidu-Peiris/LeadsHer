@@ -5,6 +5,12 @@ const User = require('../models/User');
 const normalizeRole = (r) => String(r || '').toLowerCase();
 const isAdminRole = (r) => normalizeRole(r) === 'admin';
 
+/**
+ * Max featured (published) stories. Frontend: `frontend/src/constants/featuredStories.js`.
+ * Layout on /stories: 1 large + up to 6 in “More featured” = 7 total.
+ */
+const MAX_FEATURED_STORIES = 7;
+
 const stripHtml = (s) => String(s || '').replace(/<[^>]*>/g, ' ');
 
 const wordCount = (content) => {
@@ -25,19 +31,64 @@ const computeExcerpt = (content, providedExcerpt) => {
   return text.slice(0, 297) + '...';
 };
 
+const sortFeaturedByOrder = (list) =>
+  [...list].sort((a, b) => {
+    const ao = a.featuredOrder != null ? a.featuredOrder : Number.MAX_SAFE_INTEGER;
+    const bo = b.featuredOrder != null ? b.featuredOrder : Number.MAX_SAFE_INTEGER;
+    if (ao !== bo) return ao - bo;
+    return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+  });
+
 const enforceFeaturedLimit = async (storyIdToKeep) => {
-  const featured = await Story.find({ isFeatured: true, status: 'published' })
-    .sort({ publishedAt: 1, updatedAt: 1 })
-    .select('_id')
+  const list = await Story.find({ isFeatured: true, status: 'published' })
+    .select('_id featuredOrder publishedAt')
     .lean();
-  if (featured.length <= 5) return;
-  const toUnfeature = featured
-    .filter((s) => s._id.toString() !== storyIdToKeep.toString())
-    .slice(0, Math.max(0, featured.length - 5))
-    .map((s) => s._id);
+  if (list.length <= MAX_FEATURED_STORIES) return;
+
+  const keepId = storyIdToKeep.toString();
+  const sorted = sortFeaturedByOrder(list);
+  const keepFirst = sorted.find((s) => s._id.toString() === keepId);
+  const rest = sorted.filter((s) => s._id.toString() !== keepId);
+  const merged = keepFirst ? [keepFirst, ...rest] : rest;
+  const keepIds = new Set(merged.slice(0, MAX_FEATURED_STORIES).map((s) => s._id.toString()));
+  const toUnfeature = list.filter((s) => !keepIds.has(s._id.toString())).map((s) => s._id);
   if (toUnfeature.length) {
-    await Story.updateMany({ _id: { $in: toUnfeature } }, { $set: { isFeatured: false } });
+    await Story.updateMany(
+      { _id: { $in: toUnfeature } },
+      { $set: { isFeatured: false, featuredOrder: null } }
+    );
   }
+};
+
+const reorderFeaturedStory = async (storyId, direction) => {
+  const list = await Story.find({ isFeatured: true, status: 'published' })
+    .select('_id featuredOrder publishedAt')
+    .lean();
+  const sorted = sortFeaturedByOrder(list);
+  const idx = sorted.findIndex((s) => s._id.toString() === storyId.toString());
+  if (idx < 0) {
+    const err = new Error('Story is not in the featured list.');
+    err.status = 400;
+    throw err;
+  }
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= sorted.length) {
+    const populated = await Story.findById(storyId).populate('author', 'name profilePicture avatar').lean();
+    return {
+      ...populated,
+      likeCount: populated.likes ? populated.likes.length : 0,
+      likes: undefined,
+    };
+  }
+  const next = [...sorted];
+  [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+  await Promise.all(next.map((s, i) => Story.updateOne({ _id: s._id }, { $set: { featuredOrder: i } })));
+  const populated = await Story.findById(storyId).populate('author', 'name profilePicture avatar').lean();
+  return {
+    ...populated,
+    likeCount: populated.likes ? populated.likes.length : 0,
+    likes: undefined,
+  };
 };
 
 const createStoryRecord = async ({ authorId, title, content, excerpt, coverImage, category, tags, status }) => {
@@ -226,6 +277,15 @@ const getStoriesPaginated = async ({
 };
 
 const updateStoryById = async (storyId, userId, userRole, updates) => {
+  if (updates.featuredReorder === 'up' || updates.featuredReorder === 'down') {
+    if (!isAdminRole(userRole)) {
+      const err = new Error('Only admin can reorder featured stories.');
+      err.status = 403;
+      throw err;
+    }
+    return reorderFeaturedStory(storyId, updates.featuredReorder);
+  }
+
   const story = await Story.findById(storyId);
   if (!story) {
     const err = new Error('Story not found.');
@@ -286,7 +346,31 @@ const updateStoryById = async (storyId, userId, userRole, updates) => {
       err.status = 403;
       throw err;
     }
-    story.isFeatured = !!updates.isFeatured;
+    const wasFeatured = story.isFeatured;
+    const turningOn = !!updates.isFeatured;
+    story.isFeatured = turningOn;
+    if (turningOn && !wasFeatured) {
+      if (story.status !== 'published') {
+        const err = new Error('Only published stories can be featured.');
+        err.status = 400;
+        throw err;
+      }
+      const others = await Story.find({
+        isFeatured: true,
+        status: 'published',
+        _id: { $ne: story._id },
+      })
+        .select('featuredOrder')
+        .lean();
+      const maxOrder = others.reduce((m, o) => {
+        const v = o.featuredOrder;
+        if (v == null) return m;
+        return Math.max(m, v);
+      }, -1);
+      story.featuredOrder = maxOrder + 1;
+    } else if (!turningOn) {
+      story.featuredOrder = null;
+    }
   }
 
   await story.save();
@@ -418,7 +502,20 @@ const getStoriesByUser = async (targetUserId, { page = 1, limit = 10 } = {}) => 
       .lean(),
     Story.countDocuments(query),
   ]);
-  return { stories, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const commentCounts = await Comment.aggregate([
+    { $match: { story: { $in: stories.map((s) => s._id) } } },
+    { $group: { _id: '$story', count: { $sum: 1 } } },
+  ]);
+  const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
+  const out = stories.map((s) => ({
+    ...s,
+    likeCount: s.likes ? s.likes.length : 0,
+    commentCount: commentMap.get(String(s._id)) || 0,
+    likes: undefined,
+  }));
+
+  return { stories: out, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
 const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
@@ -437,21 +534,47 @@ const getMyStories = async (userId, { page = 1, limit = 50 } = {}) => {
     Story.countDocuments(query),
   ]);
 
+  const commentCounts = await Comment.aggregate([
+    { $match: { story: { $in: stories.map((s) => s._id) } } },
+    { $group: { _id: '$story', count: { $sum: 1 } } },
+  ]);
+  const commentMap = new Map(commentCounts.map((c) => [String(c._id), c.count]));
+
   const out = stories.map((s) => ({
     ...s,
     likeCount: s.likes ? s.likes.length : 0,
+    commentCount: commentMap.get(String(s._id)) || 0,
     likes: undefined,
   }));
 
   return { stories: out, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
+/** Count published stories the user has liked (current user id in `likes` array). */
+const countStoriesLikedByUser = async (userId) => {
+  if (!userId) return 0;
+  return Story.countDocuments({
+    likes: userId,
+    status: 'published',
+  });
+};
+
 const getFeaturedStories = async () => {
-  const stories = await Story.find({ status: 'published' })
-    .sort({ isFeatured: -1, publishedAt: -1, createdAt: -1 })
-    .limit(5)
-    .populate('author', 'name profilePicture avatar')
-    .lean();
+  const raw = await Story.aggregate([
+    { $match: { status: 'published', isFeatured: true } },
+    {
+      $addFields: {
+        _sortOrder: { $ifNull: ['$featuredOrder', 999999] },
+      },
+    },
+    { $sort: { _sortOrder: 1, publishedAt: -1, createdAt: -1 } },
+    { $limit: MAX_FEATURED_STORIES },
+    { $project: { _sortOrder: 0 } },
+  ]);
+  const stories = await Story.populate(raw, {
+    path: 'author',
+    select: 'name profilePicture avatar',
+  });
   return stories.map((s) => ({ ...s, likeCount: s.likes ? s.likes.length : 0, likes: undefined }));
 };
 
@@ -467,6 +590,7 @@ module.exports = {
   deleteCommentFromStory,
   getStoriesByUser,
   getMyStories,
+  countStoriesLikedByUser,
   getFeaturedStories,
   wordCount,
 };

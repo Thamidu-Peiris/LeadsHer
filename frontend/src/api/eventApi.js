@@ -10,6 +10,13 @@ export const eventApi = {
   getMyCreatedEvents:() => api.get('/events/my-created'),
 
   // CRUD (mentor / admin)
+  uploadCover:       (formData) =>
+    api.post('/events/upload-cover', formData, {
+      transformRequest: [(body, headers) => {
+        delete headers['Content-Type'];
+        return body;
+      }],
+    }),
   create:            (data) => api.post('/events', data),
   update:            (id, data) => api.patch(`/events/${id}`, data),
   delete:            (id) => api.delete(`/events/${id}`),
@@ -27,6 +34,6 @@ export const eventApi = {
 
   // Admin-only
   rescheduleEvent:   (id, data) => api.patch(`/events/${id}/reschedule`, data),
-  issueCertificates: (id) => api.post(`/events/${id}/certificates`),
-  getEventCertificates: (id) => api.get(`/events/${id}/certificates`),
+  sendReminderEmails: (id, params) =>
+    api.post(`/events/${id}/send-reminder-emails`, {}, { params }),
 };

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import DashboardTopBar from '../components/dashboard/DashboardTopBar';
+import AdminDashboardTopBar from '../components/dashboard/AdminDashboardTopBar';
 import { useAuth } from '../context/AuthContext';
 import { storyApi } from '../api/storyApi';
 import { eventApi } from '../api/eventApi';
@@ -24,13 +26,62 @@ import {
   enrichMentorship,
   enrichFeedbackRow,
 } from '../utils/mentorshipAdminMerge';
+import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
 import toast from 'react-hot-toast';
+
+function menteeEventCoverUrl(e) {
+  const raw =
+    typeof e.coverImage === 'string'
+      ? e.coverImage
+      : typeof e.cover_image === 'string'
+        ? e.cover_image
+        : '';
+  return raw?.trim() ? absolutePhotoUrl(raw.trim()) : '';
+}
+
+function menteeEventLocationLine(e) {
+  if (e.type === 'virtual') return 'Virtual';
+  return e.location?.city || e.location?.venue || 'Online';
+}
+
+function menteeFormatEventDate(dateVal) {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function menteeFormatEventTimeDisplay(startTime) {
+  if (startTime == null || startTime === '') return '';
+  const s = String(startTime).trim();
+  if (!s) return '';
+  const parts = s.split(':').map((p) => Number(p));
+  if (parts.length >= 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+    const dt = new Date();
+    dt.setHours(parts[0], parts[1], parts[2] || 0, 0);
+    return dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return s;
+}
+
+function menteeEventDateTimeLine(e) {
+  const dateStr = menteeFormatEventDate(e.date);
+  const timeStr = menteeFormatEventTimeDisplay(e.startTime);
+  if (dateStr && timeStr) return `${dateStr} · ${timeStr}`;
+  if (dateStr) return dateStr;
+  if (timeStr) return timeStr;
+  return null;
+}
 
 function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentor';
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
   const [onboardOpen, setOnboardOpen] = useState(false);
   const [onboardLoading, setOnboardLoading] = useState(false);
   const [onboardSaving, setOnboardSaving] = useState(false);
@@ -136,21 +187,139 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
   const totalLikes = useMemo(
-    () => myStories.reduce((a, s) => a + (s.likeCount || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0),
     [myStories]
   );
+  const monthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
+  const monthLabel = useMemo(
+    () => new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    []
+  );
+  const storiesThisMonth = useMemo(
+    () =>
+      myStories.filter((s) => {
+        const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myStories, monthStart]
+  );
+  const sessionsThisMonth = useMemo(
+    () =>
+      myEvents.filter((e) => {
+        const t = new Date(e?.date || e?.startDate || e?.createdAt || 0).getTime();
+        return Number.isFinite(t) && t >= monthStart.getTime();
+      }).length,
+    [myEvents, monthStart]
+  );
+  const repliesThisMonth = useMemo(
+    () =>
+      myStories
+        .filter((s) => {
+          const t = new Date(s?.publishedAt || s?.createdAt || 0).getTime();
+          return Number.isFinite(t) && t >= monthStart.getTime();
+        })
+        .reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0),
+    [myStories, monthStart]
+  );
+  const goals = useMemo(() => ([
+    { key: 'stories', label: 'Stories', icon: 'auto_stories', value: storiesThisMonth, target: 4 },
+    { key: 'sessions', label: 'Sessions', icon: 'event', value: sessionsThisMonth, target: 3 },
+    { key: 'replies', label: 'Replies', icon: 'chat', value: repliesThisMonth, target: 20 },
+  ]), [storiesThisMonth, sessionsThisMonth, repliesThisMonth]);
+  const recentActivity = useMemo(() => {
+    const items = [];
+    const sortedStories = [...myStories].sort(
+      (a, b) => new Date(b?.updatedAt || b?.createdAt || 0) - new Date(a?.updatedAt || a?.createdAt || 0)
+    );
+    sortedStories.slice(0, 2).forEach((s) => {
+      const likes = Number(s?.likeCount ?? s?.likes?.length ?? 0);
+      const comments = Number(s?.commentCount ?? 0);
+      items.push({
+        icon: 'auto_stories',
+        title: s?.title || 'Story update',
+        meta: `${likes} likes · ${comments} comments`,
+      });
+    });
+    const nextEvent = [...myEvents]
+      .filter((e) => new Date(e?.date || e?.startDate || 0).getTime() >= Date.now())
+      .sort((a, b) => new Date(a?.date || a?.startDate || 0) - new Date(b?.date || b?.startDate || 0))[0];
+    if (nextEvent) {
+      items.push({
+        icon: 'event_upcoming',
+        title: `Upcoming: ${nextEvent.title || 'Event'}`,
+        meta: new Date(nextEvent?.date || nextEvent?.startDate || Date.now()).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+      });
+    }
+    if (mentorProfile) {
+      items.push({
+        icon: mentorProfile?.isAvailable ? 'toggle_on' : 'toggle_off',
+        title: `Mentorship ${mentorProfile?.isAvailable ? 'availability on' : 'availability off'}`,
+        meta: 'From your mentor profile settings',
+      });
+    }
+    if (items.length === 0) {
+      items.push({
+        icon: 'notifications',
+        title: 'No new activity yet',
+        meta: 'Your latest likes, comments, and updates will appear here',
+      });
+    }
+    return items.slice(0, 4);
+  }, [myStories, myEvents, mentorProfile]);
+  const monthlyTrend = useMemo(() => {
+    const now = new Date();
+    const buckets = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: d.toLocaleDateString('en-US', { month: 'short' }),
+        stories: 0,
+        sessions: 0,
+      };
+    });
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    myStories.forEach((s) => {
+      const t = new Date(s?.publishedAt || s?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].stories += 1;
+    });
+    myEvents.forEach((e) => {
+      const t = new Date(e?.date || e?.startDate || e?.createdAt || 0);
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const i = idx.get(k);
+      if (i != null && Number.isFinite(t.getTime())) buckets[i].sessions += 1;
+    });
+    const maxValue = Math.max(1, ...buckets.map((b) => Math.max(b.stories, b.sessions)));
+    return { buckets, maxValue };
+  }, [myStories, myEvents]);
+  const engagement = useMemo(() => {
+    const comments = myStories.reduce((sum, s) => sum + Number(s?.commentCount ?? 0), 0);
+    const likes = totalLikes;
+    const views = totalViews;
+    const total = Math.max(1, likes + comments + views);
+    const likesPct = Math.round((likes / total) * 100);
+    const commentsPct = Math.round((comments / total) * 100);
+    const viewsPct = 100 - likesPct - commentsPct;
+    return { likes, comments, views, likesPct, commentsPct, viewsPct };
+  }, [myStories, totalLikes, totalViews]);
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* Onboarding modal */}
+    <>
+      {/* Onboarding modal */}
         {onboardOpen && (
           <div className="fixed inset-0 z-[60] bg-black/35 flex items-center justify-center p-6">
-            <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow p-8">
+            <div className="w-full max-w-3xl bg-white dark:bg-surface-container border border-outline-variant/20 p-8">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                   <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Complete your mentor profile</h2>
@@ -216,7 +385,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                     <button
                       type="button"
-                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-gold-accent/40 transition-colors bg-white dark:bg-surface-container"
+                      className="px-5 py-3 rounded-lg font-bold text-sm border border-outline-variant/25 hover:border-rose-500/40 transition-colors bg-white dark:bg-surface-container"
                       onClick={() => navigate('/dashboard/settings')}
                     >
                       Open Settings
@@ -224,7 +393,7 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
                     <button
                       type="button"
                       disabled={onboardSaving}
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-60"
+                      className="bg-rose-500 text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-rose-600 disabled:opacity-60 dark:bg-rose-600 dark:hover:bg-rose-500"
                       onClick={saveOnboarding}
                     >
                       {onboardSaving ? 'Saving…' : 'Save profile'}
@@ -235,188 +404,35 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
             </div>
           </div>
         )}
-        {/* Fixed left sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white dark:bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-40">
-          {/* Profile */}
-          <div className="p-6 flex flex-col items-center gap-3 border-b border-outline-variant/20">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                <img
-                  alt="User avatar"
-                  className="w-full h-full object-cover rounded-full"
-                  src={avatarSrc}
-                />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                  mentorProfile?.isAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={mentorProfile?.isAvailable ? 'Available' : 'Unavailable'}
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="text-on-surface font-bold text-lg">{firstName}</h3>
-              <div className="mt-1 flex justify-center">
-                <span className="bg-gold-accent/10 text-gold-accent text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-gold-accent/20">
-                  Mentor
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/mentorship', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Bottom */}
-          <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-3">
-            <div className="flex items-center justify-between px-4 py-2 text-outline hover:text-on-surface cursor-pointer transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[22px]">notifications</span>
-                <span className="text-sm font-medium">Notifications</span>
-              </div>
-              <span className="w-2 h-2 bg-tertiary rounded-full" />
-            </div>
-            <button className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
-              UPGRADE TO PRO
-            </button>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Dashboard</span>
-            </div>
-
-            <div className="max-w-md w-full px-4 hidden md:block">
-              <div className="relative group">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
-                  search
-                </span>
-                <input
-                  className="w-full bg-surface-container-lowest border border-outline-variant/25 rounded-full py-2 pl-10 pr-4 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-1 focus:ring-gold-accent transition-all"
-                  placeholder="Search experiences, mentors..."
-                  type="text"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button className="w-10 h-10 rounded-full bg-white dark:bg-surface-container border border-outline-variant/25 flex items-center justify-center text-outline hover:text-gold-accent transition-colors">
-                <span className="material-symbols-outlined">help_outline</span>
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover rounded-full"
-                    src={avatarSrc}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50"
-                  >
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentor'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard' }]} />
 
           {/* Content */}
-          <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-6 lg:space-y-8 lg:p-8">
             {/* Welcome banner */}
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="relative overflow-hidden rounded-xl border border-outline-variant/20 bg-white p-5 dark:bg-surface-container-lowest sm:p-8">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
-              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
+              <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl -ml-48 -mb-48" />
 
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+              <div className="relative z-10 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center md:gap-6">
                 <div className="space-y-2">
-                  <h1 className="font-serif-alt text-4xl font-bold text-on-surface">
+                  <h1 className="font-serif-alt text-2xl font-bold text-on-surface sm:text-3xl lg:text-4xl">
                     Welcome back, {firstName} 👋
                   </h1>
-                  <p className="text-on-surface-variant text-sm max-w-md">
-                    Role: <span className="text-gold-accent font-bold">mentor</span> · {user?.email}
+                  <p className="max-w-md text-xs text-on-surface-variant sm:text-sm">
+                    Role: <span className="text-rose-600 font-bold dark:text-rose-400">mentor</span> · {user?.email}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
                   <Link
                     to="/dashboard/stories/new"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-[#f43f5e] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98] sm:w-auto sm:px-6 sm:py-3"
                   >
                     + New Story
                   </Link>
                   {canManageEvents && (
                     <Link
                       to="/events/new"
-                      className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-4 py-2.5 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50 sm:min-h-[48px] sm:w-auto sm:px-6 sm:py-3"
                     >
                       + New Event
                     </Link>
@@ -425,119 +441,306 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               </div>
             </section>
 
-            <div className="grid grid-cols-12 gap-8">
+            <div className="grid grid-cols-12 gap-5 lg:gap-8">
               {/* Left column */}
-              <div className="col-span-12 lg:col-span-8 space-y-8">
+              <div className="col-span-12 space-y-5 lg:col-span-8 lg:space-y-8">
                 {/* Activity grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Published</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myStories.length}</h4>
-                      <div className="h-8 w-20 bg-primary/10 rounded-md" />
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        auto_stories
+                      </span>
                     </div>
                     <p className="text-[10px] text-outline">Your published stories</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
-                      <span className="text-[10px] bg-gold-accent/10 text-gold-accent px-2 py-1 rounded">My events</span>
+                      <span className="text-[10px] bg-rose-500/10 text-rose-600 px-2 py-1 rounded dark:bg-rose-500/15 dark:text-rose-400">My events</span>
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Community Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews + totalLikes}</h4>
-                      <div className="text-tertiary">
-                        <span className="material-symbols-outlined">stars</span>
-                      </div>
+                      <span className="material-symbols-outlined text-[#f43f5e] text-[24px]" aria-hidden>
+                        stars
+                      </span>
                     </div>
                     <p className="text-[10px] text-tertiary">Views + likes combined</p>
                   </div>
                 </div>
 
-                {/* Recent stories (your stories) */}
-                <section className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Latest Stories</h2>
-                    <Link className="text-gold-accent text-xs font-bold hover:underline flex items-center gap-1 uppercase tracking-wider" to="/stories">
-                      View all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    </Link>
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Monthly Trend</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Last 6 months
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2 items-end h-40">
+                      {monthlyTrend.buckets.map((b) => {
+                        const storiesH = Math.max(6, Math.round((b.stories / monthlyTrend.maxValue) * 92));
+                        const sessionsH = Math.max(6, Math.round((b.sessions / monthlyTrend.maxValue) * 92));
+                        return (
+                          <div key={b.key} className="flex flex-col items-center gap-1">
+                            <div className="flex items-end gap-1 h-28">
+                              <span
+                                className="w-3 rounded-md bg-[#f43f5e]"
+                                style={{ height: `${storiesH}%` }}
+                                title={`Stories: ${b.stories}`}
+                              />
+                              <span
+                                className="w-3 rounded-md border border-[#f43f5e]/40 bg-rose-100"
+                                style={{ height: `${sessionsH}%` }}
+                                title={`Sessions: ${b.sessions}`}
+                              />
+                            </div>
+                            <span className="text-[10px] font-semibold text-outline">{b.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex items-center gap-4 text-[11px] text-outline">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm bg-[#f43f5e]" /> Stories
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2.5 w-2.5 rounded-sm border border-[#f43f5e]/50 bg-rose-100" /> Sessions
+                      </span>
+                    </div>
                   </div>
 
-                  {myStories.length === 0 ? (
-                    <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 text-on-surface-variant">
-                      You haven&apos;t written any stories yet.
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Engagement Mix</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#f43f5e] bg-[#f43f5e]/10 px-2 py-1 rounded-full">
+                        Likes / Comments / Views
+                      </span>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {myStories.slice(0, 4).map((s) => (
-                        <div key={s._id} className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-5 hover:border-gold-accent/40 transition-colors">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-serif-alt text-lg font-bold text-on-surface line-clamp-1">{s.title}</h3>
-                            <Link to={`/stories/${s._id}`} className="text-outline hover:text-gold-accent transition-colors">
-                              <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                            </Link>
+                    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-5">
+                      <div
+                        className="h-28 w-28 rounded-full border border-outline-variant/20"
+                        style={{
+                          background: `conic-gradient(#f43f5e 0% ${engagement.likesPct}%, #fb7185 ${engagement.likesPct}% ${engagement.likesPct + engagement.commentsPct}%, #ffd1e7 ${engagement.likesPct + engagement.commentsPct}% 100%)`,
+                        }}
+                      />
+                      <div className="space-y-2 text-xs">
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#f43f5e]" /> Likes: {engagement.likes}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#fb7185]" /> Comments: {engagement.comments}
+                        </p>
+                        <p className="flex items-center gap-2 text-on-surface">
+                          <span className="h-2.5 w-2.5 rounded-full bg-[#ffd1e7] border border-[#f43f5e]/20" /> Views: {engagement.views}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mini Goals / Progress</h3>
+                      <span className="text-[10px] px-2 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold uppercase tracking-wider">
+                        {monthLabel}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {goals.map((g) => {
+                        const pct = Math.min(100, Math.round((g.value / g.target) * 100));
+                        return (
+                          <div key={g.key} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <p className="font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px] text-[#f43f5e]">{g.icon}</span>
+                                {g.label}
+                              </p>
+                              <p className="text-outline tabular-nums">{g.value}/{g.target}</p>
+                            </div>
+                            <div className="h-2 rounded-full bg-outline-variant/20 overflow-hidden">
+                              <div className="h-2 rounded-full bg-[#f43f5e]" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                          {s.excerpt && <p className="text-on-surface-variant text-sm mt-2 line-clamp-2">{s.excerpt}</p>}
-                          <div className="mt-4 flex items-center justify-between text-xs text-outline">
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">visibility</span> {s.views || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[16px]">favorite</span> {s.likeCount || 0}
-                            </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-4">
+                    <h3 className="font-serif-alt text-xl font-bold text-on-surface">Recent Activity Feed</h3>
+                    <div className="space-y-2.5">
+                      {recentActivity.map((a, idx) => (
+                        <div key={`${a.title}-${idx}`} className="rounded-lg border border-outline-variant/15 bg-surface-container-lowest/70 px-3 py-2.5">
+                          <p className="text-sm font-semibold text-on-surface flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px] text-[#f43f5e]">{a.icon}</span>
+                            <span className="line-clamp-1">{a.title}</span>
+                          </p>
+                          <p className="mt-1 text-[11px] text-outline pl-6">{a.meta}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+
+              {/* Right column */}
+              <div className="col-span-12 space-y-5 lg:col-span-4 lg:space-y-6">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
+                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-black dark:text-neutral-100">calendar_today</span> Upcoming Events
+                  </h3>
+                  {myEvents.length === 0 ? (
+                    <p className="text-outline text-sm">No registered events yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {myEvents.slice(0, 3).map((e) => {
+                        const coverUrl = menteeEventCoverUrl(e);
+                        const whenLine = menteeEventDateTimeLine(e);
+                        return (
+                          <Link
+                            key={e._id}
+                            to={`/events/${e._id}`}
+                            className="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          >
+                            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-slate-100 dark:bg-slate-800">
+                              {coverUrl ? (
+                                <img
+                                  src={coverUrl}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-full items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+                                  aria-hidden
+                                >
+                                  <span className="material-symbols-outlined text-[26px] text-rose-200 dark:text-rose-800/70">
+                                    event
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
+                              {whenLine && (
+                                <p className="text-[10px] text-outline mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px] shrink-0 text-rose-600 dark:text-rose-400">
+                                    schedule
+                                  </span>
+                                  <span className="min-w-0 line-clamp-1">{whenLine}</span>
+                                </p>
+                              )}
+                              <p className={`text-[10px] text-outline flex items-center gap-1 ${whenLine ? 'mt-0.5' : 'mt-1'}`}>
+                                <span className="material-symbols-outlined text-[12px] shrink-0 text-outline">
+                                  {e.type === 'virtual' ? 'videocam' : 'location_on'}
+                                </span>
+                                <span className="min-w-0 line-clamp-1">{menteeEventLocationLine(e)}</span>
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <Link to="/dashboard/events" className="text-black dark:text-neutral-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                    Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </Link>
+                </div>
+
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
+                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+                    <Link
+                      to="/dashboard/stories/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg bg-[#f43f5e] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-[#e11d48]"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">auto_stories</span> New Story
+                    </Link>
+                    <Link
+                      to="/events/new"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">event</span> New Event
+                    </Link>
+                    <Link
+                      to="/dashboard/mentorship"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">groups</span> Mentorship
+                    </Link>
+                    <Link
+                      to="/dashboard/forum"
+                      className="inline-flex min-h-[46px] items-center justify-center gap-1.5 rounded-lg border-2 border-[#f43f5e]/35 bg-white px-3 py-2 text-xs font-bold text-on-surface transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">forum</span> Forum
+                    </Link>
+                  </div>
+                </div>
+
+                <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Your Latest Stories</h3>
+                    <Link
+                      className="text-[11px] font-bold uppercase tracking-wider text-[#f43f5e] hover:text-[#e11d48] flex items-center gap-1"
+                      to="/dashboard/stories"
+                    >
+                      View all <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </Link>
+                  </div>
+                  {myStories.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant">You haven&apos;t written any stories yet.</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {myStories.slice(0, 3).map((s) => (
+                        <div key={s._id} className="rounded-lg border border-outline-variant/20 bg-surface-container-lowest/80 px-3 py-2.5 hover:border-rose-500/40 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-11 w-14 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-white">
+                              <img
+                                src={s.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=180&h=140&fit=crop&q=80'}
+                                alt={s.title || 'Story'}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-on-surface line-clamp-1">{s.title}</p>
+                                <Link to={`/stories/${s._id}`} className="text-outline hover:text-rose-600 transition-colors">
+                                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                </Link>
+                              </div>
+                              <div className="mt-1.5 flex items-center gap-4 text-[11px] text-outline">
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[14px] text-[#f43f5e]">visibility</span> {s.views ?? s.viewCount ?? 0}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <span
+                                    className="material-symbols-outlined text-[14px] text-[#f43f5e]"
+                                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}
+                                  >
+                                    favorite
+                                  </span>
+                                  {s.likeCount ?? 0}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </section>
-              </div>
-
-              {/* Right column */}
-              <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
-                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
-                  </h3>
-                  {myEvents.length === 0 ? (
-                    <p className="text-outline text-sm">No registered events yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {myEvents.slice(0, 2).map((e) => (
-                        <Link
-                          key={e._id}
-                          to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
-                        >
-                          <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
-                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link
-                      to="/stories/new"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">auto_stories</span> New Story
-                    </Link>
-                    <Link
-                      to="/mentors"
-                      className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">groups</span> Mentorship
-                    </Link>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -547,17 +750,14 @@ function MentorDashboard({ user, myStories, myEvents, canManageEvents }) {
               </p>
             </footer>
           </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 }
 
-function MenteeDashboard({ user, myStories, myEvents }) {
+function MenteeDashboard({ user, myStories, myEvents, likedStoriesCount }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Mentee';
   const navigate = useNavigate();
   const { logout, updateUser } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const menteeUserId = user?.id ?? user?._id;
   const menteePromptKey = menteeUserId ? `leadsher_mentee_dashboard_profile_${menteeUserId}` : '';
@@ -611,7 +811,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
   };
 
   const totalViews = useMemo(
-    () => myStories.reduce((a, s) => a + (s.views || 0), 0),
+    () => myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0),
     [myStories]
   );
 
@@ -620,9 +820,8 @@ function MenteeDashboard({ user, myStories, myEvents }) {
     'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face&q=80';
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        {/* First-time mentee profile modal */}
+    <>
+      {/* First-time mentee profile modal */}
         {menteeProfileOpen && (
           <div
             className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-sm"
@@ -713,135 +912,12 @@ function MenteeDashboard({ user, myStories, myEvents }) {
           </div>
         )}
 
-        {/* Fixed left sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          {/* Profile — icon opens menu with Profile link */}
-          <div className="p-4 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img alt="" className="w-full h-full object-cover rounded-full" src={menteeAvatarSrc} />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <p className="text-on-surface font-bold text-base text-center leading-tight px-1">{firstName}</p>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-              { to: '/dashboard/mentors', icon: 'groups', label: 'Mentorship' },
-              { to: '/dashboard/events', icon: 'event', label: 'Events' },
-
-              { to: '/dashboard/stories', icon: 'auto_stories', label: 'Stories' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all group ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="p-4 mt-auto border-t border-outline-variant/20 space-y-3">
-            <Link
-              to="/mentors"
-              className="w-full bg-gradient-to-r from-gold-accent to-primary text-white text-xs font-bold py-3 rounded-lg shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              FIND A MENTOR
-            </Link>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="ml-[260px] flex-1 flex flex-col min-h-screen">
-          {/* Top navbar */}
-          <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-outline">
-              <Link className="hover:text-gold-accent transition-colors" to="/">
-                Home
-              </Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface">Dashboard</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors focus:outline-none focus:ring-2 focus:ring-gold-accent/40"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen ? 'true' : 'false'}
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src={menteeAvatarSrc}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <div role="menu" className="absolute right-0 mt-3 w-56 bg-white dark:bg-surface-container border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="font-sans-modern text-sm font-semibold text-on-surface line-clamp-1">
-                        {user?.name || 'Mentee'}
-                      </p>
-                      <p className="font-sans-modern text-xs text-outline line-clamp-1">
-                        {user?.email}
-                      </p>
-                    </div>
-                    <Link
-                      to="/dashboard/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="block w-full text-left px-5 py-3 font-sans-modern text-sm text-on-surface hover:bg-surface-container-low transition-colors"
-                      role="menuitem"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 font-sans-modern text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                      role="menuitem"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </header>
+          <DashboardTopBar crumbs={[{ label: 'Dashboard' }]} />
 
           {/* Content */}
           <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
             {/* Welcome banner */}
-            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-8 relative overflow-hidden">
+            <section className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-8 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-tertiary/10 rounded-full blur-3xl -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gold-accent/10 rounded-full blur-3xl -ml-48 -mb-48" />
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -856,7 +932,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/dashboard/mentors"
-                    className="bg-gold-accent text-white px-6 py-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-gold-accent/10"
+                    className="bg-black text-white px-6 py-3 rounded-lg font-bold text-sm hover:bg-neutral-900 active:scale-95 transition-all"
                   >
                     Find a Mentor
                   </Link>
@@ -874,7 +950,7 @@ function MenteeDashboard({ user, myStories, myEvents }) {
               {/* Left column */}
               <div className="col-span-12 lg:col-span-8 space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Registered Events</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{myEvents.length}</h4>
@@ -882,15 +958,23 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                     </div>
                     <p className="text-[10px] text-outline">Events you joined</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
-                    <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories Saved</p>
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
+                    <p className="text-xs uppercase tracking-widest text-outline font-bold">Stories liked</p>
                     <div className="flex items-end justify-between">
-                      <h4 className="text-2xl font-bold text-on-surface">0</h4>
-                      <div className="h-8 w-20 bg-tertiary/10 rounded-md" />
+                      <h4 className="text-2xl font-bold text-on-surface tabular-nums">{likedStoriesCount}</h4>
+                      <Link
+                        to="/stories"
+                        className="inline-flex h-8 items-center rounded-md bg-rose-500/10 px-2 text-rose-700 transition-colors hover:bg-rose-500/20 dark:text-rose-300"
+                        title="Browse stories"
+                      >
+                        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          favorite
+                        </span>
+                      </Link>
                     </div>
-                    <p className="text-[10px] text-outline">Wishlist (coming soon)</p>
+                    <p className="text-[10px] text-outline">Published stories you hearted</p>
                   </div>
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow p-5 rounded-xl space-y-2">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 p-5 rounded-xl space-y-2">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">Reading Impact</p>
                     <div className="flex items-end justify-between">
                       <h4 className="text-2xl font-bold text-on-surface">{totalViews}</h4>
@@ -905,17 +989,22 @@ function MenteeDashboard({ user, myStories, myEvents }) {
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Your Recent Activity</h2>
-                    <Link className="text-gold-accent text-xs font-bold hover:underline flex items-center gap-1 uppercase tracking-wider" to="/events">
+                    <Link className="text-black dark:text-neutral-100 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" to="/dashboard/events">
                       View events <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   </div>
 
-                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6">
+                  <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6">
                     <p className="text-on-surface-variant text-sm">
                       Start by exploring mentors and joining an event. Your mentorship requests will appear here.
                     </p>
                     <div className="mt-4 flex gap-3 flex-wrap">
-                      <Link to="/mentors" className="btn-primary">Explore mentors</Link>
+                      <Link
+                        to="/dashboard/mentors"
+                        className="inline-flex items-center justify-center px-8 py-4 bg-black text-white font-label text-xs tracking-[0.2em] uppercase transition-transform hover:-translate-y-0.5 hover:bg-neutral-900 active:scale-[0.98]"
+                      >
+                        Explore mentors
+                      </Link>
                       <Link to="/dashboard/stories" className="btn-outline">Read stories</Link>
                     </div>
                   </div>
@@ -924,42 +1013,83 @@ function MenteeDashboard({ user, myStories, myEvents }) {
 
               {/* Right column */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gold-accent">calendar_today</span> Upcoming Events
+                    <span className="material-symbols-outlined text-black dark:text-neutral-100">calendar_today</span> Upcoming Events
                   </h3>
                   {myEvents.length === 0 ? (
                     <p className="text-outline text-sm">No registered events yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {myEvents.slice(0, 3).map((e) => (
-                        <Link
-                          key={e._id}
-                          to={`/events/${e._id}`}
-                          className="block p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
-                        >
-                          <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
-                          <p className="text-[10px] text-outline mt-1 line-clamp-1">{e.location?.city || e.location?.venue || 'Online'}</p>
-                        </Link>
-                      ))}
+                      {myEvents.slice(0, 3).map((e) => {
+                        const coverUrl = menteeEventCoverUrl(e);
+                        const whenLine = menteeEventDateTimeLine(e);
+                        return (
+                          <Link
+                            key={e._id}
+                            to={`/events/${e._id}`}
+                            className="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/20 hover:border-gold-accent/40 transition-colors rounded-lg"
+                          >
+                            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-outline-variant/20 bg-slate-100 dark:bg-slate-800">
+                              {coverUrl ? (
+                                <img
+                                  src={coverUrl}
+                                  alt=""
+                                  className="size-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div
+                                  className="flex size-full items-center justify-center bg-gradient-to-br from-rose-50 to-rose-100/60 dark:from-rose-950/35 dark:to-rose-950/15"
+                                  aria-hidden
+                                >
+                                  <span className="material-symbols-outlined text-[26px] text-rose-200 dark:text-rose-800/70">
+                                    event
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-on-surface font-bold text-sm line-clamp-1">{e.title}</p>
+                              {whenLine && (
+                                <p className="text-[10px] text-outline mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[12px] shrink-0 text-rose-600 dark:text-rose-400">
+                                    schedule
+                                  </span>
+                                  <span className="min-w-0 line-clamp-1">{whenLine}</span>
+                                </p>
+                              )}
+                              <p
+                                className={`text-[10px] text-outline flex items-center gap-1 ${whenLine ? 'mt-0.5' : 'mt-1'}`}
+                              >
+                                <span className="material-symbols-outlined text-[12px] shrink-0 text-outline">
+                                  {e.type === 'virtual' ? 'videocam' : 'location_on'}
+                                </span>
+                                <span className="min-w-0 line-clamp-1">{menteeEventLocationLine(e)}</span>
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
-                  <Link to="/events" className="text-gold-accent text-xs font-bold hover:underline uppercase tracking-wider flex items-center gap-1">
+                  <Link to="/dashboard/events" className="text-black dark:text-neutral-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                     Browse all <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </Link>
                 </div>
 
-                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 editorial-shadow rounded-xl p-6 space-y-4">
+                <div className="bg-white dark:bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-6 space-y-4">
                   <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/mentors"
+                      to="/dashboard/mentors"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">groups</span> Find Mentors
                     </Link>
                     <Link
-                      to="/events"
+                      to="/dashboard/events"
                       className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:border-gold-accent/40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">event</span> Events
@@ -970,18 +1100,83 @@ function MenteeDashboard({ user, myStories, myEvents }) {
             </div>
 
             <footer className="pt-6 border-t border-outline-variant/20 text-center">
-              <p className="text-[10px] text-outline tracking-widest uppercase">
+              <p className="text-[10px] text-black dark:text-neutral-100 tracking-widest uppercase">
                 © {new Date().getFullYear()} LeadsHer. Built for brilliance.
               </p>
             </footer>
           </div>
-        </main>
-      </div>
+    </>
+  );
+}
+
+const MANAGE_ACCOUNT_PAGE_SIZE = 20;
+
+function getManageAccountPageItems(current, total) {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total]);
+  for (let p = current - 1; p <= current + 1; p++) {
+    if (p >= 1 && p <= total) pages.add(p);
+  }
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push('ellipsis');
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+function ManageAccountPaginationBar({ page, totalPages, totalItems, onPageChange }) {
+  if (totalPages <= 1 || totalItems === 0) return null;
+  const items = getManageAccountPageItems(page, totalPages);
+  const start = (page - 1) * MANAGE_ACCOUNT_PAGE_SIZE + 1;
+  const end = Math.min(page * MANAGE_ACCOUNT_PAGE_SIZE, totalItems);
+  const btnBase =
+    'min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg border-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1';
+  const btnIdle = 'border-outline-variant/35 bg-white text-on-surface hover:border-[#f43f5e]/40 hover:bg-rose-50';
+  const btnActive = 'border-[#f43f5e] bg-[#f43f5e] text-white shadow-sm';
+  const navBtn = `${btnBase} px-3 ${btnIdle} disabled:opacity-40 disabled:pointer-events-none`;
+  return (
+    <div className="mt-6 border-t border-outline-variant/20 pt-4">
+      <p className="mb-3 text-center text-xs text-on-surface-variant">
+        Showing {start}–{end} of {totalItems} (page {page} of {totalPages})
+      </p>
+      <nav className="flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
+        <button type="button" className={navBtn} disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          Previous
+        </button>
+        {items.map((item, idx) =>
+          item === 'ellipsis' ? (
+            <span key={`ellipsis-${idx}`} className="px-1 text-on-surface-variant select-none" aria-hidden="true">
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              className={`${btnBase} ${page === item ? btnActive : btnIdle}`}
+              onClick={() => onPageChange(item)}
+              aria-current={page === item ? 'page' : undefined}
+            >
+              {item}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          className={navBtn}
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </button>
+      </nav>
     </div>
   );
 }
 
-function AdminDashboard({ user, myStories, myEvents }) {
+function AdminDashboard({ user }) {
   const firstName = user?.name?.split(' ')?.[0] || 'Admin';
   const location = useLocation();
   const navigate = useNavigate();
@@ -1004,16 +1199,27 @@ function AdminDashboard({ user, myStories, myEvents }) {
   const [activeMentorships, setActiveMentorships] = useState([]);
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [reportData, setReportData] = useState(null);
+  const [platformStoryTotal, setPlatformStoryTotal] = useState(0);
+  const [platformEventTotal, setPlatformEventTotal] = useState(0);
+  const [manageAccountSearch, setManageAccountSearch] = useState('');
+  const [manageAccountFilterOpen, setManageAccountFilterOpen] = useState(false);
+  const [mentorAccountPage, setMentorAccountPage] = useState(1);
+  const [menteeAccountPage, setMenteeAccountPage] = useState(1);
+  const [terminateDialog, setTerminateDialog] = useState({ open: false, id: null });
+  const [terminateSubmitting, setTerminateSubmitting] = useState(false);
+
   const loadAdminData = async () => {
     setLoadingAdmin(true);
     try {
-      const [u, mp, rq, ac, fb, rp] = await Promise.allSettled([
+      const [u, mp, rq, ac, fb, rp, st, ev] = await Promise.allSettled([
         authApi.adminListUsers({ limit: 5000 }),
         mentorApi.getAll({ limit: 500 }),
         mentorshipApi.adminGetRequests(),
         mentorshipApi.adminGetActive(),
         mentorshipApi.adminGetFeedback(),
         mentorshipApi.adminGetReports(),
+        storyApi.getAll({ limit: 1, page: 1 }),
+        eventApi.getAll({ limit: 10000, page: 1 }),
       ]);
       let userList = [];
       if (u.status === 'fulfilled') {
@@ -1025,11 +1231,13 @@ function AdminDashboard({ user, myStories, myEvents }) {
 
       if (mp.status === 'fulfilled') setMentorProfiles(mp.value.data?.data || mp.value.data?.mentors || []);
       if (rq.status === 'fulfilled') {
-        const raw = rq.value.data?.data || [];
+        const body = rq.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setRequests(raw.map((r) => enrichRequest(r, authIdx)));
       }
       if (ac.status === 'fulfilled') {
-        const raw = ac.value.data?.data || [];
+        const body = ac.value.data || {};
+        const raw = Array.isArray(body.data) ? body.data : [];
         setActiveMentorships(raw.map((m) => enrichMentorship(m, authIdx)));
       }
       if (fb.status === 'fulfilled') {
@@ -1037,6 +1245,26 @@ function AdminDashboard({ user, myStories, myEvents }) {
         setFeedbackRows(raw.map((f) => enrichFeedbackRow(f, authIdx)));
       }
       if (rp.status === 'fulfilled') setReportData(rp.value.data?.data || null);
+
+      if (st.status === 'fulfilled') {
+        const d = st.value.data || {};
+        const total = d.pagination?.total;
+        setPlatformStoryTotal(
+          typeof total === 'number'
+            ? total
+            : (Array.isArray(d.stories) ? d.stories.length : 0)
+        );
+      } else {
+        setPlatformStoryTotal(0);
+      }
+
+      if (ev.status === 'fulfilled') {
+        const d = ev.value.data || {};
+        const events = d.data?.events || d.events || [];
+        setPlatformEventTotal(Array.isArray(events) ? events.length : 0);
+      } else {
+        setPlatformEventTotal(0);
+      }
     } finally {
       setLoadingAdmin(false);
     }
@@ -1109,14 +1337,27 @@ function AdminDashboard({ user, myStories, myEvents }) {
     }
   };
 
-  const terminateMentorship = async (id) => {
-    if (!window.confirm('Terminate this mentorship?')) return;
+  const openTerminateDialog = (id) => {
+    setTerminateDialog({ open: true, id });
+  };
+
+  const closeTerminateDialog = () => {
+    if (terminateSubmitting) return;
+    setTerminateDialog({ open: false, id: null });
+  };
+
+  const confirmTerminateMentorship = async () => {
+    if (!terminateDialog.id) return;
+    setTerminateSubmitting(true);
     try {
-      await mentorshipApi.adminTerminate(id, 'Terminated by admin');
+      await mentorshipApi.adminTerminate(terminateDialog.id, 'Terminated by admin');
       toast.success('Mentorship terminated');
+      setTerminateDialog({ open: false, id: null });
       await loadAdminData();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to terminate mentorship');
+    } finally {
+      setTerminateSubmitting(false);
     }
   };
 
@@ -1147,6 +1388,97 @@ function AdminDashboard({ user, myStories, myEvents }) {
     () => mentorMenteeUsers.filter((u) => (u?.role || '').toLowerCase() === 'mentee'),
     [mentorMenteeUsers]
   );
+
+  const filteredMentorUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return mentorUsers;
+    return mentorUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [mentorUsers, manageAccountSearch]);
+
+  const filteredMenteeUsers = useMemo(() => {
+    const q = manageAccountSearch.trim().toLowerCase();
+    if (!q) return menteeUsers;
+    return menteeUsers.filter((u) => {
+      const name = String(u?.name || '').toLowerCase();
+      const email = String(u?.email || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [menteeUsers, manageAccountSearch]);
+
+  useEffect(() => {
+    setMentorAccountPage(1);
+    setMenteeAccountPage(1);
+  }, [manageAccountSearch]);
+
+  const mentorTotalPages = Math.max(1, Math.ceil(filteredMentorUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+  const menteeTotalPages = Math.max(1, Math.ceil(filteredMenteeUsers.length / MANAGE_ACCOUNT_PAGE_SIZE));
+
+  useEffect(() => {
+    setMentorAccountPage((p) => Math.min(p, mentorTotalPages));
+  }, [mentorTotalPages]);
+
+  useEffect(() => {
+    setMenteeAccountPage((p) => Math.min(p, menteeTotalPages));
+  }, [menteeTotalPages]);
+
+  const mentorPageSafe = Math.min(Math.max(1, mentorAccountPage), mentorTotalPages);
+  const menteePageSafe = Math.min(Math.max(1, menteeAccountPage), menteeTotalPages);
+
+  const paginatedMentorUsers = useMemo(() => {
+    const start = (mentorPageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMentorUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMentorUsers, mentorPageSafe]);
+
+  const paginatedMenteeUsers = useMemo(() => {
+    const start = (menteePageSafe - 1) * MANAGE_ACCOUNT_PAGE_SIZE;
+    return filteredMenteeUsers.slice(start, start + MANAGE_ACCOUNT_PAGE_SIZE);
+  }, [filteredMenteeUsers, menteePageSafe]);
+
+  const exportManageAccountCsv = () => {
+    const escape = (val) => {
+      const s = String(val ?? '');
+      if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    let headers;
+    const lines = [];
+    if (manageAccountTab === 'mentors') {
+      headers = ['Name', 'Email', 'Verified', 'Suspended', 'Has mentor profile'];
+      filteredMentorUsers.forEach((u) => {
+        const mp = mentorProfileByUser.get(String(u.id || u._id));
+        lines.push(
+          [
+            escape(u.name),
+            escape(u.email),
+            mp?.isVerified ? 'Yes' : 'No',
+            u.isSuspended ? 'Yes' : 'No',
+            mp ? 'Yes' : 'No',
+          ].join(',')
+        );
+      });
+    } else {
+      headers = ['Name', 'Email', 'Suspended'];
+      filteredMenteeUsers.forEach((u) => {
+        lines.push([escape(u.name), escape(u.email), u.isSuspended ? 'Yes' : 'No'].join(','));
+      });
+    }
+    const csv = [headers.join(','), ...lines].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leadsher-manage-account-${manageAccountTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded');
+  };
+
   const newestUnverifiedMentors = useMemo(() => (
     mentorProfiles
       .filter((p) => !p?.isVerified)
@@ -1191,218 +1523,17 @@ function AdminDashboard({ user, myStories, myEvents }) {
   }, [reportData, requests, activeMentorships, feedbackRows]);
 
   return (
-    <div className="min-h-screen">
-      <div className="relative flex min-h-screen overflow-hidden bg-surface text-on-surface">
-        <aside className="fixed left-0 top-0 h-screen w-[280px] bg-white border-r border-outline-variant/20 flex flex-col z-40">
-          <div className="p-6 border-b border-outline-variant/20">
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-2 border-gold-accent p-0.5 overflow-hidden">
-                  <img
-                    alt="Admin avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
-                </div>
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
-              </div>
-              <div className="text-center">
-                <p className="text-on-surface font-bold text-lg leading-tight">{user?.name || 'Admin'}</p>
-                <span className="inline-flex mt-2 px-3 py-1 rounded-full bg-gold-accent/15 text-gold-accent text-[10px] font-bold tracking-widest uppercase border border-gold-accent/25">
-                  Admin
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {[
-              { to: '/dashboard', icon: 'space_dashboard', label: 'Admin Dashboard' },
-              { to: '/dashboard/manage-account', icon: 'manage_accounts', label: 'Manage User Account' },
-              { to: '/dashboard/manage-stories', icon: 'auto_stories', label: 'Manage Stories' },
-              { to: '/dashboard/events', icon: 'event', label: 'Manage Events' },
-              { to: '/dashboard/manage-mentors', icon: 'groups', label: 'Manage Mentorship' },
-              { to: '/dashboard/resources', icon: 'library_books', label: 'Manage Resources' },
-              { to: '/dashboard/forum', icon: 'forum', label: 'Manage Forum' },
-              { to: '/dashboard/settings', icon: 'settings', label: 'Admin Settings' },
-            ].map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg border-l-2 transition-all ${
-                    isActive
-                      ? 'text-gold-accent bg-gold-accent/5 border-gold-accent'
-                      : 'text-outline hover:text-on-surface hover:bg-surface-container-low border-transparent'
-                  }`
-                }
-              >
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                <span className="text-sm font-medium">{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-
-        <main className={`ml-[280px] flex-1 flex flex-col min-h-screen ${isManageMentorsRoute ? 'bg-surface' : ''}`}>
-          {isManageMentorsRoute ? (
-            <header className="relative w-full h-16 min-h-[64px] sticky top-0 z-50 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 border-b border-outline-variant/20">
-              <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline shrink-0 min-w-0 font-sans-modern">
-                <Link className="hover:text-primary transition-colors" to="/">
-                  Home
-                </Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <Link className="hover:text-primary transition-colors" to="/dashboard">
-                  Dashboard
-                </Link>
-                <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                {isViewAllMentorshipRequests ? (
-                  <>
-                    <Link
-                      className="hover:text-primary transition-colors"
-                      to="/dashboard/manage-mentors"
-                    >
-                      Mentorship
-                    </Link>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">All Requests</span>
-                  </>
-                ) : isViewAllActiveMentorship ? (
-                  <>
-                    <Link
-                      className="hover:text-primary transition-colors"
-                      to="/dashboard/manage-mentors"
-                    >
-                      Mentorship
-                    </Link>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    <span className="text-on-surface">All Active</span>
-                  </>
-                ) : (
-                  <span className="text-on-surface">Mentorship</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 sm:gap-4 ml-auto shrink-0">
-                <div className="flex items-center gap-3 pl-1 sm:pl-2">
-                  <div className="text-right hidden lg:block">
-                    <p className="text-xs font-bold text-on-surface font-sans-modern">{user?.name || 'Admin'}</p>
-                    <p className="text-[10px] text-on-surface-variant font-sans-modern">Global Admin</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setProfileOpen((v) => !v)}
-                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-gold-accent/30"
-                  >
-                    <img
-                      alt=""
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-gold-accent/20"
-                      src={
-                        user?.profilePicture ||
-                        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80'
-                      }
-                    />
-                  </button>
-                </div>
-              </div>
-              {profileOpen && (
-                <div className="absolute right-8 top-14 w-56 bg-white border border-outline-variant/20 editorial-shadow z-[60] rounded-xl overflow-hidden">
-                  <div className="px-5 py-4 border-b border-outline-variant/15">
-                    <p className="text-sm font-semibold text-on-surface line-clamp-1 font-sans-modern">{user?.name || 'Admin'}</p>
-                    <p className="text-xs text-outline line-clamp-1 font-sans-modern">{user?.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await logout();
-                        toast.success('You have signed out.');
-                      } finally {
-                        setProfileOpen(false);
-                        navigate('/');
-                      }
-                    }}
-                    className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2 font-sans-modern"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </header>
-          ) : (
-            <header className="h-16 min-h-[64px] border-b border-outline-variant/20 bg-white/80 dark:bg-surface-container-lowest/90 backdrop-blur-md sticky top-0 z-30 px-8 flex items-center justify-between">
-              <div>
-                <div
-                  className={`flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-outline ${
-                    isManageMentorsRoute ? '' : 'mb-1'
-                  }`}
-                >
-                  <Link className="hover:text-gold-accent transition-colors" to="/">
-                    Home
-                  </Link>
-                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                  <Link className="hover:text-gold-accent transition-colors" to="/dashboard">
-                    Dashboard
-                  </Link>
-                  {isManageAccountRoute && (
-                    <>
-                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                      <span className="text-on-surface">Manage Account</span>
-                    </>
-                  )}
-                </div>
-                {isManageAccountRoute ? (
-                  <>
-                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Manage User Account</h1>
-                    <p className="text-xs text-outline uppercase tracking-widest">Mentor & mentee profile management</p>
-                  </>
-                ) : (
-                  <>
-                    <h1 className="font-serif-alt text-2xl font-bold text-on-surface">Welcome, {firstName}</h1>
-                    <p className="text-xs text-outline uppercase tracking-widest">Role: Admin · {user?.email}</p>
-                  </>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/25 hover:border-gold-accent transition-colors"
-                >
-                  <img
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face&q=80"
-                  />
-                </button>
-                {profileOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-white border border-outline-variant/20 editorial-shadow z-50">
-                    <div className="px-5 py-4 border-b border-outline-variant/15">
-                      <p className="text-sm font-semibold text-on-surface line-clamp-1">{user?.name || 'Admin'}</p>
-                      <p className="text-xs text-outline line-clamp-1">{user?.email}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await logout();
-                          toast.success('You have signed out.');
-                        } finally {
-                          setProfileOpen(false);
-                          navigate('/');
-                        }
-                      }}
-                      className="w-full text-left px-5 py-3 text-sm text-tertiary hover:bg-tertiary/5 transition-colors flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </header>
-          )}
+    <>
+          <AdminDashboardTopBar
+            user={user}
+            firstName={firstName}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+            isManageMentorsRoute={isManageMentorsRoute}
+            isManageAccountRoute={isManageAccountRoute}
+            isViewAllMentorshipRequests={isViewAllMentorshipRequests}
+            isViewAllActiveMentorship={isViewAllActiveMentorship}
+          />
 
           <div
             className="p-8 space-y-6 w-full flex-1 max-w-[1280px] mx-auto"
@@ -1411,15 +1542,15 @@ function AdminDashboard({ user, myStories, myEvents }) {
             {!isManageAccountRoute && !isManageMentorsRoute && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Total Stories', value: myStories.length, icon: 'auto_stories' },
-                { label: 'Total Events', value: myEvents.length, icon: 'event' },
+                { label: 'Total Stories', value: platformStoryTotal, icon: 'auto_stories' },
+                { label: 'Total Events', value: platformEventTotal, icon: 'event' },
                 { label: 'Active Mentorships', value: activeMentorships.length, icon: 'groups' },
                 { label: 'Requests', value: requests.length, icon: 'report' },
               ].map((card) => (
-                <div key={card.label} className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-5">
+                <div key={card.label} className="bg-white border border-outline-variant/20 rounded-xl p-5">
                   <div className="flex items-start justify-between">
                     <p className="text-xs uppercase tracking-widest text-outline font-bold">{card.label}</p>
-                    <span className="material-symbols-outlined text-gold-accent">{card.icon}</span>
+                    <span className="material-symbols-outlined text-[#f43f5e]">{card.icon}</span>
                   </div>
                   <p className="mt-4 text-3xl font-serif-alt font-bold text-on-surface">{card.value}</p>
                 </div>
@@ -1442,48 +1573,85 @@ function AdminDashboard({ user, myStories, myEvents }) {
                   />
                 )}
                 {isManageAccountRoute ? (
-                  <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
-                    <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Manage Mentor & Mentee Accounts</h2>
-                    <p className="text-on-surface-variant text-sm mt-2 mb-6">
-                      Separate views for mentors and mentees with quick moderation actions.
-                    </p>
-
+                  <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 p-1">
+                      <div
+                        className="flex items-center gap-1 rounded-xl border-2 border-outline-variant/30 bg-slate-50/80 p-1 shadow-inner"
+                        role="tablist"
+                        aria-label="Account type"
+                      >
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentors'}
                         onClick={() => setManageAccountTab('mentors')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentors'
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentors
                       </button>
                       <button
                         type="button"
+                        role="tab"
+                        aria-selected={manageAccountTab === 'mentees'}
                         onClick={() => setManageAccountTab('mentees')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        className={`min-h-[42px] px-5 rounded-lg text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/45 focus-visible:ring-offset-2 ${
                           manageAccountTab === 'mentees'
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'text-on-surface-variant hover:text-on-surface'
+                            ? 'bg-[#f43f5e] text-white shadow-md ring-1 ring-black/10'
+                            : 'border border-transparent bg-white text-on-surface shadow-sm hover:border-outline-variant/40 hover:bg-slate-50'
                         }`}
                       >
                         Mentees
                       </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
-                          <span className="material-symbols-outlined text-[15px]">filter_list</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setManageAccountFilterOpen((v) => !v)}
+                          className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-bold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/40 focus-visible:ring-offset-2 ${
+                            manageAccountFilterOpen || manageAccountSearch.trim()
+                              ? 'border-[#f43f5e] bg-rose-50 text-[#f43f5e] ring-1 ring-[#f43f5e]/20'
+                              : 'border-outline-variant/40 bg-white text-on-surface hover:border-outline-variant/60 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">filter_list</span>
                           Filter
                         </button>
-                        <button type="button" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-outline-variant/25 bg-white text-on-surface text-xs font-bold">
-                          <span className="material-symbols-outlined text-[15px]">download</span>
+                        <button
+                          type="button"
+                          onClick={exportManageAccountCsv}
+                          className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border-2 border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-slate-400 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+                        >
+                          <span className="material-symbols-outlined text-[20px] leading-none" aria-hidden="true">download</span>
                           Export
                         </button>
                       </div>
                     </div>
+
+                    {(manageAccountFilterOpen || manageAccountSearch.trim()) && (
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <input
+                          type="search"
+                          value={manageAccountSearch}
+                          onChange={(e) => setManageAccountSearch(e.target.value)}
+                          placeholder="Search by name or email…"
+                          className="min-w-[200px] flex-1 max-w-md rounded-lg border border-outline-variant/25 bg-white px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-[#f43f5e]/50 focus:outline-none focus:ring-1 focus:ring-[#f43f5e]/30"
+                          autoFocus={manageAccountFilterOpen}
+                        />
+                        {manageAccountSearch.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setManageAccountSearch('')}
+                            className="inline-flex min-h-[40px] items-center rounded-lg border-2 border-outline-variant/35 bg-white px-4 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/40 hover:bg-rose-50 hover:text-[#f43f5e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-2"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     <div className="h-1" />
 
@@ -1495,15 +1663,20 @@ function AdminDashboard({ user, myStories, myEvents }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentors</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-bold">
-                              {mentorUsers.length} mentors
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
+                              {manageAccountSearch.trim()
+                                ? `${filteredMentorUsers.length} of ${mentorUsers.length} mentors`
+                                : `${mentorUsers.length} mentors`}
                             </span>
                           </div>
                           {mentorUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentor accounts found.</p>
+                          ) : filteredMentorUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentors match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {mentorUsers.map((u) => {
+                              {paginatedMentorUsers.map((u) => {
                                 const mentorProfile = mentorProfileByUser.get(String(u.id || u._id));
                                 return (
                                   <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
@@ -1522,26 +1695,31 @@ function AdminDashboard({ user, myStories, myEvents }) {
                                         </div>
                                       </div>
                                       <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentor</span>
+                                        <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentor</span>
                                         <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                           mentorProfile?.isVerified
                                             ? 'border-green-300 bg-green-50 text-green-700'
-                                            : 'border-red-200 bg-red-50 text-red-600'
+                                            : 'border-amber-500/70 bg-amber-100 text-amber-900'
                                         }`}>
                                           {mentorProfile?.isVerified ? 'Verified' : 'Pending Verify'}
                                         </span>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-2 lg:w-[360px]">
-                                        <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                          <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                      <div className="grid grid-cols-3 gap-2 lg:w-[380px]">
+                                        <button
+                                          type="button"
+                                          onClick={() => editUserProfile(u)}
+                                          className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                          title="Edit profile"
+                                        >
+                                          <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             u.isSuspended
-                                              ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                              : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                              ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                              : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                           }`}
                                         >
                                           {u.isSuspended ? 'Reactivate' : 'Suspend'}
@@ -1550,11 +1728,11 @@ function AdminDashboard({ user, myStories, myEvents }) {
                                           type="button"
                                           disabled={!mentorProfile}
                                           onClick={() => mentorProfile && toggleVerifyMentor(mentorProfile)}
-                                          className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                          className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                             mentorProfile?.isVerified
-                                              ? 'border-outline-variant/25 bg-surface-container-lowest text-outline hover:text-on-surface'
-                                              : 'border-primary/40 bg-primary text-white hover:bg-primary/90'
-                                          } ${!mentorProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                              ? 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400'
+                                              : 'border-[#f43f5e] bg-[#f43f5e] text-white hover:bg-[#e11d48] focus-visible:ring-[#f43f5e]'
+                                          } ${!mentorProfile ? 'cursor-not-allowed opacity-50' : ''}`}
                                         >
                                           {!mentorProfile ? 'No profile' : mentorProfile.isVerified ? 'Unverify' : 'Verify'}
                                         </button>
@@ -1564,6 +1742,13 @@ function AdminDashboard({ user, myStories, myEvents }) {
                                 );
                               })}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={mentorPageSafe}
+                              totalPages={mentorTotalPages}
+                              totalItems={filteredMentorUsers.length}
+                              onPageChange={setMentorAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1572,15 +1757,20 @@ function AdminDashboard({ user, myStories, myEvents }) {
                         <section>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="font-serif-alt text-xl font-bold text-on-surface">Mentees</h3>
-                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary font-bold">
-                              {menteeUsers.length} mentees
+                            <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-[#f43f5e]/30 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">
+                              {manageAccountSearch.trim()
+                                ? `${filteredMenteeUsers.length} of ${menteeUsers.length} mentees`
+                                : `${menteeUsers.length} mentees`}
                             </span>
                           </div>
                           {menteeUsers.length === 0 ? (
                             <p className="text-sm text-on-surface-variant">No mentee accounts found.</p>
+                          ) : filteredMenteeUsers.length === 0 ? (
+                            <p className="text-sm text-on-surface-variant">No mentees match your search.</p>
                           ) : (
+                            <>
                             <div className="space-y-3">
-                              {menteeUsers.map((u) => (
+                              {paginatedMenteeUsers.map((u) => (
                                 <div key={u.id || u._id} className="border border-outline-variant/15 rounded-xl px-4 py-3 bg-white">
                                   <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -1597,24 +1787,29 @@ function AdminDashboard({ user, myStories, myEvents }) {
                                       </div>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-primary/15 bg-primary/10 text-primary font-bold">Mentee</span>
+                                      <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-[#f43f5e]/20 bg-[#f43f5e]/10 text-[#f43f5e] font-bold">Mentee</span>
                                       <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border font-bold ${
                                         u.isSuspended ? 'border-red-300 bg-red-50 text-red-700' : 'border-green-300 bg-green-50 text-green-700'
                                       }`}>
                                         {u.isSuspended ? 'Suspended' : 'Active'}
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 lg:w-[240px]">
-                                      <button type="button" onClick={() => editUserProfile(u)} className="px-2 py-1.5 rounded-md border border-outline-variant/20 bg-white text-on-surface hover:bg-surface-container-lowest">
-                                        <span className="material-symbols-outlined text-[15px] leading-none">edit_square</span>
+                                    <div className="grid grid-cols-2 gap-2 lg:w-[260px]">
+                                      <button
+                                        type="button"
+                                        onClick={() => editUserProfile(u)}
+                                        className="inline-flex min-h-[42px] items-center justify-center rounded-lg border-2 border-outline-variant/35 bg-white text-on-surface shadow-sm transition-colors hover:border-[#f43f5e]/45 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f43f5e]/35 focus-visible:ring-offset-1"
+                                        title="Edit profile"
+                                      >
+                                        <span className="material-symbols-outlined text-[22px] leading-none">edit_square</span>
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setSuspended(u.id || u._id, !u.isSuspended)}
-                                        className={`px-2.5 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-md border ${
+                                        className={`min-h-[42px] rounded-lg border-2 px-2 text-xs font-bold uppercase tracking-wide shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
                                           u.isSuspended
-                                            ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                            : 'border-red-300 bg-white text-red-600 hover:bg-red-50'
+                                            ? 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100 focus-visible:ring-green-400'
+                                            : 'border-red-400 bg-white text-red-600 hover:bg-red-50 focus-visible:ring-red-400'
                                         }`}
                                       >
                                         {u.isSuspended ? 'Reactivate' : 'Suspend'}
@@ -1624,6 +1819,13 @@ function AdminDashboard({ user, myStories, myEvents }) {
                                 </div>
                               ))}
                             </div>
+                            <ManageAccountPaginationBar
+                              page={menteePageSafe}
+                              totalPages={menteeTotalPages}
+                              totalItems={filteredMenteeUsers.length}
+                              onPageChange={setMenteeAccountPage}
+                            />
+                            </>
                           )}
                         </section>
                         )}
@@ -1638,7 +1840,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                     requests={requests}
                     activeMentorships={activeMentorships}
                     feedbackRows={feedbackRows}
-                    onTerminate={terminateMentorship}
+                    onTerminate={openTerminateDialog}
                     variant={
                       isViewAllMentorshipRequests
                         ? 'all-requests'
@@ -1655,12 +1857,12 @@ function AdminDashboard({ user, myStories, myEvents }) {
             )}
 
             {!isManageAccountRoute && !isManageMentorsRoute && (
-            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+            <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Newest Pending Verify Mentors</h2>
                 <Link
                   to="/dashboard/manage-account"
-                  className="text-xs uppercase tracking-widest font-bold text-primary hover:underline"
+                  className="text-xs uppercase tracking-widest font-bold text-[#f43f5e] hover:text-[#e11d48] hover:underline"
                 >
                   Manage verifications
                 </Link>
@@ -1684,7 +1886,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                               <p className="text-xs text-outline line-clamp-1">{mentorUser?.email || ''}</p>
                             </div>
                           </div>
-                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-red-200 bg-red-50 text-red-600 font-bold">
+                          <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-md border border-amber-500/70 bg-amber-100 text-amber-900 font-bold">
                             Pending Verify
                           </span>
                         </div>
@@ -1697,7 +1899,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
             )}
 
             {!isManageAccountRoute && !isManageMentorsRoute && (
-            <div className="bg-white border border-outline-variant/20 editorial-shadow rounded-xl p-8">
+            <div className="bg-white border border-outline-variant/20 rounded-xl p-8">
               <h2 className="font-serif-alt text-2xl font-bold text-on-surface">Admin Control Center</h2>
               <p className="text-on-surface-variant text-sm mt-2 mb-6">
                 Use quick links to manage platform entities and moderation workflows.
@@ -1711,8 +1913,60 @@ function AdminDashboard({ user, myStories, myEvents }) {
             </div>
             )}
           </div>
-        </main>
-      </div>
+
+      {terminateDialog.open && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close terminate dialog"
+            className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
+            onClick={closeTerminateDialog}
+            disabled={terminateSubmitting}
+          />
+          <div
+            className="relative w-full max-w-md rounded-xl border border-outline-variant/20 bg-white dark:bg-surface-container-lowest shadow-2xl p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terminate-mentorship-title"
+          >
+            <h3
+              id="terminate-mentorship-title"
+              className="font-serif-alt text-xl font-bold text-on-surface"
+            >
+              Terminate mentorship?
+            </h3>
+            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+              This ends the active mentorship for the mentor and mentee. They can start a new mentorship later if
+              they choose.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeTerminateDialog}
+                disabled={terminateSubmitting}
+                className="px-4 py-2.5 rounded-lg border border-outline-variant/25 bg-white dark:bg-surface-container text-sm font-semibold text-on-surface hover:border-outline-variant/40 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmTerminateMentorship}
+                disabled={terminateSubmitting}
+                className="inline-flex min-w-[10rem] items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 dark:bg-red-600 dark:hover:bg-red-500"
+              >
+                {terminateSubmitting ? (
+                  <>
+                    <Spinner size="sm" className="text-white" />
+                    Terminating…
+                  </>
+                ) : (
+                  'Yes, terminate'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editModalOpen && (
         <div className="fixed inset-0 z-[120] bg-black/45 backdrop-blur-[1px] p-4 flex items-center justify-center">
@@ -1783,7 +2037,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-[#f43f5e] text-white text-sm font-semibold hover:bg-[#e11d48] disabled:opacity-60"
                 >
                   {editSaving ? 'Saving…' : 'Save Changes'}
                 </button>
@@ -1792,7 +2046,7 @@ function AdminDashboard({ user, myStories, myEvents }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1800,6 +2054,7 @@ export default function DashboardPage() {
   const { user, canManageEvents } = useAuth();
   const [myStories, setMyStories]   = useState([]);
   const [myEvents, setMyEvents]     = useState([]);
+  const [likedStoriesCount, setLikedStoriesCount] = useState(0);
   const [loading, setLoading]       = useState(true);
 
   const userId = user?.id ?? user?._id;
@@ -1808,16 +2063,27 @@ export default function DashboardPage() {
     if (!user || !userId) return;
     const fetchAll = async () => {
       setLoading(true);
+      const roleLc = (user?.role || '').toLowerCase();
       try {
-        const [sRes, eRes] = await Promise.allSettled([
+        const reqs = [
           storyApi.getByUser(userId, { limit: 6 }),
           eventApi.getMyEvents(),
-        ]);
+        ];
+        if (roleLc === 'mentee') {
+          reqs.push(storyApi.getMyLikedCount());
+        }
+        const [sRes, eRes, lRes] = await Promise.allSettled(reqs);
         if (sRes.status === 'fulfilled') {
           setMyStories(sRes.value.data?.stories || []);
         }
         if (eRes.status === 'fulfilled') {
           setMyEvents(eRes.value.data?.data?.events || eRes.value.data?.events || []);
+        }
+        if (lRes && lRes.status === 'fulfilled') {
+          const c = lRes.value.data?.count;
+          setLikedStoriesCount(typeof c === 'number' ? c : 0);
+        } else if (roleLc === 'mentee') {
+          setLikedStoriesCount(0);
         }
       } finally {
         setLoading(false);
@@ -1854,23 +2120,20 @@ export default function DashboardPage() {
         user={user}
         myStories={myStories}
         myEvents={myEvents}
+        likedStoriesCount={likedStoriesCount}
       />
     );
   }
   if (roleLc === 'admin') {
     return (
-      <AdminDashboard
-        user={user}
-        myStories={myStories}
-        myEvents={myEvents}
-      />
+      <AdminDashboard user={user} />
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10">
       {/* Welcome */}
-      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/15 editorial-shadow px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-surface-container-lowest rounded-2xl border border-outline-variant/15 px-8 py-8 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-on-surface">
             Welcome back, {user?.name?.split(' ')[0]}! 👋
@@ -1882,14 +2145,14 @@ export default function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/dashboard/stories/new"
-            className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+            className="inline-flex items-center justify-center rounded-lg bg-[#f43f5e] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e11d48] active:scale-[0.98]"
           >
             + New Story
           </Link>
           {canManageEvents && (
             <Link
               to="/events/new"
-              className="px-5 py-2.5 border border-outline-variant/30 bg-white dark:bg-surface-container text-on-surface font-sans-modern text-sm font-medium tracking-wide hover:bg-surface-container-low transition-colors"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg border-2 border-[#f43f5e]/35 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-colors hover:border-[#f43f5e] hover:bg-rose-50"
             >
               + New Event
             </Link>
@@ -1902,8 +2165,8 @@ export default function DashboardPage() {
         {[
           { label: 'My Stories',        value: myStories.length, link: '/stories' },
           { label: 'Registered Events', value: myEvents.length,  link: '/events' },
-          { label: 'Total Views',       value: myStories.reduce((a, s) => a + (s.views || 0), 0) },
-          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + (s.likeCount || 0), 0) },
+          { label: 'Total Views',       value: myStories.reduce((a, s) => a + Number(s?.views ?? s?.viewCount ?? 0), 0) },
+          { label: 'Total Likes',       value: myStories.reduce((a, s) => a + Number(s?.likeCount ?? s?.likes?.length ?? 0), 0) },
         ].map(({ label, value, link }) => (
           <div key={label} className="card p-5">
             <p className="text-2xl font-display font-bold text-brand-700">{value}</p>
@@ -1932,9 +2195,9 @@ export default function DashboardPage() {
                 <StoryCard story={s} />
                 <div className="absolute top-2 right-2 hidden group-hover:flex gap-1.5">
                   <Link to={`/dashboard/stories/${s._id}/edit`}
-                    className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-gray-700 hover:bg-gray-50 border">Edit</Link>
+                    className="bg-white text-xs px-2.5 py-1 rounded-lg text-gray-700 hover:bg-gray-50 border">Edit</Link>
                   <button onClick={() => handleDeleteStory(s._id)}
-                    className="bg-white shadow text-xs px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 border">Del</button>
+                    className="bg-white text-xs px-2.5 py-1 rounded-lg text-red-500 hover:bg-red-50 border">Del</button>
                 </div>
               </div>
             ))}

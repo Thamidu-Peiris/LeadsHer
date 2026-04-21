@@ -53,6 +53,32 @@
   --c-gold-accent:                212 175 55;
 }
 
+/* Home page: rose/pink accents instead of purple primary (scoped to .home-theme-rose) */
+.home-theme-rose {
+  --c-primary:                    225 29 72;
+  --c-primary-container:          244 63 94;
+  --c-on-primary:                 255 255 255;
+  --c-on-primary-container:       255 241 242;
+  --c-inverse-primary:            254 205 211;
+  --c-primary-fixed:              255 228 230;
+  --c-primary-fixed-dim:          225 29 72;
+  --c-on-primary-fixed:           136 19 55;
+  --c-on-primary-fixed-variant:   159 18 57;
+  --c-surface-tint:               225 29 72;
+}
+
+.dark .home-theme-rose {
+  --c-primary:                    251 113 133;
+  --c-primary-container:          225 29 72;
+  --c-on-primary:                 255 255 255;
+  --c-on-primary-container:       255 241 242;
+  --c-inverse-primary:            225 29 72;
+  --c-primary-fixed:              136 19 55;
+  --c-primary-fixed-dim:          251 113 133;
+  --c-on-primary-fixed-variant:   255 228 230;
+  --c-surface-tint:               251 113 133;
+}
+
 /* ─── Dark mode tokens ─────────────────────────────────────────────── */
 .dark {
   --c-outline:                    154 147 168;
@@ -150,6 +176,277 @@
   }
 }
 
+/** Featured Stories: main card first paint — soft fade + gentle rise */
+@keyframes featuredHeroIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/** Featured Stories: hero swap on carousel — crossfade-style (opacity + small motion, no scale snap) */
+@keyframes featuredCarouselHero {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/** Featured Stories: sidebar rows — light horizontal slide */
+@keyframes featuredSideIn {
+  from {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/**
+ * Featured carousel swap (not a white flash): hero slides down / toward sidebar;
+ * next hero + column enter from above. Opacity stays > ~0.5 so background never “pops” white.
+ */
+@keyframes featuredHeroSwapOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0.62;
+    transform: translate3d(0, 48px, 0) scale(0.92);
+  }
+}
+
+@keyframes featuredHeroSwapIn {
+  from {
+    opacity: 0.82;
+    transform: translate3d(0, -40px, 0) scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (min-width: 1024px) {
+  @keyframes featuredHeroSwapOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0.65;
+      transform: translate3d(18%, 24px, 0) scale(0.9);
+    }
+  }
+
+  @keyframes featuredHeroSwapIn {
+    from {
+      opacity: 0.85;
+      transform: translate3d(-14%, -36px, 0) scale(1.07);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+@keyframes featuredSideColumnSwapOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.52;
+    transform: translate3d(0, 26px, 0);
+  }
+}
+
+@keyframes featuredSideColumnSwapIn {
+  from {
+    opacity: 0.55;
+    transform: translate3d(0, -40px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/**
+ * Featured carousel variant B — smooth “glide”: hero drifts left/down, next story glides in from the right;
+ * sidebar column drifts the opposite way for a gentle handoff (no harsh white cut).
+ */
+@keyframes featuredHeroGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0.6;
+    transform: translate3d(-36px, 14px, 0) scale(0.94);
+  }
+}
+
+@keyframes featuredHeroGlideIn {
+  from {
+    opacity: 0.78;
+    transform: translate3d(48px, -18px, 0) scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (min-width: 1024px) {
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0.62;
+      transform: translate3d(-14%, 18px, 0) scale(0.9);
+    }
+  }
+
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.84;
+      transform: translate3d(16%, -22px, 0) scale(1.06);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+@keyframes featuredSideColumnGlideOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.48;
+    transform: translate3d(28px, 10px, 0);
+  }
+}
+
+@keyframes featuredSideColumnGlideIn {
+  from {
+    opacity: 0.52;
+    transform: translate3d(-32px, -14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes featuredHeroIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredCarouselHero {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredHeroSwapOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.4;
+    }
+  }
+  @keyframes featuredHeroSwapIn {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideColumnSwapOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.35;
+    }
+  }
+  @keyframes featuredSideColumnSwapIn {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredHeroGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.38;
+    }
+  }
+  @keyframes featuredHeroGlideIn {
+    from {
+      opacity: 0.38;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes featuredSideColumnGlideOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.32;
+    }
+  }
+  @keyframes featuredSideColumnGlideIn {
+    from {
+      opacity: 0.32;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
 @layer components {
   /* Buttons */
   .btn-primary {
@@ -157,6 +454,13 @@
   }
   .btn-outline {
     @apply inline-flex items-center justify-center px-8 py-4 border border-outline-variant text-primary font-label text-xs tracking-[0.2em] uppercase hover:bg-secondary-container/20 transition-all active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-outline-white-rose {
+    @apply inline-flex items-center justify-center px-8 py-4 bg-white border-2 border-rose-500 text-primary font-label font-bold text-xs tracking-[0.2em] uppercase hover:bg-rose-50 transition-all active:scale-[0.98] disabled:opacity-50;
+  }
+  /* Hero: white control, pink label, rose stroke */
+  .btn-explore-archives {
+    @apply inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white border-2 border-rose-500 text-rose-600 font-label font-bold text-xs tracking-[0.2em] uppercase shadow-md shadow-rose-900/5 hover:bg-rose-50 hover:text-rose-700 transition-all active:scale-[0.98] disabled:opacity-50;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center px-4 py-2 text-on-surface-variant font-label text-xs tracking-wider uppercase hover:text-primary transition-colors;
@@ -174,15 +478,6 @@
   }
   .dark .editorial-shadow {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-  }
-  /* Glass nav */
-  .glass-nav {
-    background: rgba(250, 249, 247, 0.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-  .dark .glass-nav {
-    background: rgba(16, 15, 22, 0.85);
   }
   /* Marquee */
   .marquee { display: flex; overflow: hidden; user-select: none; gap: 2rem; }

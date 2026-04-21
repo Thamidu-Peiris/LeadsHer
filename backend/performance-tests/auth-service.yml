@@ -1,0 +1,86 @@
+config:
+  target: "http://localhost:5001"
+  phases:
+    # Warm-up: ramp from 1 to 10 VUs over 30 seconds
+    - duration: 30
+      arrivalRate: 1
+      rampTo: 10
+      name: "Warm-up"
+    # Sustained load: 10 VUs for 60 seconds
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained Load"
+    # Stress: spike to 50 VUs for 30 seconds
+    - duration: 30
+      arrivalRate: 50
+      name: "Stress Spike"
+  payload:
+    path: "./data/users.csv"
+    fields:
+      - "email"
+      - "password"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  # Thresholds - fail if p99 > 1000ms or error rate > 1%
+  ensure:
+    p99: 1000
+    maxErrorRate: 1
+
+scenarios:
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Registration Config"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/auth/registration-config"
+          expect:
+            - statusCode: 200
+
+  - name: "User Registration"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            name: "Perf Test {{ $randomString() }}"
+            email: "perf_{{ $randomString() }}@example.com"
+            password: "PerfTest1!"
+            role: "mentee"
+
+  - name: "Login"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+  - name: "Authenticated Profile Fetch"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/auth/profile"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200

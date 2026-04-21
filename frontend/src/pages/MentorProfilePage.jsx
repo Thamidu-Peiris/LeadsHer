@@ -4,7 +4,7 @@ import { mentorApi } from '../api/mentorApi';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
 import toast from 'react-hot-toast';
-import { absolutePhotoUrl } from '../utils/absolutePhotoUrl';
+import { absolutePhotoUrl, userDisplayPhoto } from '../utils/absolutePhotoUrl';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const TABS = [
@@ -20,7 +20,7 @@ const EXPERTISE_ICONS = ['groups', 'strategy', 'trending_up'];
 function StarMaterial({ rating, className = '' }) {
   const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
   return (
-    <span className={`flex items-center text-gold-accent ${className}`} aria-hidden>
+    <span className={`flex items-center text-rose-500 ${className}`} aria-hidden>
       {Array.from({ length: r }, (_, i) => (
         <span key={`f-${i}`} className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: '"FILL" 1' }}>
           star
@@ -89,7 +89,7 @@ function FeedbackStars({ rating, className = '', sizeClass = 'text-[20px]' }) {
 export default function MentorProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isMentee } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
@@ -148,13 +148,17 @@ export default function MentorProfilePage() {
       toast.error('Log in to send a request');
       return;
     }
+    if (!isMentee) {
+      toast.error('Only mentees can request mentorship');
+      return;
+    }
     setRequestForm({
       goals: 'Career growth, Leadership',
       preferredStartDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
       message: 'I would love to learn from your experience.',
     });
     setRequestModalOpen(true);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isMentee]);
 
   const submitMentorshipRequest = useCallback(async () => {
     if (!profile) return;
@@ -227,8 +231,7 @@ export default function MentorProfilePage() {
   if (!profile) return null;
 
   const displayName = profile.user?.name || 'Mentor';
-  const avatarSrc = profile.user?.profilePicture || profile.user?.avatar;
-  const initial = displayName[0]?.toUpperCase() || 'M';
+  const avatarSrc = userDisplayPhoto(profile.user || { name: displayName }, { size: 240 });
   const industries = profile.industries || [];
   const areas = profile.mentoringAreas || [];
   const expertiseList = profile.expertise || [];
@@ -247,10 +250,14 @@ export default function MentorProfilePage() {
   const memberSince = profile.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : null;
+  const activeMentorshipCount =
+    typeof profile.activeMentorships === 'number'
+      ? profile.activeMentorships
+      : profile.availability?.currentMentees ?? 0;
   const canShowAvailable =
     profile.isAvailable &&
     profile.isVerified &&
-    (profile.availability?.currentMentees ?? 0) < (profile.availability?.maxMentees ?? 1);
+    activeMentorshipCount < (profile.availability?.maxMentees ?? 1);
 
   const scrollToSection = (sectionId) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -264,14 +271,8 @@ export default function MentorProfilePage() {
         <header className="bg-white border-b border-neutral-200/90 pb-6 pt-4 px-4 md:px-10 lg:px-12">
           <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row items-center lg:items-end gap-10">
             <div className="relative shrink-0">
-              <div className="w-[120px] h-[120px] rounded-full p-1 ring-2 ring-gold-accent">
-                {avatarSrc ? (
-                  <img src={avatarSrc} alt="" className="w-full h-full object-cover rounded-full" />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-neutral-100 flex items-center justify-center text-3xl font-semibold text-neutral-600">
-                    {initial}
-                  </div>
-                )}
+              <div className="w-[120px] h-[120px] rounded-full p-1 ring-2 ring-rose-500">
+                <img src={avatarSrc} alt="" className="w-full h-full object-cover rounded-full" />
               </div>
               {profile.isVerified ? (
                 <div
@@ -295,7 +296,7 @@ export default function MentorProfilePage() {
                 {displayName}
               </h1>
               <div className="flex flex-col gap-1 text-neutral-500">
-                <p className="text-lg text-gold-accent font-medium">{roleLine}</p>
+                <p className="text-lg text-rose-500 font-medium">{roleLine}</p>
                 <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3 text-sm text-neutral-500">
                   {location ? (
                     <>
@@ -343,20 +344,26 @@ export default function MentorProfilePage() {
                 )}
               </div>
               <div className="flex gap-3 w-full max-w-md lg:max-w-none justify-center lg:justify-end">
+                {isAuthenticated && !isMentee ? (
+                  <p className="flex-1 lg:flex-none text-center lg:text-right text-xs text-neutral-500 max-w-xs lg:max-w-none self-center">
+                    Mentorship requests are for mentee accounts only.
+                  </p>
+                ) : (
                 <button
                   type="button"
                   onClick={openRequestModal}
-                  className="flex-1 lg:flex-none px-8 py-3 bg-gold-accent hover:brightness-95 text-white rounded-lg font-bold transition-all text-sm uppercase tracking-widest shadow-sm shadow-gold-accent/25"
+                  className="flex-1 lg:flex-none px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-bold transition-all text-sm uppercase tracking-widest shadow-sm shadow-rose-500/25"
                 >
                   Request mentorship
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setBookmarked((b) => !b)}
                   className={`p-3 border rounded-lg transition-all ${
                     bookmarked
-                      ? 'border-gold-accent bg-amber-50 text-amber-900'
-                      : 'border-amber-200 text-gold-accent hover:bg-amber-50'
+                      ? 'border-rose-500 bg-rose-50 text-rose-900'
+                      : 'border-rose-200 text-rose-500 hover:bg-rose-50'
                   }`}
                   aria-pressed={bookmarked}
                   aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark mentor'}
@@ -383,7 +390,7 @@ export default function MentorProfilePage() {
                 onClick={() => scrollToSection(tid)}
                 className={`py-4 text-sm font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors shrink-0 ${
                   activeTab === tid
-                    ? 'border-gold-accent text-gold-accent'
+                    ? 'border-rose-500 text-rose-500'
                     : 'border-transparent text-neutral-400 hover:text-neutral-700'
                 }`}
               >
@@ -407,7 +414,7 @@ export default function MentorProfilePage() {
                 <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {profile.achievements.map((a) => (
                     <li key={a} className="flex items-start gap-3 text-neutral-600">
-                      <span className="text-gold-accent mt-0.5" aria-hidden>
+                      <span className="text-rose-500 mt-0.5" aria-hidden>
                         ✦
                       </span>
                       <span>{a}</span>
@@ -425,9 +432,9 @@ export default function MentorProfilePage() {
               {areas.slice(0, 3).map((area, idx) => (
                 <div
                   key={area}
-                  className="p-6 md:p-8 border border-neutral-200 rounded-xl bg-white shadow-sm group hover:border-amber-200 transition-all"
+                  className="p-6 md:p-8 border border-neutral-200 rounded-xl bg-white shadow-sm group hover:border-rose-200 transition-all"
                 >
-                  <span className="material-symbols-outlined text-gold-accent text-4xl mb-4 group-hover:scale-110 transition-transform block">
+                  <span className="material-symbols-outlined text-rose-500 text-4xl mb-4 group-hover:scale-110 transition-transform block">
                     {EXPERTISE_ICONS[idx % EXPERTISE_ICONS.length]}
                   </span>
                   <h3 className="text-lg font-bold mb-2 text-neutral-900">{area}</h3>
@@ -452,16 +459,16 @@ export default function MentorProfilePage() {
                       <div key={skill} className="space-y-2">
                         <div className="text-sm font-medium text-neutral-800">{skill}</div>
                         <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
-                          <div className="h-full w-full bg-gold-accent rounded-full" />
+                          <div className="h-full w-full bg-rose-500 rounded-full" />
                         </div>
                       </div>
                     ))
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-center p-8 bg-amber-50/90 border border-amber-100 rounded-xl">
+              <div className="flex items-center justify-center p-8 bg-rose-50/90 border border-rose-100 rounded-xl">
                 <div className="text-center">
-                  <p className="text-6xl md:text-7xl font-black text-gold-accent leading-none mb-2">{years || 0}+</p>
+                  <p className="text-6xl md:text-7xl font-black text-rose-500 leading-none mb-2">{years || 0}+</p>
                   <p className="text-xl font-bold text-neutral-900 tracking-widest uppercase">Years of impact</p>
                   <p className="text-neutral-500 mt-4 max-w-[220px] mx-auto text-sm">
                     Deep experience across {industries.length ? industries.slice(0, 2).join(' & ') : 'multiple industries'}.
@@ -606,7 +613,7 @@ export default function MentorProfilePage() {
               <div className="p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Mentee slots</h3>
                 <p className="text-lg font-semibold text-neutral-900">
-                  {profile.availability?.currentMentees ?? 0} / {profile.availability?.maxMentees ?? '—'} active
+                  {activeMentorshipCount} / {profile.availability?.maxMentees ?? '—'} active mentorships
                 </p>
               </div>
               {profile.availability?.preferredTime?.length > 0 ? (
@@ -632,7 +639,7 @@ export default function MentorProfilePage() {
           <div className="flex justify-center pt-4 border-t border-neutral-200">
             <Link
               to="/mentors"
-              className="inline-flex items-center justify-center px-8 py-3 border-2 border-amber-300 text-amber-900 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-amber-50 transition-colors"
+              className="inline-flex items-center justify-center px-8 py-3 border-2 border-rose-300 text-rose-900 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-rose-50 transition-colors"
             >
               Back to all mentors
             </Link>
@@ -682,7 +689,7 @@ export default function MentorProfilePage() {
                   onChange={(e) =>
                     setRequestForm((f) => ({ ...f, preferredStartDate: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/30"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
                 />
               </div>
               <div>
@@ -693,7 +700,7 @@ export default function MentorProfilePage() {
                   type="text"
                   value={requestForm.goals}
                   onChange={(e) => setRequestForm((f) => ({ ...f, goals: e.target.value }))}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/30"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
                   placeholder="e.g. Career growth, Leadership"
                 />
               </div>
@@ -707,7 +714,7 @@ export default function MentorProfilePage() {
                 value={requestForm.message}
                 onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
                 rows={4}
-                className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-gold-accent focus:ring-1 focus:ring-gold-accent/30"
+                className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30"
               />
             </div>
 
@@ -723,7 +730,7 @@ export default function MentorProfilePage() {
                 type="button"
                 disabled={submittingRequest}
                 onClick={submitMentorshipRequest}
-                className="rounded-lg bg-gold-accent px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-gold-accent/25 transition-all hover:brightness-95 disabled:opacity-60"
+                className="rounded-lg bg-rose-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm shadow-rose-500/25 transition-all hover:bg-rose-600 disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Send request'}
               </button>

@@ -1,12 +1,49 @@
+const mongoose = require('mongoose');
 const MentorshipRequest = require('../models/MentorshipRequest');
 const MentorProfile = require('../models/MentorProfile');
 const Mentorship = require('../models/Mentorship');
+const User = require('../models/User');
+
+/** Resolve body `mentorId` (mentor User id or MentorProfile id) to the mentor's User id + profile doc. */
+async function resolveMentorProfileAndUserId(mentorId) {
+  if (!mongoose.Types.ObjectId.isValid(mentorId)) {
+    return { mentorUserId: null, mentorProfile: null };
+  }
+  let mentorProfile = await MentorProfile.findById(mentorId);
+  let mentorUserId = mentorId;
+  if (mentorProfile) {
+    mentorUserId = mentorProfile.user;
+  } else {
+    mentorProfile = await MentorProfile.findOne({ user: mentorId });
+    if (mentorProfile) mentorUserId = mentorProfile.user;
+  }
+  if (!mentorProfile) return { mentorUserId: null, mentorProfile: null };
+  return { mentorUserId, mentorProfile };
+}
 
 const createRequest = async (userId, { mentorId, goals, preferredStartDate, message }) => {
-  const mentorProfile = await MentorProfile.findOne({ user: mentorId });
-  if (!mentorProfile) {
+  const menteeUser = await User.findById(userId).select('role');
+  if (!menteeUser) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  const menteeRole = String(menteeUser.role || '').toLowerCase();
+  if (menteeRole !== 'mentee') {
+    const err = new Error('Only mentees can send mentorship requests');
+    err.status = 403;
+    throw err;
+  }
+
+  const { mentorUserId, mentorProfile } = await resolveMentorProfileAndUserId(mentorId);
+  if (!mentorProfile || !mentorUserId) {
     const err = new Error('Mentor profile not found');
     err.status = 404;
+    throw err;
+  }
+  if (String(mentorUserId) === String(userId)) {
+    const err = new Error('You cannot send a mentorship request to yourself');
+    err.status = 400;
     throw err;
   }
   if (!mentorProfile.isVerified) {
@@ -25,7 +62,21 @@ const createRequest = async (userId, { mentorId, goals, preferredStartDate, mess
     err.status = 400;
     throw err;
   }
-  const existingRequest = await MentorshipRequest.findOne({ mentor: mentorId, mentee: userId, status: 'pending' });
+  const activeWithThisMentor = await Mentorship.findOne({
+    mentor: mentorUserId,
+    mentee: userId,
+    status: 'active',
+  });
+  if (activeWithThisMentor) {
+    const err = new Error('You already have an active mentorship with this mentor');
+    err.status = 400;
+    throw err;
+  }
+  const existingRequest = await MentorshipRequest.findOne({
+    mentor: mentorUserId,
+    mentee: userId,
+    status: 'pending',
+  });
   if (existingRequest) {
     const err = new Error('You already have a pending request to this mentor');
     err.status = 400;
@@ -37,8 +88,27 @@ const createRequest = async (userId, { mentorId, goals, preferredStartDate, mess
     err.status = 400;
     throw err;
   }
-  const mentorshipRequest = await MentorshipRequest.create({ mentor: mentorId, mentee: userId, goals, preferredStartDate: startDate, message });
-  await mentorshipRequest.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  let mentorshipRequest;
+  try {
+    mentorshipRequest = await MentorshipRequest.create({
+      mentor: mentorUserId,
+      mentee: userId,
+      goals,
+      preferredStartDate: startDate,
+      message,
+    });
+  } catch (e) {
+    if (e && e.code === 11000) {
+      const err = new Error('You already have a pending request to this mentor');
+      err.status = 400;
+      throw err;
+    }
+    throw e;
+  }
+  await mentorshipRequest.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return mentorshipRequest;
 };
 
@@ -48,12 +118,17 @@ const getRequests = async (userId, userRole, { status, type = 'received' }) => {
   else if (type === 'sent') filter.mentee = userId;
   else filter.$or = [{ mentor: userId }, { mentee: userId }];
   if (status) filter.status = status;
-  const requests = await MentorshipRequest.find(filter).populate('mentor', 'name email avatar').populate('mentee', 'name email avatar').sort('-createdAt');
+  const requests = await MentorshipRequest.find(filter)
+    .populate('mentor', 'name email avatar profilePicture')
+    .populate('mentee', 'name email avatar profilePicture')
+    .sort('-createdAt');
   return { data: requests, count: requests.length };
 };
 
 const getRequestById = async (requestId, userId) => {
-  const request = await MentorshipRequest.findById(requestId).populate('mentor', 'name email avatar bio').populate('mentee', 'name email avatar bio');
+  const request = await MentorshipRequest.findById(requestId)
+    .populate('mentor', 'name email avatar profilePicture bio')
+    .populate('mentee', 'name email avatar profilePicture bio');
   if (!request) {
     const err = new Error('Mentorship request not found');
     err.status = 404;
@@ -120,7 +195,10 @@ const acceptRequest = async (requestId, userId, responseMessage) => {
     mentorProfile.isAvailable = false;
   }
   await mentorProfile.save();
-  await mentorship.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await mentorship.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return { request, mentorship };
 };
 
@@ -145,7 +223,10 @@ const rejectRequest = async (requestId, userId, responseMessage) => {
   request.respondedAt = Date.now();
   request.responseMessage = responseMessage || 'Request rejected';
   await request.save();
-  await request.populate([{ path: 'mentor', select: 'name email avatar' }, { path: 'mentee', select: 'name email avatar' }]);
+  await request.populate([
+    { path: 'mentor', select: 'name email avatar profilePicture' },
+    { path: 'mentee', select: 'name email avatar profilePicture' },
+  ]);
   return request;
 };
 

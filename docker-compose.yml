@@ -134,6 +134,7 @@ services:
       - mentorship-service
       - resource-service
       - forum-service
+      - event-service
     networks:
       - leadsher-network
     restart: unless-stopped

@@ -2,6 +2,7 @@ const express = require('express');
 const eventController = require('../controllers/eventController');
 const registrationController = require('../controllers/registrationController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { uploadEventCover } = require('../middleware/uploadEventCover');
 
 const router = express.Router();
 
@@ -13,6 +14,14 @@ router.get('/', eventController.getAllEvents);
 
 router.get('/my-events',   protect, eventController.getMyEvents);
 router.get('/my-created',  protect, restrictTo('admin', 'mentor'), eventController.getMyCreatedEvents);
+
+router.post(
+  '/upload-cover',
+  protect,
+  restrictTo('admin', 'mentor'),
+  uploadEventCover.single('cover'),
+  eventController.uploadEventCover
+);
 
 /* ── Single event CRUD ──────────────────────────────────────────────────── */
 
@@ -38,6 +47,12 @@ router.patch('/:id/cancel',      protect, restrictTo('admin', 'mentor'), eventCo
 /* ── Admin-only actions ─────────────────────────────────────────────────── */
 
 router.patch('/:id/reschedule',  protect, restrictTo('admin'), eventController.rescheduleEvent);
+router.post(
+    '/:id/send-reminder-emails',
+    protect,
+    restrictTo('admin'),
+    eventController.sendReminderEmails
+);
 router.post('/:id/certificates', protect, restrictTo('admin'), eventController.issueCertificates);
 router.get('/:id/certificates',  protect, eventController.getEventCertificates);
 

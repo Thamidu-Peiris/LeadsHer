@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { userDisplayPhoto } from '../../utils/absolutePhotoUrl';
 
 const CATEGORY_LABEL = {
   leadership:       'Leadership',
@@ -17,6 +18,7 @@ const BG = [
 
 export default function StoryCard({ story, idx = 0 }) {
   const { _id, title, excerpt, category, author, readingTime, likeCount, coverImage } = story;
+  const authorAvatarSrc = userDisplayPhoto(author || { name: 'Unknown' }, { size: 72 });
 
   return (
     <Link to={`/stories/${_id}`} className="group cursor-pointer block">
@@ -47,9 +49,11 @@ export default function StoryCard({ story, idx = 0 }) {
       )}
 
       <div className="flex items-center gap-3 border-t border-outline-variant/10 pt-5">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-secondary/30 flex items-center justify-center font-bold text-white text-xs">
-          {author?.name?.[0]?.toUpperCase() || 'A'}
-        </div>
+        <img
+          src={authorAvatarSrc}
+          alt={author?.name || 'Author'}
+          className="w-9 h-9 rounded-full object-cover border border-outline-variant/20"
+        />
         <div className="flex-1">
           <p className="font-label text-[10px] tracking-wider uppercase">{author?.name || 'Unknown'}</p>
         </div>

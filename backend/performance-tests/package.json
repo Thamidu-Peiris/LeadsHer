@@ -1,0 +1,18 @@
+{
+  "name": "leadsher-performance-tests",
+  "version": "1.0.0",
+  "description": "Artillery performance tests for all LeadsHer microservices",
+  "scripts": {
+    "test:auth":        "artillery run auth-service.yml --output reports/auth-report.json && artillery report reports/auth-report.json",
+    "test:mentorship":  "artillery run mentorship-service.yml --output reports/mentorship-report.json && artillery report reports/mentorship-report.json",
+    "test:story":       "artillery run story-service.yml --output reports/story-report.json && artillery report reports/story-report.json",
+    "test:forum":       "artillery run forum-service.yml --output reports/forum-report.json && artillery report reports/forum-report.json",
+    "test:resource":    "artillery run resource-service.yml --output reports/resource-report.json && artillery report reports/resource-report.json",
+    "test:event":       "artillery run event-service.yml --output reports/event-report.json && artillery report reports/event-report.json",
+    "test:all":         "npm run test:auth && npm run test:mentorship && npm run test:story && npm run test:forum && npm run test:resource && npm run test:event",
+    "test:quick":       "artillery quick --count 10 --num 5 http://localhost:5001/health"
+  },
+  "devDependencies": {
+    "artillery": "^2.0.0"
+  }
+}

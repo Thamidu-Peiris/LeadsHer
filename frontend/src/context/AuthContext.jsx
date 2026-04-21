@@ -50,14 +50,50 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const res = await authApi.register(data);
     const payload = res.data;
-    if (payload.token) saveSession(payload.token, payload.user);
+    if (payload.token && payload.user) saveSession(payload.token, payload.user);
+    if (payload.requiresVerification && payload.email) {
+      try {
+        sessionStorage.setItem('leadsher_pending_email', payload.email);
+      } catch {
+        /* ignore */
+      }
+    }
     return payload;
+  };
+
+  const verifyEmailWithCode = async (email, code) => {
+    const res = await authApi.verifyEmail({ email: email.trim(), code: String(code).trim() });
+    const { token, user } = res.data;
+    if (token && user) saveSession(token, user);
+    try {
+      sessionStorage.removeItem('leadsher_pending_email');
+    } catch {
+      /* ignore */
+    }
+    return res.data;
+  };
+
+  const verifyEmailWithToken = async (token) => {
+    const res = await authApi.verifyEmail({ token });
+    const { token: jwt, user } = res.data;
+    if (jwt && user) saveSession(jwt, user);
+    try {
+      sessionStorage.removeItem('leadsher_pending_email');
+    } catch {
+      /* ignore */
+    }
+    return res.data;
   };
 
   const logout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     clearSession();
   };
+
+  /** After password reset (or similar) when API returns token + user */
+  const applySession = useCallback((payload) => {
+    if (payload?.token && payload?.user) saveSession(payload.token, payload.user);
+  }, [saveSession]);
 
   const updateUser = (updated) => {
     const merged = { ...user, ...updated };
@@ -75,7 +111,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, token, loading, isAuthenticated, isAdmin, isMentor, isMentee, canManageEvents,
-      login, register, logout, updateUser,
+      login, register, logout, updateUser, applySession, verifyEmailWithCode, verifyEmailWithToken,
     }}>
       {children}
     </AuthContext.Provider>

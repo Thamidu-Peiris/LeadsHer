@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { forumApi } from '../api/forumApi';
 import Spinner from '../components/common/Spinner';
+import { userDisplayPhoto } from '../utils/absolutePhotoUrl';
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
@@ -52,16 +53,14 @@ const fmtCat = (c) =>
 
 function TopicCard({ topic, pinned }) {
   const catColor = CAT_COLORS[topic.category] || CAT_COLORS.general;
-  const avatarSrc =
-    topic.author?.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(topic.author?.name || 'U')}&background=c9a84c&color=fff&size=40`;
+  const avatarSrc = userDisplayPhoto(topic.author, { size: 40 });
 
   return (
     <Link
       to={`/forum/${topic._id}`}
-      className={`group block bg-white dark:bg-surface-container-lowest border rounded-xl p-5 hover:border-gold-accent/50 hover:shadow-md transition-all duration-200 ${
+      className={`group block bg-white dark:bg-surface-container-lowest border rounded-xl p-5 hover:border-blue-900/50 hover:shadow-md transition-all duration-200 ${
         pinned
-          ? 'border-gold-accent/40 bg-gold-accent/[0.02]'
+          ? 'border-blue-900/40 bg-blue-900/[0.02]'
           : 'border-slate-200 dark:border-outline-variant/30'
       }`}
     >
@@ -75,7 +74,7 @@ function TopicCard({ topic, pinned }) {
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
             {pinned && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gold-accent bg-gold-accent/10 border border-gold-accent/25 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-blue-900 bg-blue-900/10 border border-blue-900/25 px-2 py-0.5 rounded-full">
                 <span className="material-symbols-outlined text-[12px]">push_pin</span>
                 Pinned
               </span>
@@ -92,7 +91,7 @@ function TopicCard({ topic, pinned }) {
           </div>
 
           {/* Title */}
-          <h3 className="font-serif-alt text-base font-bold text-on-surface group-hover:text-gold-accent transition-colors line-clamp-2 leading-snug mb-1">
+          <h3 className="font-serif-alt text-base font-bold text-on-surface group-hover:text-blue-900 transition-colors line-clamp-2 leading-snug mb-1">
             {topic.title}
           </h3>
 
@@ -183,71 +182,64 @@ export default function ForumPage() {
           style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #c9a84c 0%, transparent 60%)' }}
         />
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 text-gold-accent/80 text-xs font-bold uppercase tracking-[0.2em] mb-4">
-            <span className="w-8 h-px bg-gold-accent/50" />
+          <div className="inline-flex items-center gap-2 text-blue-900/80 text-xs font-bold uppercase tracking-[0.2em] mb-4">
+            <span className="w-8 h-px bg-blue-900/50" />
             Community
-            <span className="w-8 h-px bg-gold-accent/50" />
+            <span className="w-8 h-px bg-blue-900/50" />
           </div>
           <h1 className="font-serif-alt text-4xl md:text-5xl font-bold text-white mb-4">
             LeadsHer Forum
           </h1>
-          <p className="text-white/60 text-lg max-w-xl mx-auto mb-8">
+          <p className="text-white/60 text-lg max-w-xl mx-auto">
             Ask questions, share insights, and grow alongside a community of women leaders.
           </p>
-          {user ? (
-            <Link
-              to="/forum/new"
-              className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-lg shadow-gold-accent/25"
-            >
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              Start a Discussion
-            </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 bg-gold-accent hover:bg-gold-accent/90 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-lg shadow-gold-accent/25"
-            >
-              Join the Conversation
-            </Link>
-          )}
         </div>
       </section>
 
       <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="relative group">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-gold-accent transition-colors">
-              search
-            </span>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search discussions…"
-              className="w-full bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl py-3 pl-12 pr-32 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-gold-accent/40 focus:border-gold-accent transition-all"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-gold-accent hover:bg-gold-accent/90 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+        {/* Search + Start a Discussion */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <form onSubmit={handleSearch} className="w-full min-w-0 max-w-md sm:max-w-lg sm:shrink-0">
+            <div className="relative group">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline group-focus-within:text-blue-900 transition-colors">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search discussions…"
+                className="w-full bg-white dark:bg-surface-container-lowest border border-slate-200 dark:border-outline-variant/30 rounded-xl py-3 pl-12 pr-32 text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-blue-900/40 focus:border-blue-900 transition-all"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+          <Link
+            to={user ? '/forum/new' : '/login'}
+            className="inline-flex shrink-0 items-center justify-center gap-2 bg-black hover:bg-neutral-900 text-white font-bold px-6 py-3 rounded-lg transition-colors w-full sm:w-auto"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Start a Discussion
+          </Link>
+        </div>
 
         {/* Filters row */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           {/* Category tabs */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
             {CATEGORIES.map((c) => (
               <button
                 key={c.value}
                 onClick={() => handleCategoryChange(c.value)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
                   category === c.value
-                    ? 'bg-gold-accent text-white border-gold-accent'
-                    : 'bg-white dark:bg-surface-container-lowest text-outline border-outline-variant/30 hover:border-gold-accent/40 hover:text-on-surface'
+                    ? 'bg-blue-900 text-white border-blue-900'
+                    : 'bg-white dark:bg-surface-container-lowest text-outline border-outline-variant/30 hover:border-blue-900/40 hover:text-on-surface'
                 }`}
               >
                 {c.label}
@@ -259,7 +251,7 @@ export default function ForumPage() {
           <select
             value={sort}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="text-sm border border-outline-variant/30 rounded-lg px-3 py-1.5 bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-gold-accent"
+            className="text-sm border border-outline-variant/30 rounded-lg px-3 py-1.5 bg-white dark:bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-1 focus:ring-blue-900"
           >
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
@@ -293,7 +285,10 @@ export default function ForumPage() {
                 <p className="text-on-surface-variant font-medium mb-2">No discussions yet</p>
                 <p className="text-outline text-sm mb-6">Be the first to start a conversation.</p>
                 {user && (
-                  <Link to="/forum/new" className="btn-primary inline-flex items-center gap-2">
+                  <Link
+                    to="/forum/new"
+                    className="inline-flex items-center gap-2 bg-black hover:bg-neutral-900 text-white font-bold px-6 py-3 rounded-lg transition-colors"
+                  >
                     <span className="material-symbols-outlined text-[18px]">add</span>
                     Start a Discussion
                   </Link>
@@ -311,7 +306,7 @@ export default function ForumPage() {
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="p-2 rounded-lg border border-outline-variant/30 text-outline hover:text-on-surface hover:border-gold-accent/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg border border-outline-variant/30 text-outline hover:text-on-surface hover:border-blue-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                 </button>
@@ -331,8 +326,8 @@ export default function ForumPage() {
                         onClick={() => setPage(p)}
                         className={`w-9 h-9 rounded-lg text-sm font-medium transition-all border ${
                           p === page
-                            ? 'bg-gold-accent text-white border-gold-accent'
-                            : 'border-outline-variant/30 text-outline hover:border-gold-accent/40 hover:text-on-surface'
+                            ? 'bg-blue-900 text-white border-blue-900'
+                            : 'border-outline-variant/30 text-outline hover:border-blue-900/40 hover:text-on-surface'
                         }`}
                       >
                         {p}
@@ -342,7 +337,7 @@ export default function ForumPage() {
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="p-2 rounded-lg border border-outline-variant/30 text-outline hover:text-on-surface hover:border-gold-accent/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg border border-outline-variant/30 text-outline hover:text-on-surface hover:border-blue-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                 </button>

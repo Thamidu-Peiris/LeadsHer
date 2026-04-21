@@ -56,7 +56,7 @@ const getPlatformStats = async () => {
 };
 
 const getTopMentors = async (limit = 10) => {
-  return MentorProfile.find({ isVerified: true, rating: { $gt: 0 } }).populate('user', 'name email').sort('-rating -totalMentorships').limit(limit);
+  return MentorProfile.find({ isVerified: true, rating: { $gt: 0 } }).populate('user', 'name email avatar profilePicture').sort('-rating -totalMentorships').limit(limit);
 };
 
 const getMentorshipsRequiringAttention = async () => {

@@ -1,6 +1,7 @@
 const mentorshipService = require('../services/mentorshipService');
 const Mentorship = require('../models/Mentorship');
 const MentorshipRequest = require('../models/MentorshipRequest');
+const MentorProfile = require('../models/MentorProfile');
 const adminOps = require('../utils/adminOperations');
 
 exports.getActiveMentorships = async (req, res) => {
@@ -20,6 +21,30 @@ exports.getMentorshipById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching mentorship:', error);
     res.status(error.status || 500).json({ message: 'Error fetching mentorship', error: error.message });
+  }
+};
+
+exports.getSessionAgoraToken = async (req, res) => {
+  try {
+    const data = await mentorshipService.issueAgoraRtcToken(req.params.id, req.params.sessionId, req.user._id);
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Error issuing Agora token:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Error issuing video token' });
+  }
+};
+
+exports.completeSessionVideoCall = async (req, res) => {
+  try {
+    const mentorship = await mentorshipService.completeSessionVideoCall(
+      req.params.id,
+      req.params.sessionId,
+      req.user._id
+    );
+    res.status(200).json({ message: 'Session video marked completed', data: mentorship });
+  } catch (error) {
+    console.error('Error completing session video:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Error completing session video' });
   }
 };
 
@@ -166,6 +191,8 @@ exports.adminTerminateMentorship = async (req, res) => {
     item.status = 'terminated';
     item.endDate = Date.now();
     await item.save();
+    const mentorProfile = await MentorProfile.findOne({ user: item.mentor });
+    if (mentorProfile) await mentorProfile.decrementMentees();
     await item.populate([
       { path: 'mentor', select: 'name email profilePicture' },
       { path: 'mentee', select: 'name email profilePicture' },
