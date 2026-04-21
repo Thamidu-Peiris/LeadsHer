@@ -382,6 +382,8 @@ const markAcceptedAnswer = async (replyId, userId, userRole) => {
   if (!wasAccepted) {
     reply.isAcceptedAnswer = true;
     await reply.save();
+  } else {
+    reply.isAcceptedAnswer = false;
   }
   await reply.populate('author', 'name avatar profilePicture');
   return reply;
